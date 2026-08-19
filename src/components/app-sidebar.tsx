@@ -30,6 +30,12 @@ import {
   Clock,
   FileText,
   Receipt,
+  Layers,
+  Droplets,
+  Calendar,
+  Wallet,
+  MapPin,
+  AlertTriangle,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -127,6 +133,11 @@ export function AppSidebar() {
         { title: "Pack Items", href: "/dashboard/manufacturing/pack", icon: PackageCheck },
         { title: "QR Generator", href: "/dashboard/manufacturing/qr-generator", icon: QrCode },
         { title: "QR Scanner", href: "/dashboard/manufacturing/scan", icon: ScanLine },
+        { title: "Machines", href: "/dashboard/manufacturing/machines", icon: Wrench },
+        { title: "Production Orders", href: "/dashboard/manufacturing/production", icon: Factory },
+        { title: "Raw Materials", href: "/dashboard/manufacturing/raw-materials", icon: Package },
+        { title: "Quality Inspections", href: "/dashboard/manufacturing/quality", icon: ShieldCheck },
+        { title: "Bill of Materials", href: "/dashboard/manufacturing/boms", icon: Layers },
       ],
     },
     {
@@ -151,6 +162,7 @@ export function AppSidebar() {
         { title: "Customers", href: "/dashboard/sales/customers", icon: Users },
         { title: "Invoices", href: "/dashboard/sales/invoices", icon: FileText },
         { title: "Returns", href: "/dashboard/sales/returns", icon: ArrowRightLeft },
+        { title: "Quotations", href: "/dashboard/sales/quotations", icon: Receipt },
       ],
     },
     {
@@ -161,6 +173,28 @@ export function AppSidebar() {
       children: [
         { title: "All Employees", href: "/dashboard/employees", icon: List },
         { title: "Add Employee", href: "/dashboard/employees/new", icon: PlusCircle },
+        { title: "Departments", href: "/dashboard/employees/departments", icon: Building2 },
+        { title: "Attendance", href: "/dashboard/employees/attendance", icon: Clock },
+        { title: "Leave", href: "/dashboard/employees/leave", icon: Calendar },
+      ],
+    },
+    {
+      key: "finance",
+      title: "Finance",
+      icon: Wallet,
+      requires: ["VIEW_OPERATIONS"],
+      children: [
+        { title: "Chart of Accounts", href: "/dashboard/finance/accounts", icon: List },
+      ],
+    },
+    {
+      key: "logistics",
+      title: "Logistics",
+      icon: Truck,
+      requires: ["VIEW_OPERATIONS"],
+      children: [
+        { title: "Vehicles", href: "/dashboard/logistics/vehicles", icon: List },
+        { title: "Shipments", href: "/dashboard/logistics/shipments", icon: MapPin },
       ],
     },
   ];
@@ -203,9 +237,13 @@ export function AppSidebar() {
       icon: Wrench,
       requires: ["APPLY_LIFECYCLE"],
     },
+    {
+      title: "Recalls",
+      href: "/dashboard/recall",
+      icon: AlertTriangle,
+      requires: ["VIEW_OPERATIONS"],
+    },
   ];
-
-  // ── Settings ──
   const utilityNavItems: NavEntry[] = [
     {
       title: t("settings"),

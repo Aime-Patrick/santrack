@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Plus, MoreHorizontal, Shield, Building2, Mail, UserCog } from "lucide-react";
+import {
+  Plus, MoreHorizontal, Shield, Building2, Mail, UserCog,
+  Wrench, Settings as SettingsIcon, AlertTriangle, CheckCircle,
+  Clock, Cog,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,8 +37,8 @@ const userColumns: ColumnDef<TableFeatures, UserResponse>[] = [
     header: "Name",
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-          <span className="text-xs font-medium text-primary">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+          <span className="text-xs font-medium">
             {(row.getValue("fullName") as string)?.charAt(0)?.toUpperCase()}
           </span>
         </div>
@@ -63,24 +67,50 @@ const userColumns: ColumnDef<TableFeatures, UserResponse>[] = [
   {
     id: "actions",
     header: "",
-    cell: ({ row }) => {
-      const user = row.original;
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
-            <span className="sr-only">Open menu</span>
-            <MoreHorizontal className="h-4 w-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>Edit Role</DropdownMenuItem>
-            <DropdownMenuItem>Reset Password</DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
+    cell: () => (
+      <DropdownMenu>
+        <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem>Edit Role</DropdownMenuItem>
+          <DropdownMenuItem>Reset Password</DropdownMenuItem>
+          <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ),
   },
 ];
+
+const maintenanceFeatures = [
+  {
+    icon: <Cog className="size-5 text-white" />,
+    iconBg: "bg-primary",
+    title: "Machine Management",
+    description: "Track machine status, register new machines, and monitor active equipment.",
+    status: "available" as const,
+  },
+  {
+    icon: <Wrench className="size-5 text-white" />,
+    iconBg: "bg-success",
+    title: "Preventive Maintenance",
+    description: "Schedule preventive maintenance and track service history.",
+    status: "planned" as const,
+  },
+  {
+    icon: <AlertTriangle className="size-5 text-white" />,
+    iconBg: "bg-warning-foreground",
+    title: "Warranty Tracking",
+    description: "Manage product warranties, track activation dates, and process claims.",
+    status: "planned" as const,
+  },
+];
+
+const maintenanceStatus = {
+  available: { label: "Available", color: "border-success/30 bg-success/10 text-success" },
+  planned: { label: "Planned", color: "border-border bg-muted/60 text-muted-foreground" },
+};
 
 export default function SettingsPage() {
   const { data: me } = useMe();
@@ -89,11 +119,17 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your organization profile and team members.
-        </p>
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
+          <SettingsIcon className="size-4" />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Settings</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage your organization profile, team, and maintenance.
+          </p>
+        </div>
       </div>
 
       <Tabs defaultValue="organization">
@@ -106,8 +142,13 @@ export default function SettingsPage() {
             <UserCog className="mr-1.5 size-4" />
             Users & Roles
           </TabsTrigger>
+          <TabsTrigger value="maintenance">
+            <Wrench className="mr-1.5 size-4" />
+            Maintenance
+          </TabsTrigger>
         </TabsList>
 
+        {/* Organization Tab */}
         <TabsContent value="organization" className="mt-4">
           <Card>
             <CardHeader>
@@ -131,7 +172,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">User ID</p>
-                    <p className="font-mono text-sm">{me?.id}</p>
+                    <p className="font-mono text-sm text-faint">{me?.id}</p>
                   </div>
                 </div>
               ) : (
@@ -141,14 +182,13 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
+        {/* Users Tab */}
         <TabsContent value="users" className="mt-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Team Members</CardTitle>
-                <CardDescription>
-                  {users?.length ?? 0} users in your organization
-                </CardDescription>
+                <CardDescription>{users?.length ?? 0} users in your organization</CardDescription>
               </div>
               <Button size="sm">
                 <Plus className="mr-1.5 size-4" />
@@ -157,9 +197,7 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
               {usersLoading ? (
-                <div className="flex h-32 items-center justify-center text-muted-foreground">
-                  Loading users...
-                </div>
+                <div className="flex h-32 items-center justify-center text-muted-foreground">Loading users...</div>
               ) : (
                 <DataTable
                   columns={userColumns}
@@ -172,6 +210,37 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Maintenance Tab */}
+        <TabsContent value="maintenance" className="mt-4">
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Maintenance & Equipment</CardTitle>
+                <CardDescription>Manage machine lifecycle, maintenance schedules, and warranties</CardDescription>
+              </CardHeader>
+            </Card>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              {maintenanceFeatures.map((f) => (
+                <Card key={f.title}>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className={`flex size-10 items-center justify-center rounded-lg ${f.iconBg} text-white`}>
+                        {f.icon}
+                      </div>
+                      <Badge variant="outline" className={maintenanceStatus[f.status].color}>
+                        {maintenanceStatus[f.status].label}
+                      </Badge>
+                    </div>
+                    <CardTitle className="mt-3 text-base">{f.title}</CardTitle>
+                    <CardDescription>{f.description}</CardDescription>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

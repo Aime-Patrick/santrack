@@ -1,12 +1,17 @@
-import { Building2, Package, TrendingUp, Users } from "lucide-react";
+"use client";
+
+import { Building2, Package, TrendingUp, Users, ShoppingCart, Truck } from "lucide-react";
 import { MetricCard } from "@/components/dashboard/stat-card";
 import { ProductionTrendsChart } from "@/components/dashboard/production-trends-chart";
 import { OperationsTable } from "@/components/dashboard/operations-table";
+import { useExecutiveSummary } from "@/hooks/analytics";
 
 export default function DashboardPage() {
+  const { data: summary, isLoading } = useExecutiveSummary();
+
   return (
     <div className="space-y-6">
-      {/* Welcome header */}
+      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
           <TrendingUp className="size-4" />
@@ -19,61 +24,67 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Top 4 KPI Cards ── */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Total Industries"
-          value="24"
-          badge="+12.5%"
-          badgeType="positive"
-          trendText="Trending up this month"
-          trendType="up"
-          caption="Registered across 5 economic zones"
+          value={isLoading ? "—" : summary?.totalIndustries ?? 0}
           icon={<Building2 className="size-4" />}
           iconBg="bg-primary"
+          caption="Registered organizations"
         />
-
         <MetricCard
           title="Inventory Items"
-          value="1,482"
-          badge="+8.4%"
-          badgeType="positive"
-          trendText="Active catalog batches"
-          trendType="up"
-          caption="Stock tracked in real-time"
+          value={isLoading ? "—" : (summary?.totalItems ?? 0).toLocaleString()}
           icon={<Package className="size-4" />}
           iconBg="bg-success"
+          caption="Stock tracked in real-time"
         />
-
         <MetricCard
           title="Production Rate"
-          value="85.6%"
-          badge="+5.2%"
-          badgeType="positive"
-          trendText="Daily output target met"
-          trendType="up"
-          caption="National operational efficiency"
+          value={isLoading ? "—" : `${summary?.productionRate ?? 0}%`}
           icon={<TrendingUp className="size-4" />}
           iconBg="bg-warning-foreground"
+          caption="Operational efficiency"
         />
-
         <MetricCard
           title="Active Workforce"
-          value="348"
-          badge="+4.5%"
-          badgeType="positive"
-          trendText="Certified plant operators"
-          trendType="up"
-          caption="Across registered factories"
+          value={isLoading ? "—" : summary?.activeWorkforce ?? 0}
           icon={<Users className="size-4" />}
           iconBg="bg-primary"
+          caption="Certified operators"
         />
       </div>
 
-      {/* ── Production & Traceability Trends Chart ── */}
+      {/* Secondary KPIs */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <MetricCard
+          title="Recent Sales"
+          value={isLoading ? "—" : summary?.recentSales ?? 0}
+          icon={<ShoppingCart className="size-4" />}
+          iconBg="bg-success"
+          caption="Last 30 days"
+        />
+        <MetricCard
+          title="Active Products"
+          value={isLoading ? "—" : summary?.totalProducts ?? 0}
+          icon={<Package className="size-4" />}
+          iconBg="bg-primary"
+          caption="Registered in catalog"
+        />
+        <MetricCard
+          title="Pending Transfers"
+          value={isLoading ? "—" : summary?.pendingTransfers ?? 0}
+          icon={<Truck className="size-4" />}
+          iconBg="bg-warning-foreground"
+          caption="Awaiting dispatch"
+        />
+      </div>
+
+      {/* Chart */}
       <ProductionTrendsChart />
 
-      {/* ── Operations & Batches Table ── */}
+      {/* Operations Table */}
       <OperationsTable />
     </div>
   );
