@@ -451,16 +451,16 @@ export function AppSidebar() {
 
       {/* ── Company Footer Card ── */}
       <div className="px-3 pb-3 group-data-[collapsible=icon]:hidden">
-        <div className="rounded-xl bg-white/10 border border-white/15 overflow-hidden">
+        <div className="rounded-xl bg-rwanda-green border border-white/15 overflow-hidden">
           {/* Imigongo Top */}
-          <div className="w-full h-8 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
+          <div className="w-full h-3 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
           <div className="px-3 py-3 text-center space-y-1">
-            <p className="text-[11px] font-bold text-white uppercase tracking-wider">SAN TECH Ltd</p>
-            <p className="text-[9px] text-white/60">Powering Rwanda&apos;s Industries</p>
-            <p className="text-[9px] text-white/40">&copy; 2026 All rights reserved</p>
+            <p className="text-lg font-bold text-white uppercase tracking-wider">SAN TECH</p>
+            <p className="text-xs text-white/60">Powering Rwanda&apos;s Industries</p>
+            <p className="text-xs text-white/40">&copy; 2026 All rights reserved</p>
           </div>
           {/* Imigongo Bottom */}
-          <div className="w-full h-8 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
+          <div className="w-full h-3 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
         </div>
       </div>
     </Sidebar>
