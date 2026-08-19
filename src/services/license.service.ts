@@ -29,7 +29,11 @@ export const licenseService = {
   },
 
   documents(licenseId: number): Promise<LicenseDocument[]> {
-    return api.get<LicenseDocument[]>(`/api/licenses/${licenseId}/documents`).then((r) => r.data);
+    return api.get<LicenseDocument[]>(`/api/licenses/${licenseId}/history`).then((r) => r.data);
+  },
+
+  regulatorDocuments(licenseId: number): Promise<LicenseDocument[]> {
+    return api.get<LicenseDocument[]>(`/api/regulator/licenses/${licenseId}/documents`).then((r) => r.data);
   },
 
   history(licenseId: number): Promise<LicenseEvent[]> {
@@ -59,5 +63,9 @@ export const licenseService = {
 
   revoke(licenseId: number, reason: string): Promise<License> {
     return api.post<License>(`/api/regulator/licenses/${licenseId}/revoke`, { reason }).then((r) => r.data);
+  },
+
+  renew(licenseId: number): Promise<License> {
+    return api.post<License>(`/api/licenses/${licenseId}/renew`).then((r) => r.data);
   },
 };

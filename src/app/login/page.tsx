@@ -36,10 +36,13 @@ export default function LoginPage() {
     login.mutate(
       { email: values.email, password: values.password },
       {
-        onSuccess: (data) =>
-          router.replace(
-            data.user.organization ? "/dashboard" : "/onboarding",
-          ),
+        onSuccess: (data) => {
+          if (data.user.role === "SYSTEM_ADMIN" || data.user.organization) {
+            router.replace("/dashboard");
+          } else {
+            router.replace("/onboarding");
+          }
+        },
       },
     );
   });

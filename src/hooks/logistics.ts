@@ -49,10 +49,23 @@ export function useCreateShipment() {
 export function useDispatchShipment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: shipmentService.dispatch,
+    mutationFn: shipmentService.depart,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "shipments"] }); toast.success("Shipment dispatched"); },
     onError: (e: Error) => toast.error(e.message),
   });
+}
+
+export function useCancelShipment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: shipmentService.cancel,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "shipments"] }); toast.success("Shipment cancelled"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useShipmentEvents(id: number) {
+  return useQuery({ queryKey: ["logistics", "shipments", id, "events"], queryFn: () => shipmentService.events(id), enabled: !!id });
 }
 
 export function useDeliverShipment() {
@@ -88,6 +101,43 @@ export function useCreateRoute() {
   return useMutation({
     mutationFn: routeService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "routes"] }); toast.success("Route created"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ── Update mutations ──
+export function useUpdateVehicle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<import("@/services/logistics.service").Vehicle> }) => vehicleService.update(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "vehicles"] }); toast.success("Vehicle updated"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateDriver() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<import("@/services/logistics.service").Driver> }) => driverService.update(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "drivers"] }); toast.success("Driver updated"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateTransporter() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<import("@/services/logistics.service").Transporter> }) => transporterService.update(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "transporters"] }); toast.success("Transporter updated"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateRoute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<import("@/services/logistics.service").Route> }) => routeService.update(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "routes"] }); toast.success("Route updated"); },
     onError: (e: Error) => toast.error(e.message),
   });
 }

@@ -102,6 +102,11 @@ export const productionService = {
     api.post<ProductionOrder>(`/api/production-orders/${id}/complete`, data).then((r) => r.data),
   cancel: (id: number, data: { reason: string }) =>
     api.post<ProductionOrder>(`/api/production-orders/${id}/cancel`, data).then((r) => r.data),
+  allocateMaterials: (id: number, data: { materials: { materialId: number; quantity: number }[] }) =>
+    api.post<ProductionOrder>(`/api/production-orders/${id}/materials/allocate`, data).then((r) => r.data),
+  issueMaterials: (id: number, data: { materials: { materialId: number; quantity: number }[] }) =>
+    api.post<ProductionOrder>(`/api/production-orders/${id}/materials/issue`, data).then((r) => r.data),
+  close: (id: number) => api.post<ProductionOrder>(`/api/production-orders/${id}/close`).then((r) => r.data),
 };
 
 export const rawMaterialService = {

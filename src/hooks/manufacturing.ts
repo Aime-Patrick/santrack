@@ -40,6 +40,44 @@ export function useCompleteProduction() {
   });
 }
 
+export function useAllocateMaterials() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { materials: { materialId: number; quantity: number }[] } }) =>
+      productionService.allocateMaterials(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["production-orders"] }); toast.success("Materials allocated"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useIssueMaterials() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { materials: { materialId: number; quantity: number }[] } }) =>
+      productionService.issueMaterials(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["production-orders"] }); toast.success("Materials issued"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useCloseProduction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: productionService.close,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["production-orders"] }); toast.success("Production closed"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useCancelProduction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { reason: string } }) => productionService.cancel(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["production-orders"] }); toast.success("Production cancelled"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 // ── Raw Materials ──
 export function useRawMaterials() {
   return useQuery({ queryKey: ["raw-materials"], queryFn: rawMaterialService.list });

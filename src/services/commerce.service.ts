@@ -91,6 +91,44 @@ export interface PaginatedResponse<T> {
   content: T[];
 }
 
+export interface SalesOrder {
+  id: number;
+  orderNumber: string;
+  status: string;
+  customerId: number;
+  customerName: string;
+  quotationId: number | null;
+  quotationNumber: string | null;
+  invoiceId: number | null;
+  invoiceNumber: string | null;
+  subtotal: number | null;
+  taxPercent: number | null;
+  totalAmount: number | null;
+  notes: string;
+  createdAt: string;
+  lines: SalesOrderLine[];
+}
+
+export interface SalesOrderLine {
+  id: number;
+  productId: number;
+  productName: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number | null;
+}
+
+export const salesOrderService = {
+  list: (page = 0, size = 20) => api.get<PaginatedResponse<SalesOrder>>("/api/commerce/sales-orders", { params: { page, size } }).then((r) => r.data),
+  get: (id: number) => api.get<SalesOrder>(`/api/commerce/sales-orders/${id}`).then((r) => r.data),
+  create: (data: { customerId: number; quotationId?: number; lines: { productId: number; quantity: number; unitPrice: number; description?: string }[]; taxPercent?: number; notes?: string }) =>
+    api.post<SalesOrder>("/api/commerce/sales-orders", data).then((r) => r.data),
+  confirm: (id: number) => api.post<SalesOrder>(`/api/commerce/sales-orders/${id}/confirm`).then((r) => r.data),
+  fulfil: (id: number) => api.post<SalesOrder>(`/api/commerce/sales-orders/${id}/fulfil`).then((r) => r.data),
+  cancel: (id: number) => api.post<SalesOrder>(`/api/commerce/sales-orders/${id}/cancel`).then((r) => r.data),
+};
+
 export const customerService = {
   list: () => api.get<PaginatedResponse<Customer>>("/api/commerce/customers").then((r) => r.data),
   get: (id: number) => api.get<Customer>(`/api/commerce/customers/${id}`).then((r) => r.data),

@@ -36,3 +36,51 @@ export function useFinanceReports() {
     receivables: useQuery({ queryKey: ["finance", "reports", "receivables"], queryFn: financeReportService.receivables }),
   };
 }
+
+// ── Budget mutations ──
+export function useCreateBudget() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: budgetService.create,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["finance", "budgets"] }); toast.success("Budget created"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateBudget() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Pick<import("@/services/finance.service").Budget, "period" | "amount">> }) => budgetService.update(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["finance", "budgets"] }); toast.success("Budget updated"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ── Cost Centre mutations ──
+export function useCreateCostCentre() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: costCentreService.create,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["finance", "cost-centres"] }); toast.success("Cost centre created"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateCostCentre() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<Pick<import("@/services/finance.service").CostCentre, "name" | "active">> }) => costCentreService.update(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["finance", "cost-centres"] }); toast.success("Cost centre updated"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ── Journal Entry mutation ──
+export function useCreateJournalEntry() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: journalService.create,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["finance", "journal"] }); toast.success("Journal entry created"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}

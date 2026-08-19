@@ -88,6 +88,11 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
 
       {/* Form Panel (Centered, Clean, and Elevated) */}
       <section className="col-span-12 lg:col-span-6 xl:col-span-6 flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 relative bg-[#f8fafc]">
+        {/* Imigongo Pattern - Top */}
+        <div className="pointer-events-none absolute top-0 left-0 right-0 h-16 overflow-hidden opacity-[0.07]">
+          <Image src="/images/imigongo2.png" alt="" fill className="object-cover" aria-hidden="true" />
+        </div>
+
         {/* Mobile Header (Shown on screens < lg) */}
         <div className="mb-6 flex flex-col items-center gap-2 lg:hidden">
           <SanTrackBrand theme="light" />
@@ -96,6 +101,11 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         {/* Form Container */}
         <div className="w-full max-w-[440px] z-10">
           {children}
+        </div>
+
+        {/* Imigongo Pattern - Bottom */}
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 overflow-hidden opacity-[0.07]">
+          <Image src="/images/imigongo2.png" alt="" fill className="object-cover" aria-hidden="true" />
         </div>
       </section>
     </main>

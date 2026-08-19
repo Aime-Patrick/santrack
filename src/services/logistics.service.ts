@@ -61,17 +61,28 @@ export interface Shipment {
   createdAt: string;
 }
 
+export interface ShipmentEvent {
+  id: number;
+  shipmentId: number;
+  type: string;
+  notes: string;
+  actorName: string | null;
+  recordedAt: string;
+}
+
 export const vehicleService = {
   list: () => api.get<{ total: number; content: Vehicle[] }>("/api/logistics/vehicles").then((r) => r.data),
   get: (id: number) => api.get<Vehicle>(`/api/logistics/vehicles/${id}`).then((r) => r.data),
   create: (data: { plateNumber: string; type: string; capacity?: number }) =>
     api.post<Vehicle>("/api/logistics/vehicles", data).then((r) => r.data),
+  update: (id: number, data: Partial<Vehicle>) => api.patch<Vehicle>(`/api/logistics/vehicles/${id}`, data).then((r) => r.data),
 };
 
 export const transporterService = {
   list: () => api.get<{ total: number; content: Transporter[] }>("/api/logistics/transporters").then((r) => r.data),
   create: (data: { name: string; code: string; phone: string; email?: string }) =>
     api.post<Transporter>("/api/logistics/transporters", data).then((r) => r.data),
+  update: (id: number, data: Partial<Transporter>) => api.patch<Transporter>(`/api/logistics/transporters/${id}`, data).then((r) => r.data),
 };
 
 export const driverService = {
@@ -79,6 +90,7 @@ export const driverService = {
   get: (id: number) => api.get<Driver>(`/api/logistics/drivers/${id}`).then((r) => r.data),
   create: (data: { transporterId: number; name: string; licenseNumber: string; phone: string }) =>
     api.post<Driver>("/api/logistics/drivers", data).then((r) => r.data),
+  update: (id: number, data: Partial<Driver>) => api.patch<Driver>(`/api/logistics/drivers/${id}`, data).then((r) => r.data),
 };
 
 export const routeService = {
@@ -86,6 +98,7 @@ export const routeService = {
   get: (id: number) => api.get<Route>(`/api/logistics/routes/${id}`).then((r) => r.data),
   create: (data: { name: string; sourceLocationId: number; destinationLocationId: number; distanceKm?: number; expectedHours?: number }) =>
     api.post<Route>("/api/logistics/routes", data).then((r) => r.data),
+  update: (id: number, data: Partial<Route>) => api.patch<Route>(`/api/logistics/routes/${id}`, data).then((r) => r.data),
 };
 
 export const shipmentService = {
@@ -94,6 +107,8 @@ export const shipmentService = {
   get: (id: number) => api.get<Shipment>(`/api/logistics/shipments/${id}`).then((r) => r.data),
   create: (data: { vehicleId?: number; transporterId?: number; origin: string; destination: string }) =>
     api.post<Shipment>("/api/logistics/shipments", data).then((r) => r.data),
-  dispatch: (id: number) => api.post<Shipment>(`/api/logistics/shipments/${id}/dispatch`).then((r) => r.data),
+  depart: (id: number) => api.post<Shipment>(`/api/logistics/shipments/${id}/depart`).then((r) => r.data),
   deliver: (id: number) => api.post<Shipment>(`/api/logistics/shipments/${id}/deliver`).then((r) => r.data),
+  events: (id: number) => api.get<ShipmentEvent[]>(`/api/logistics/shipments/${id}/events`).then((r) => r.data),
+  cancel: (id: number) => api.post<Shipment>(`/api/logistics/shipments/${id}/cancel`).then((r) => r.data),
 };

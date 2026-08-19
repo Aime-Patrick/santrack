@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { employeeService, departmentService, attendanceService, leaveService } from "@/services/payroll.service";
+import { employeeService, departmentService, attendanceService, leaveService, payItemService } from "@/services/payroll.service";
 import { toast } from "sonner";
 
 // ── Employees ──
@@ -124,4 +124,45 @@ export function usePayrollSummary(runId?: number, period?: string) {
 
 export function useLeaveReport() {
   return useQuery({ queryKey: ["payroll", "reports", "leave"], queryFn: payrollReportService.leave });
+}
+
+// ── Department update ──
+export function useUpdateDepartment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<import("@/services/payroll.service").Department> }) => departmentService.update(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "departments"] }); toast.success("Department updated"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ── Leave reject ──
+export function useRejectLeave() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { reason: string } }) => leaveService.reject(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "leaves"] }); toast.success("Leave rejected"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ── Pay Items ──
+export function useAddPayItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ employeeId, data }: { employeeId: number; data: { code: string; name: string; type: string; amount: number } }) =>
+      payItemService.add(employeeId, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "pay-items"] }); toast.success("Pay item added"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useRemovePayItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ employeeId, payItemId }: { employeeId: number; payItemId: number }) =>
+      payItemService.remove(employeeId, payItemId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "pay-items"] }); toast.success("Pay item removed"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
 }

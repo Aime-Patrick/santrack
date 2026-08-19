@@ -62,6 +62,7 @@ export const departmentService = {
   list: () => api.get<Department[]>("/api/payroll/departments").then((r) => r.data),
   get: (id: number) => api.get<Department>(`/api/payroll/departments/${id}`).then((r) => r.data),
   create: (data: { name: string; code: string }) => api.post<Department>("/api/payroll/departments", data).then((r) => r.data),
+  update: (id: number, data: Partial<Department>) => api.patch<Department>(`/api/payroll/departments/${id}`, data).then((r) => r.data),
 };
 
 export const attendanceService = {
@@ -78,6 +79,25 @@ export const leaveService = {
     api.post<Leave>("/api/payroll/leaves", data).then((r) => r.data),
   approve: (id: number) => api.post<Leave>(`/api/payroll/leaves/${id}/approve`).then((r) => r.data),
   reject: (id: number, data: { reason: string }) => api.post<Leave>(`/api/payroll/leaves/${id}/reject`, data).then((r) => r.data),
+};
+
+export interface PayItem {
+  id: number;
+  employeeId: number;
+  code: string;
+  name: string;
+  type: string;
+  amount: number;
+  active: boolean;
+}
+
+export const payItemService = {
+  list: (employeeId: number) =>
+    api.get<PayItem[]>(`/api/payroll/employees/${employeeId}/pay-items`).then((r) => r.data),
+  add: (employeeId: number, data: { code: string; name: string; type: string; amount: number }) =>
+    api.post<PayItem>(`/api/payroll/employees/${employeeId}/pay-items`, data).then((r) => r.data),
+  remove: (employeeId: number, payItemId: number) =>
+    api.delete(`/api/payroll/employees/${employeeId}/pay-items/${payItemId}`).then((r) => r.data),
 };
 
 export interface JobPosition {

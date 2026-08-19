@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { customerService, invoiceService, returnService, quotationService } from "@/services/commerce.service";
+import { customerService, invoiceService, returnService, quotationService, salesOrderService } from "@/services/commerce.service";
 import { toast } from "sonner";
 
 // ── Customers ──
@@ -109,6 +109,99 @@ export function useAcceptQuotation() {
   return useMutation({
     mutationFn: quotationService.accept,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "quotations"] }); toast.success("Quotation accepted"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useRejectQuotation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { reason: string } }) => quotationService.reject(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "quotations"] }); toast.success("Quotation rejected"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useExpireQuotation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: quotationService.expire,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "quotations"] }); toast.success("Quotation expired"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ── Invoice extras ──
+export function useVoidInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: invoiceService.void,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "invoices"] }); toast.success("Invoice voided"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ── Return extras ──
+export function useRefundReturn() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: returnService.refund,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "returns"] }); toast.success("Return refunded"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useRejectReturn() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { reason: string } }) => returnService.reject(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "returns"] }); toast.success("Return rejected"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ── Customer statement ──
+export function useCustomerStatement(id: number) {
+  return useQuery({ queryKey: ["commerce", "customers", id, "statement"], queryFn: () => customerService.statement(id), enabled: !!id });
+}
+
+// ── Sales Orders ──
+export function useSalesOrders(page = 0, size = 20) {
+  return useQuery({ queryKey: ["commerce", "sales-orders", page, size], queryFn: () => salesOrderService.list(page, size) });
+}
+
+export function useCreateSalesOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: salesOrderService.create,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] }); toast.success("Sales order created"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useConfirmSalesOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: salesOrderService.confirm,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] }); toast.success("Sales order confirmed"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useFulfilSalesOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: salesOrderService.fulfil,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] }); toast.success("Sales order fulfilled"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useCancelSalesOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: salesOrderService.cancel,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] }); toast.success("Sales order cancelled"); },
     onError: (e: Error) => toast.error(e.message),
   });
 }
