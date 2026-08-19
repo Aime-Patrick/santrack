@@ -147,6 +147,7 @@ export function AppSidebar() {
       requires: ["VIEW_OPERATIONS", "MOVE_STOCK"],
       children: [
         { title: "Inventory Overview", href: "/dashboard/inventory", icon: List },
+        { title: "Items", href: "/dashboard/items", icon: Package },
         { title: "Stock Transfer", href: "/dashboard/manufacturing/stock-transfer", icon: Truck },
         { title: "Stock Relocate", href: "/dashboard/manufacturing/stock-relocate", icon: ArrowRightLeft },
       ],

@@ -1,72 +1,79 @@
 "use client";
 
-import { Wrench, Shield, Headphones, AlertTriangle } from "lucide-react";
+import { Wrench, Shield, Headphones, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { MetricCard } from "@/components/dashboard/stat-card";
 
 const features = [
   {
-    icon: <Wrench className="size-5 text-primary" />,
+    icon: <Wrench className="size-5 text-white" />,
+    iconBg: "bg-primary",
     title: "Machine Maintenance",
     description: "Track machine status, schedule preventive maintenance, and log repair history.",
-    status: "partial" as const,
-    note: "Machine status tracking available. Scheduling and history coming soon.",
+    status: "coming-soon",
   },
   {
-    icon: <Shield className="size-5 text-primary" />,
+    icon: <Shield className="size-5 text-white" />,
+    iconBg: "bg-success",
     title: "Warranty Tracking",
     description: "Manage product warranties, track activation dates, and process warranty claims.",
-    status: "planned" as const,
-    note: "Requires warranty entity and service module.",
+    status: "coming-soon",
   },
   {
-    icon: <Headphones className="size-5 text-primary" />,
+    icon: <Headphones className="size-5 text-white" />,
+    iconBg: "bg-warning-foreground",
     title: "Service Requests",
     description: "Create and manage after-sales service requests, repairs, and replacements.",
-    status: "planned" as const,
-    note: "Requires service request entity and workflow.",
+    status: "coming-soon",
   },
 ];
-
-const statusConfig = {
-  partial: { label: "In Progress", color: "bg-yellow-100 text-yellow-800" },
-  planned: { label: "Planned", color: "bg-gray-100 text-gray-600" },
-};
 
 export default function MaintenancePage() {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Maintenance</h1>
-        <p className="text-muted-foreground">
-          After-sales maintenance, warranty tracking, and service request management.
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
+          <Wrench className="size-4" />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Maintenance</h1>
+          <p className="text-sm text-muted-foreground">Machine maintenance, warranties, and service requests.</p>
+        </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {features.map((f) => (
-          <Card key={f.title}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
-                  {f.icon}
-                </div>
-                <Badge variant="outline" className={statusConfig[f.status].color}>
-                  {statusConfig[f.status].label}
-                </Badge>
-              </div>
-              <CardTitle className="mt-3">{f.title}</CardTitle>
-              <CardDescription>{f.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                {f.note}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <MetricCard title="Machine Maintenance" value="—" icon={<Wrench className="size-4" />} iconBg="bg-primary" caption="Coming Soon" />
+        <MetricCard title="Warranty Tracking" value="—" icon={<Shield className="size-4" />} iconBg="bg-success" caption="Coming Soon" />
+        <MetricCard title="Service Requests" value="—" icon={<Headphones className="size-4" />} iconBg="bg-warning-foreground" caption="Coming Soon" />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Coming Soon</CardTitle>
+          <CardDescription>These features are under development and will be available in a future release.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {features.map((f) => (
+              <div key={f.title} className="flex flex-col gap-3 rounded-lg border border-border/60 p-4">
+                <div className="flex items-center gap-2.5">
+                  <div className={`flex size-8 items-center justify-center rounded-lg ${f.iconBg}`}>
+                    {f.icon}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{f.title}</p>
+                    <Badge variant="outline" className="mt-0.5 border-warning/30 bg-warning/10 text-warning-foreground">
+                      <Clock className="size-3" /> Coming Soon
+                    </Badge>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">{f.description}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
