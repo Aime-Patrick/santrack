@@ -68,3 +68,60 @@ export function useApproveLeave() {
     onError: (e: Error) => toast.error(e.message),
   });
 }
+
+// ── Job Positions ──
+import { jobPositionService, payrollRunService, payrollReportService } from "@/services/payroll.service";
+
+export function useJobPositions() {
+  return useQuery({ queryKey: ["payroll", "job-positions"], queryFn: jobPositionService.list });
+}
+
+export function useCreateJobPosition() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: jobPositionService.create,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "job-positions"] }); toast.success("Job position created"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateJobPosition() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Partial<import("@/services/payroll.service").JobPosition> }) => jobPositionService.update(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "job-positions"] }); toast.success("Job position updated"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ── Payroll Runs ──
+export function usePayrollRuns() {
+  return useQuery({ queryKey: ["payroll", "runs"], queryFn: payrollRunService.list });
+}
+
+export function useCreatePayrollRun() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: payrollRunService.create,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "runs"] }); toast.success("Payroll run created"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function usePayPayrollRun() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: payrollRunService.pay,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "runs"] }); toast.success("Payroll marked as paid"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ── Payroll Reports ──
+export function usePayrollSummary(runId?: number, period?: string) {
+  return useQuery({ queryKey: ["payroll", "reports", "summary", runId, period], queryFn: () => payrollReportService.summary(runId, period) });
+}
+
+export function useLeaveReport() {
+  return useQuery({ queryKey: ["payroll", "reports", "leave"], queryFn: payrollReportService.leave });
+}

@@ -150,6 +150,7 @@ export function AppSidebar() {
         { title: "Items", href: "/dashboard/items", icon: Package },
         { title: "Stock Transfer", href: "/dashboard/manufacturing/stock-transfer", icon: Truck },
         { title: "Stock Relocate", href: "/dashboard/manufacturing/stock-relocate", icon: ArrowRightLeft },
+        { title: "Locations", href: "/dashboard/inventory/locations", icon: MapPin },
       ],
     },
     {
@@ -175,8 +176,11 @@ export function AppSidebar() {
         { title: "All Employees", href: "/dashboard/employees", icon: List },
         { title: "Add Employee", href: "/dashboard/employees/new", icon: PlusCircle },
         { title: "Departments", href: "/dashboard/employees/departments", icon: Building2 },
+        { title: "Job Positions", href: "/dashboard/employees/job-positions", icon: ClipboardList },
         { title: "Attendance", href: "/dashboard/employees/attendance", icon: Clock },
         { title: "Leave", href: "/dashboard/employees/leave", icon: Calendar },
+        { title: "Payroll Runs", href: "/dashboard/employees/payroll-runs", icon: Wallet },
+        { title: "Payroll Reports", href: "/dashboard/employees/payroll-reports", icon: BarChart3 },
       ],
     },
     {
@@ -186,6 +190,10 @@ export function AppSidebar() {
       requires: ["VIEW_OPERATIONS"],
       children: [
         { title: "Chart of Accounts", href: "/dashboard/finance/accounts", icon: List },
+        { title: "Budgets", href: "/dashboard/finance/budgets", icon: Wallet },
+        { title: "Cost Centres", href: "/dashboard/finance/cost-centres", icon: Building2 },
+        { title: "Journal Entries", href: "/dashboard/finance/journal", icon: ClipboardList },
+        { title: "Finance Reports", href: "/dashboard/finance/reports", icon: BarChart3 },
       ],
     },
     {
@@ -195,7 +203,10 @@ export function AppSidebar() {
       requires: ["VIEW_OPERATIONS"],
       children: [
         { title: "Vehicles", href: "/dashboard/logistics/vehicles", icon: List },
-        { title: "Shipments", href: "/dashboard/logistics/shipments", icon: MapPin },
+        { title: "Drivers", href: "/dashboard/logistics/drivers", icon: Users },
+        { title: "Transporters", href: "/dashboard/logistics/transporters", icon: Building2 },
+        { title: "Routes", href: "/dashboard/logistics/routes", icon: MapPin },
+        { title: "Shipments", href: "/dashboard/logistics/shipments", icon: Truck },
       ],
     },
   ];
@@ -211,6 +222,12 @@ export function AppSidebar() {
     {
       title: t("reports"),
       href: "/dashboard/reports",
+      icon: BarChart3,
+      requires: ["VIEW_OPERATIONS"],
+    },
+    {
+      title: "Analytics",
+      href: "/dashboard/analytics",
       icon: BarChart3,
       requires: ["VIEW_OPERATIONS"],
     },

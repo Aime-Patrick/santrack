@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { vehicleService, transporterService, shipmentService } from "@/services/logistics.service";
+import { vehicleService, transporterService, shipmentService, driverService, routeService } from "@/services/logistics.service";
 import { toast } from "sonner";
 
 // ── Vehicles ──
@@ -60,6 +60,34 @@ export function useDeliverShipment() {
   return useMutation({
     mutationFn: shipmentService.deliver,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "shipments"] }); toast.success("Shipment delivered"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ── Drivers ──
+export function useDrivers() {
+  return useQuery({ queryKey: ["logistics", "drivers"], queryFn: driverService.list });
+}
+
+export function useCreateDriver() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: driverService.create,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "drivers"] }); toast.success("Driver added"); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+// ── Routes ──
+export function useRoutes() {
+  return useQuery({ queryKey: ["logistics", "routes"], queryFn: routeService.list });
+}
+
+export function useCreateRoute() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: routeService.create,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "routes"] }); toast.success("Route created"); },
     onError: (e: Error) => toast.error(e.message),
   });
 }

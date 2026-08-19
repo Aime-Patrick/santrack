@@ -12,10 +12,37 @@ export interface Vehicle {
 
 export interface Transporter {
   id: number;
+  organizationId: number;
   name: string;
   code: string;
+  contactPerson: string;
   phone: string;
   email: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface Driver {
+  id: number;
+  transporterId: number;
+  transporterName: string;
+  name: string;
+  licenseNumber: string;
+  phone: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface Route {
+  id: number;
+  organizationId: number;
+  name: string;
+  sourceLocationId: number;
+  sourceLocationName: string;
+  destinationLocationId: number;
+  destinationLocationName: string;
+  distanceKm: number | null;
+  expectedHours: number | null;
   active: boolean;
   createdAt: string;
 }
@@ -45,6 +72,20 @@ export const transporterService = {
   list: () => api.get<{ total: number; content: Transporter[] }>("/api/logistics/transporters").then((r) => r.data),
   create: (data: { name: string; code: string; phone: string; email?: string }) =>
     api.post<Transporter>("/api/logistics/transporters", data).then((r) => r.data),
+};
+
+export const driverService = {
+  list: () => api.get<{ total: number; content: Driver[] }>("/api/logistics/drivers").then((r) => r.data),
+  get: (id: number) => api.get<Driver>(`/api/logistics/drivers/${id}`).then((r) => r.data),
+  create: (data: { transporterId: number; name: string; licenseNumber: string; phone: string }) =>
+    api.post<Driver>("/api/logistics/drivers", data).then((r) => r.data),
+};
+
+export const routeService = {
+  list: () => api.get<{ total: number; content: Route[] }>("/api/logistics/routes").then((r) => r.data),
+  get: (id: number) => api.get<Route>(`/api/logistics/routes/${id}`).then((r) => r.data),
+  create: (data: { name: string; sourceLocationId: number; destinationLocationId: number; distanceKm?: number; expectedHours?: number }) =>
+    api.post<Route>("/api/logistics/routes", data).then((r) => r.data),
 };
 
 export const shipmentService = {

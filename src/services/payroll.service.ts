@@ -79,3 +79,80 @@ export const leaveService = {
   approve: (id: number) => api.post<Leave>(`/api/payroll/leaves/${id}/approve`).then((r) => r.data),
   reject: (id: number, data: { reason: string }) => api.post<Leave>(`/api/payroll/leaves/${id}/reject`, data).then((r) => r.data),
 };
+
+export interface JobPosition {
+  id: number;
+  code: string;
+  title: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export const jobPositionService = {
+  list: () => api.get<JobPosition[]>("/api/payroll/job-positions").then((r) => r.data),
+  get: (id: number) => api.get<JobPosition>(`/api/payroll/job-positions/${id}`).then((r) => r.data),
+  create: (data: Partial<JobPosition>) => api.post<JobPosition>("/api/payroll/job-positions", data).then((r) => r.data),
+  update: (id: number, data: Partial<JobPosition>) => api.patch<JobPosition>(`/api/payroll/job-positions/${id}`, data).then((r) => r.data),
+};
+
+export interface PayrollRunLine {
+  id: number;
+  payslipNumber: string;
+  employeeId: number;
+  employeeNumber: string;
+  employeeName: string;
+  departmentName: string | null;
+  baseSalary: number;
+  allowances: number;
+  deductions: number;
+  overtimeHours: number;
+  overtimeAmount: number;
+  gross: number;
+  net: number;
+}
+
+export interface PayrollRun {
+  id: number;
+  runNumber: string;
+  period: string;
+  status: string;
+  paidOn: string | null;
+  createdById: number | null;
+  createdAt: string;
+  lines: PayrollRunLine[];
+}
+
+export const payrollRunService = {
+  list: () => api.get<PayrollRun[]>("/api/payroll/runs").then((r) => r.data),
+  get: (id: number) => api.get<PayrollRun>(`/api/payroll/runs/${id}`).then((r) => r.data),
+  create: (data: { period: string }) => api.post<PayrollRun>("/api/payroll/runs", data).then((r) => r.data),
+  pay: (id: number) => api.post<PayrollRun>(`/api/payroll/runs/${id}/pay`).then((r) => r.data),
+};
+
+export interface PayrollSummary {
+  totalEmployees: number;
+  totalGross: number;
+  totalNet: number;
+  totalDeductions: number;
+  totalAllowances: number;
+}
+
+export interface PayrollReport {
+  summary: PayrollSummary;
+  lines: PayrollRunLine[];
+  period?: string;
+  runId?: number;
+}
+
+export interface LeaveReport {
+  totalRequests: number;
+  approved: number;
+  rejected: number;
+  pending: number;
+}
+
+export const payrollReportService = {
+  summary: (runId?: number, period?: string) =>
+    api.get<PayrollReport>("/api/payroll/reports/summary", { params: { runId, period } }).then((r) => r.data),
+  leave: () => api.get<LeaveReport>("/api/payroll/reports/leave").then((r) => r.data),
+};
