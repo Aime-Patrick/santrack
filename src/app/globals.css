@@ -1,0 +1,177 @@
+@import "tailwindcss";
+
+/*
+ * San Track design tokens — Rwanda flag colors as brand identity,
+ * MINICOM-inspired surfaces and status palette for operational clarity.
+ */
+@theme inline {
+  /* ── Brand — Rwanda flag ── */
+  --color-primary: #067eda;
+  --color-primary-dark: #0085B3;
+  --color-primary-light: #E0F4FC;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #0057B8;
+  --color-secondary-foreground: #FFFFFF;
+
+  /* ── Rwanda flag accents ── */
+  --color-rwanda-blue: #067eda;
+  --color-rwanda-yellow: #fac600;
+  --color-rwanda-green: #00953C;
+
+  /* ── Status ── */
+  --color-success: #00953C;
+  --color-success-foreground: #FFFFFF;
+  --color-warning: #fac600;
+  --color-warning-foreground: #172033;
+  --color-danger: #C62828;
+  --color-danger-foreground: #FFFFFF;
+  --color-info: #067eda;
+  --color-info-foreground: #FFFFFF;
+
+  /* ── Surfaces ── */
+  --color-background: #FFFFFF;
+  --color-foreground: #172033;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #172033;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #172033;
+  --color-muted: #F1F4F8;
+  --color-muted-foreground: #5F6B7A;
+  --color-faint: #8994A3;
+  --color-accent: #F1F4F8;
+  --color-accent-foreground: #172033;
+  --color-border: #D9E1EA;
+  --color-input: #D9E1EA;
+  --color-ring: #067eda;
+  --color-destructive: #C62828;
+  --color-destructive-foreground: #FFFFFF;
+
+  /* ── Sidebar (Rwanda Blue Identity) ── */
+  --color-sidebar: #067eda;
+  --color-sidebar-foreground: #FFFFFF;
+  --color-sidebar-primary: #FFFFFF;
+  --color-sidebar-primary-foreground: #067eda;
+  --color-sidebar-accent: rgba(255, 255, 255, 0.14);
+  --color-sidebar-accent-foreground: #FFFFFF;
+  --color-sidebar-border: rgba(255, 255, 255, 0.16);
+  --color-sidebar-ring: #fac600;
+
+  /* ── Type ── */
+  --font-sans: var(--font-inter), Inter, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+
+  /* ── Radius ── */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+/* ── Hide scrollbars globally while keeping scroll functionality ── */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Sidebar: always-visible thin scrollbar ── */
+[data-slot="sidebar-content"] {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.20) transparent;
+}
+
+[data-slot="sidebar-content"]::-webkit-scrollbar {
+  display: block;
+  width: 3px;
+}
+
+[data-slot="sidebar-content"]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-slot="sidebar-content"]::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+}
+
+[data-slot="sidebar-content"]::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.40);
+}
+
+/* ── Animated Rwanda flag border ── */
+@property --border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.auth-animated-border {
+  --border-angle: 0deg;
+  padding: 2px;
+  border-radius: 12px;
+  background: conic-gradient(
+    from var(--border-angle),
+    var(--color-rwanda-blue),
+    var(--color-rwanda-yellow),
+    var(--color-rwanda-green),
+    var(--color-rwanda-blue)
+  );
+  animation: rotate-border 4s linear infinite;
+}
+
+@keyframes rotate-border {
+  to {
+    --border-angle: 360deg;
+  }
+}
+
+/* ── Rwanda flag left border (animated vertical stripe on form panel) ── */
+.rwanda-left-border {
+  position: relative;
+}
+
+.rwanda-left-border::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    var(--color-rwanda-blue),
+    var(--color-rwanda-yellow),
+    var(--color-rwanda-green),
+    var(--color-rwanda-blue)
+  );
+  background-size: 100% 300%;
+  animation: slide-stripe 4s ease-in-out infinite;
+}
+
+@keyframes slide-stripe {
+  0%, 100% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 0% 100%;
+  }
+}
+
+/* ── Auth page background ── */
+.auth-bg {
+  background: linear-gradient(
+    135deg,
+    var(--color-background) 0%,
+    #EEF2F7 50%,
+    var(--color-background) 100%
+  );
+}

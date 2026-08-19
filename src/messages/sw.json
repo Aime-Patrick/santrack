@@ -1,0 +1,86 @@
+{
+  "common": {
+    "login": "Ingia",
+    "getStarted": "Anza",
+    "language": "Lugha",
+    "search": "Tafuta kitu chochote...",
+    "viewAll": "Ona Yote",
+    "success": "Imefanikiwa",
+    "pending": "Inasubiri"
+  },
+  "nav": {
+    "industryManagement": "Usimamizi wa Viwanda"
+  },
+  "landing": {
+    "hero": {
+      "title": "Jukwaa Kamili la Viwanda",
+      "subtitle": "Ufuatiliaji, hesabu, utengenezaji, usafirishaji, fedha na wafanyakazi — kutoka malighafi hadi matumizi ya mwisho.",
+      "cta": "Anza",
+      "demo": "Angalia Onyesho"
+    },
+    "trustedBy": "Imetegemewa na viwanda vinavyoongoza nchini Rwanda"
+  },
+  "dashboard": {
+    "title": "Dashibodi",
+    "stats": {
+      "totalIndustries": "Viwanda Vyote",
+      "totalEmployees": "Wafanyakazi Wote",
+      "productionToday": "Uzalishaji wa Leo",
+      "totalRevenue": "Mapato Jumla (RWF)",
+      "totalInventory": "Hesabu Yote",
+      "pendingTransfers": "Uhamisho Unasubiri",
+      "totalSales": "Mauzo Yote",
+      "activeRecalls": "Urejesho Ambayo ni Active",
+      "fromLastMonth": "+{value}% kutoka mwezi uliopita",
+      "fromYesterday": "+{value}% kutoka jana"
+    },
+    "charts": {
+      "productionOverview": "Muhtasari wa Uzalishaji",
+      "thisYear": "Mwaka Huu",
+      "industriesByCategory": "Viwanda kwa Kategoria"
+    },
+    "activities": {
+      "recentActivities": "Shughuli za Hivi Karibuni",
+      "activity": "Shughuli",
+      "module": "Moduli",
+      "user": "Mtumiaji",
+      "date": "Tarehe",
+      "status": "Hali"
+    },
+    "notifications": {
+      "title": "Arifa",
+      "lowStock": "Tahadhari ya hisa ndogo ya Malighafi",
+      "maintenance": "Matengenezo yamepangwa kesho",
+      "newOrder": "Oda mpya imepokelewa kutoka Azam Ltd",
+      "minAgo": "Dakika {value} zilizopita",
+      "hourAgo": "Saa {value} zilizopita"
+    }
+  },
+  "sidebar": {
+    "industrySystem": "Mfumo wa Viwanda",
+    "platform": "Jukwaa",
+    "projects": "Miradi",
+    "support": "Msaada",
+    "feedback": "Maoni",
+    "navigation": "Urambazaji",
+    "administration": "Utawala",
+    "allIndustries": "Viwanda Vyote",
+    "addIndustry": "Ongeza Kiwanda",
+    "allItems": "Bidhaa Zote",
+    "addItem": "Ongeza Bidhaa",
+    "allEmployees": "Wafanyakazi Wote",
+    "addEmployee": "Ongeza Mfanyakazi",
+    "general": "Jumla",
+    "dashboard": "Dashibodi",
+    "industries": "Viwanda",
+    "inventory": "Hesabu",
+    "production": "Uzalishaji",
+    "employees": "Wafanyakazi",
+    "salesOrders": "Mauzo na Oda",
+    "maintenance": "Matengenezo",
+    "reports": "Ripoti",
+    "settings": "Mipangilio",
+    "usersRoles": "Watumiaji na Majukumu",
+    "auditLogs": "Kumbukumbu za Ukaguzi"
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "common": {
+    "login": "Injira",
+    "getStarted": "Tangira",
+    "language": "Ururimi",
+    "search": "Rondera ibintu vyose...",
+    "viewAll": "Raba Vyose",
+    "success": "Vyagenze neza",
+    "pending": "Biritegerezwa"
+  },
+  "nav": {
+    "industryManagement": "Ubuyobozi bw'Ubukorano"
+  },
+  "landing": {
+    "hero": {
+      "title": "Urubuga Rwuzuye rw'Ubukorano",
+      "subtitle": "Kurinda ibintu, ubugeni, inganda, ingendo, amahera n'abakozi — kuva ku matungo yo hambere kugeza ku banyeshuri.",
+      "cta": "Tangira",
+      "demo": "Reba Ibispajoro"
+    },
+    "trustedBy": "Biringiwe n'inganda zikomeye mu Rwanda"
+  },
+  "dashboard": {
+    "title": "Imbonerahamwe",
+    "stats": {
+      "totalIndustries": "Inganda Zose",
+      "totalEmployees": "Abakozi Bose",
+      "productionToday": "Ubufatanye Uyu Munsi",
+      "totalRevenue": "Amany师 Yose (RWF)",
+      "totalInventory": "Ibiciro Vyose",
+      "pendingTransfers": "Amakosa y'Akazi",
+      "totalSales": "Kugurisha Vyose",
+      "activeRecalls": "Amabiko y'Active",
+      "fromLastMonth": "+{value}% ku mezi ushize",
+      "fromYesterday": "+{value}% ejo"
+    },
+    "charts": {
+      "productionOverview": "Ibanjirije ry'Ubufatanye",
+      "thisYear": "Uyu Mwaka",
+      "industriesByCategory": "Inganda Ukurikije Icegera"
+    },
+    "activities": {
+      "recentActivities": "Ibikorwa vya Vuba",
+      "activity": "Igikorwa",
+      "module": "Urwego",
+      "user": "Umukoresha",
+      "date": "Itariki",
+      "status": "Imimerere"
+    },
+    "notifications": {
+      "title": "Amamenyesho",
+      "lowStock": "Amamenyesho y'igiciro gito cy'amatungo",
+      "maintenance": "Kubungabunga byegererezwe ejo",
+      "newOrder": "Itonderwa rishya ryatumijwe na Azam Ltd",
+      "minAgo": "Iminota {value} ishize",
+      "hourAgo": "Amasaha {value} ashize"
+    }
+  },
+  "sidebar": {
+    "industrySystem": "Sisitemu y'Ubukorano",
+    "platform": "Urubuga",
+    "projects": "Ibikorwa",
+    "support": "Ubufasha",
+    "feedback": "Ivyiyumviro",
+    "navigation": "Kwerekana",
+    "administration": "Ubuyobozi",
+    "allIndustries": "Inganda Zose",
+    "addIndustry": "Ongeraho Iganda",
+    "allItems": "Ibintu Vyose",
+    "addItem": "Ongeraho Igintu",
+    "allEmployees": "Abakozi Bose",
+    "addEmployee": "Ongeraho Umukozi",
+    "general": "Rusange",
+    "dashboard": "Imbonerahamwe",
+    "industries": "Inganda",
+    "inventory": "Ibikorwa",
+    "production": "Ubufatanye",
+    "employees": "Abakozi",
+    "salesOrders": "Kugurisha n'Itonderwa",
+    "maintenance": "Kubungabunga",
+    "reports": "Raporo",
+    "settings": "Amategeko",
+    "usersRoles": "Abakozi n'Imimerere",
+    "auditLogs": "Amategeko y'Ibikorwa"
+  }
+}

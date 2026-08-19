@@ -1,0 +1,86 @@
+{
+  "common": {
+    "login": "Login",
+    "getStarted": "Get Started",
+    "language": "Language",
+    "search": "Search anything...",
+    "viewAll": "View All",
+    "success": "Success",
+    "pending": "Pending"
+  },
+  "nav": {
+    "industryManagement": "Industry Management"
+  },
+  "landing": {
+    "hero": {
+      "title": "The Complete Industrial Platform",
+      "subtitle": "Traceability, inventory, manufacturing, logistics, finance and HR — from raw materials to final consumption.",
+      "cta": "Get Started",
+      "demo": "Watch Demo"
+    },
+    "trustedBy": "Trusted by leading industries across Rwanda"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "stats": {
+      "totalIndustries": "Total Industries",
+      "totalEmployees": "Total Employees",
+      "productionToday": "Production Today",
+      "totalRevenue": "Total Revenue (RWF)",
+      "totalInventory": "Total Inventory",
+      "pendingTransfers": "Pending Transfers",
+      "totalSales": "Total Sales",
+      "activeRecalls": "Active Recalls",
+      "fromLastMonth": "+{value}% from last month",
+      "fromYesterday": "+{value}% from yesterday"
+    },
+    "charts": {
+      "productionOverview": "Production Overview",
+      "thisYear": "This Year",
+      "industriesByCategory": "Industries by Category"
+    },
+    "activities": {
+      "recentActivities": "Recent Activities",
+      "activity": "Activity",
+      "module": "Module",
+      "user": "User",
+      "date": "Date",
+      "status": "Status"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "lowStock": "Low stock alert for Raw Materials",
+      "maintenance": "Maintenance scheduled tomorrow",
+      "newOrder": "New order received from Azam Ltd",
+      "minAgo": "{value} min ago",
+      "hourAgo": "{value} hour ago"
+    }
+  },
+  "sidebar": {
+    "industrySystem": "Industry System",
+    "platform": "Platform",
+    "projects": "Projects",
+    "support": "Support",
+    "feedback": "Feedback",
+    "navigation": "Navigation",
+    "administration": "Administration",
+    "allIndustries": "All Industries",
+    "addIndustry": "Add Industry",
+    "allItems": "All Items",
+    "addItem": "Add Item",
+    "allEmployees": "All Employees",
+    "addEmployee": "Add Employee",
+    "general": "General",
+    "dashboard": "Dashboard",
+    "industries": "Industries",
+    "inventory": "Inventory",
+    "production": "Production",
+    "employees": "Employees",
+    "salesOrders": "Sales & Orders",
+    "maintenance": "Maintenance",
+    "reports": "Reports",
+    "settings": "Settings",
+    "usersRoles": "Users & Roles",
+    "auditLogs": "Audit Logs"
+  }
+}
