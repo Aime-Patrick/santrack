@@ -448,35 +448,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
-      {/* ── System Status Card ── */}
-      <div className="px-3 pb-3 group-data-[collapsible=icon]:hidden">
-        <div className="rounded-xl bg-white/10 border border-white/15 p-3 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-white uppercase tracking-wider">System Status</span>
-            <span className="flex items-center gap-1 text-[10px] font-semibold text-[#4ade80]">
-              <span className="size-1.5 rounded-full bg-[#4ade80] animate-pulse" />
-              Live
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-1.5">
-            <div className="rounded-lg bg-white/8 px-2 py-1.5 text-center">
-              <p className="text-base font-extrabold text-white leading-none">24</p>
-              <p className="text-[9px] text-white/70 mt-0.5 font-medium">Industries</p>
-            </div>
-            <div className="rounded-lg bg-white/8 px-2 py-1.5 text-center">
-              <p className="text-base font-extrabold text-white leading-none">1,482</p>
-              <p className="text-[9px] text-white/70 mt-0.5 font-medium">Items</p>
-            </div>
-          </div>
-          <Link
-            href="/dashboard/reports"
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors py-1.5 text-[11px] font-semibold text-white"
-          >
-            View Full Report
-          </Link>
-        </div>
-      </div>
     </Sidebar>
   );
 }
