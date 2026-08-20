@@ -93,7 +93,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           className="absolute inset-0 z-0 opacity-[0.12]"
           style={{
             backgroundImage: "url('/images/imigongo2.png')",
-            backgroundSize: "320px auto",
+            backgroundSize: "480px auto",
             backgroundRepeat: "repeat",
             transform: "rotate(45deg) scale(1.5)",
             transformOrigin: "center center",
