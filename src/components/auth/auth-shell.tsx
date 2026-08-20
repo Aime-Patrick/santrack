@@ -32,9 +32,9 @@ export function RwandaWave() {
  */
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="grid min-h-screen lg:grid-cols-12 bg-slate-50">
+    <main className="h-screen grid lg:grid-cols-12 bg-slate-50 overflow-hidden">
       {/* Imigongo Pattern - Top (full width) */}
-      <div className="col-span-12 w-full h-4 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
+      <div className="col-span-12 w-full h-3 shrink-0 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
 
       {/* Visual Brand Panel */}
       <section className="relative hidden lg:col-span-6 xl:col-span-6 lg:flex flex-col justify-between overflow-hidden select-none bg-[#004d9c]">
@@ -90,20 +90,20 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       </section>
 
       {/* Form Panel (Centered, Clean, and Elevated) */}
-      <section className="col-span-12 lg:col-span-6 xl:col-span-6 flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 relative bg-[#f8fafc] overflow-hidden h-screen">
+      <section className="col-span-12 lg:col-span-6 xl:col-span-6 flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 relative bg-[#f8fafc] overflow-hidden min-h-0">
         {/* Mobile Header (Shown on screens < lg) */}
-        <div className="mb-6 flex flex-col items-center gap-2 lg:hidden">
+        <div className="mb-4 flex flex-col items-center gap-2 lg:hidden shrink-0">
           <SanTrackBrand theme="light" />
         </div>
 
         {/* Form Container */}
-        <div className="w-full max-w-[440px] z-10">
+        <div className="w-full max-w-[440px] z-10 min-h-0 overflow-y-auto">
           {children}
         </div>
       </section>
 
       {/* Imigongo Pattern - Bottom (full width) */}
-      <div className="col-span-12 w-full h-4 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
+      <div className="col-span-12 w-full h-3 shrink-0 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
     </main>
   );
 }
