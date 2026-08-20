@@ -3,11 +3,11 @@
 import { BarChart3, Factory, Package, Users, TrendingUp, Truck, Box } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { MetricCard } from "@/components/dashboard/stat-card";
-import { useExecutiveSummary, useIndustrySummary, useSupplyChainSummary } from "@/hooks/analytics";
+import { useExecutiveSummary, useIndustryCategories, useSupplyChainSummary } from "@/hooks/analytics";
 
 export default function AnalyticsPage() {
   const { data: executive, isLoading: execLoading } = useExecutiveSummary();
-  const { data: industries, isLoading: indLoading } = useIndustrySummary();
+  const { data: categories, isLoading: catLoading } = useIndustryCategories();
   const { data: supplyChain, isLoading: scLoading } = useSupplyChainSummary();
 
   return (
@@ -25,34 +25,34 @@ export default function AnalyticsPage() {
       {/* Executive KPIs */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
-          title="Industries"
-          value={executive?.totalIndustries ?? "—"}
+          title="Licensed Industries"
+          value={executive?.industry?.licensedIndustries ?? "—"}
           icon={<Factory className="size-4" />}
           iconBg="bg-primary"
-          caption="Registered industries"
+          caption="Active license categories"
           badge={execLoading ? "Loading" : undefined}
           badgeType="neutral"
         />
         <MetricCard
-          title="Total Products"
-          value={executive?.totalProducts ?? "—"}
+          title="Available Units"
+          value={executive?.supplyChain?.availableUnits ?? "—"}
           icon={<Package className="size-4" />}
           iconBg="bg-success"
-          caption="Product catalog"
+          caption="In stock"
         />
         <MetricCard
-          title="Active Items"
-          value={executive?.activeItems ?? "—"}
+          title="Distinct Products"
+          value={executive?.supplyChain?.distinctProducts ?? "—"}
           icon={<Box className="size-4" />}
           iconBg="bg-primary"
-          caption={`of ${executive?.totalItems ?? "—"} total`}
+          caption="Tracked products"
         />
         <MetricCard
-          title="Workforce"
-          value={executive?.activeWorkforce ?? "—"}
-          icon={<Users className="size-4" />}
+          title="Revenue"
+          value={`RWF ${(executive?.finance?.revenue ?? 0).toLocaleString()}`}
+          icon={<TrendingUp className="size-4" />}
           iconBg="bg-warning"
-          caption="Active employees"
+          caption="Total invoiced"
         />
       </div>
 
@@ -111,26 +111,26 @@ export default function AnalyticsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Industry Summary</CardTitle>
-          <CardDescription>{industries?.length ?? 0} industry categories</CardDescription>
+          <CardDescription>{categories?.length ?? 0} organization types</CardDescription>
         </CardHeader>
         <CardContent>
-          {indLoading ? (
+          {catLoading ? (
             <div className="flex h-32 items-center justify-center text-muted-foreground">Loading industry data...</div>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {industries?.map((ind) => (
-                <div key={ind.category} className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-4 py-3">
+              {categories?.map((cat) => (
+                <div key={cat.category} className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-4 py-3">
                   <div>
-                    <p className="text-sm font-medium">{ind.category}</p>
-                    <p className="text-xs text-faint">{ind.count} industries</p>
+                    <p className="text-sm font-medium">{cat.category}</p>
+                    <p className="text-xs text-faint">{cat.count} organizations</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-foreground">{ind.totalEmployees}</p>
+                    <p className="text-sm font-bold text-foreground">{cat.totalEmployees}</p>
                     <p className="text-[10px] text-faint">employees</p>
                   </div>
                 </div>
               ))}
-              {(!industries || industries.length === 0) && (
+              {(!categories || categories.length === 0) && (
                 <p className="text-sm text-muted-foreground col-span-full text-center py-8">No industry data available.</p>
               )}
             </div>
@@ -162,7 +162,7 @@ export default function AnalyticsPage() {
                 <p className="text-xs text-faint mt-1">Delivered</p>
               </div>
               <div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-center">
-                <p className="text-2xl font-bold text-foreground">${supplyChain.totalValue.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-foreground">{supplyChain.totalValue.toLocaleString()}</p>
                 <p className="text-xs text-faint mt-1">Total Value</p>
               </div>
             </div>

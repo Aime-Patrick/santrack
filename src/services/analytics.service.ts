@@ -1,15 +1,46 @@
 import { api } from "@/lib/api";
 
 export interface ExecutiveSummary {
-  totalIndustries: number;
-  totalProducts: number;
-  totalBatches: number;
-  totalItems: number;
-  activeItems: number;
-  productionRate: number;
-  activeWorkforce: number;
-  recentSales: number;
-  pendingTransfers: number;
+  industry: {
+    licensedIndustries: number;
+    activeLicenses: number;
+    inactiveLicenses: number;
+    totalLicenses: number;
+  };
+  supplyChain: {
+    availableUnits: number;
+    distinctProducts: number;
+    stockOutProducts: number;
+    inTransitUnits: number;
+    inTransitShipments: number;
+    rawMaterialCount: number;
+    lowRawMaterials: number;
+    distributionVolumes: number;
+  };
+  market: {
+    productsSold: number;
+    revenueSeries: Array<{ day: string; label: string; total: number }>;
+    topProducts: Array<{ productId: number; productName: string; units: number }>;
+    consumerSales: number;
+  };
+  finance: {
+    revenue: number;
+    receivables: number;
+    outstandingReceivables: number;
+    expenses: number;
+    payrollCost: number;
+    netProfit: number;
+    openInvoices: number;
+  };
+  compliance: {
+    activeLicenses: number;
+    expiredLicenses: number;
+    pendingReviews: number;
+    recalledItems: number;
+    recalledBatches: number;
+    inspectionFindings: Record<string, number>;
+    quarantinedItems: number;
+  };
 }
 
 export interface IndustrySummary {
@@ -28,5 +59,6 @@ export interface SupplyChainSummary {
 export const analyticsService = {
   executive: () => api.get<ExecutiveSummary>("/api/analytics/executive").then((r) => r.data),
   industry: () => api.get<IndustrySummary[]>("/api/analytics/industry").then((r) => r.data),
+  industryCategories: () => api.get<IndustrySummary[]>("/api/analytics/industry-categories").then((r) => r.data),
   supplyChain: () => api.get<SupplyChainSummary>("/api/analytics/supply-chain").then((r) => r.data),
 };

@@ -15,28 +15,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useOrganizations } from "@/hooks/organizations";
 
 type Industry = {
   id: string;
   name: string;
   category: string;
-  registrationNumber: string;
-  location: string;
+  type: string;
   status: "active" | "pending" | "inactive";
-  employees: number;
-  establishedDate: string;
 };
 
-const industries: Industry[] = [
-  { id: "IND-001", name: "Inyange Milk Ltd", category: "Agro Processing", registrationNumber: "REG-2024-001", location: "Kigali", status: "active", employees: 342, establishedDate: "2015-03-12" },
-  { id: "IND-002", name: "Bralirwa Brewery", category: "Manufacturing", registrationNumber: "REG-2024-002", location: "Rubavu", status: "active", employees: 1200, establishedDate: "2008-07-20" },
-  { id: "IND-003", name: "Cimerwa Cement", category: "Mining & Quarrying", registrationNumber: "REG-2024-003", location: "Rusizi", status: "active", employees: 560, establishedDate: "2011-01-15" },
-  { id: "IND-004", name: "Rwanda Steel Ltd", category: "Construction", registrationNumber: "REG-2024-004", location: "Kigali", status: "pending", employees: 180, establishedDate: "2020-09-05" },
-  { id: "IND-005", name: "Akagera Foods", category: "Agro Processing", registrationNumber: "REG-2024-005", location: "Kayonza", status: "active", employees: 95, establishedDate: "2018-04-22" },
-  { id: "IND-006", name: "Rwanda Mountain Tea", category: "Agro Processing", registrationNumber: "REG-2024-006", location: "Nyamasheke", status: "active", employees: 430, establishedDate: "2012-11-08" },
-  { id: "IND-007", name: "Simba Cement", category: "Mining & Quarrying", registrationNumber: "REG-2024-007", location: "Musanze", status: "inactive", employees: 210, establishedDate: "2016-06-30" },
-  { id: "IND-008", name: "Azam Industry", category: "Manufacturing", registrationNumber: "REG-2024-008", location: "Kigali", status: "active", employees: 670, establishedDate: "2014-02-18" },
-];
+const TYPE_LABELS: Record<string, string> = {
+  MANUFACTURER: "Manufacturing",
+  WAREHOUSE: "Warehousing",
+  DISTRIBUTOR: "Distribution",
+  RETAILER: "Retail",
+  SHOP: "Shop",
+  REGULATOR: "Regulator",
+  CONSUMER: "Consumer",
+};
 
 function StatusBadge({ status }: { status: Industry["status"] }) {
   return (
@@ -77,15 +74,8 @@ const columns: ColumnDef<TableFeatures, Industry>[] = [
     },
   },
   { accessorKey: "category", header: "Category" },
-  { accessorKey: "registrationNumber", header: "Reg. Number" },
-  { accessorKey: "location", header: "Location" },
   {
-    accessorKey: "employees",
-    header: "Employees",
-    cell: ({ row }) => row.original.employees.toLocaleString(),
-  },
-  {
-    accessorKey: "status",
+    id: "status",
     header: "Status",
     cell: ({ row }) => <StatusBadge status={row.original.status} />,
   },
@@ -111,6 +101,17 @@ const columns: ColumnDef<TableFeatures, Industry>[] = [
 ];
 
 export default function IndustriesPage() {
+  const { data: orgs, isLoading } = useOrganizations();
+
+  const industries: Industry[] =
+    orgs?.map((org) => ({
+      id: `ORG-${String(org.id).padStart(3, "0")}`,
+      name: org.name,
+      category: TYPE_LABELS[org.type] ?? org.type,
+      type: org.type,
+      status: "active" as const,
+    })) ?? [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -130,7 +131,24 @@ export default function IndustriesPage() {
 
       <Card>
         <CardContent className="pt-6">
-          <DataTable columns={columns} data={industries} filterColumn="name" filterPlaceholder="Search industries..." pageSize={5} noBorder />
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="size-9 rounded-full bg-muted" />
+                    <div className="space-y-1">
+                      <div className="h-3 w-32 rounded bg-muted" />
+                      <div className="h-2 w-16 rounded bg-muted" />
+                    </div>
+                  </div>
+                  <div className="h-3 w-20 rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <DataTable columns={columns} data={industries} filterColumn="name" filterPlaceholder="Search industries..." pageSize={5} noBorder />
+          )}
         </CardContent>
       </Card>
     </div>

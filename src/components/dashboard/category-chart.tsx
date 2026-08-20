@@ -11,46 +11,51 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { useIndustryCategories } from "@/hooks/analytics";
 
-const chartData = [
-  { category: "Manufacturing", value: 42, fill: "#0057B8" },
-  { category: "Agro Processing", value: 28, fill: "#00953C" },
-  { category: "Mining & Quarrying", value: 15, fill: "#fac600" },
-  { category: "Construction", value: 10, fill: "#00A1DE" },
-  { category: "Others", value: 5, fill: "#8994A3" },
-];
+const CATEGORY_COLORS: Record<string, string> = {
+  MANUFACTURER: "#067eda",
+  WAREHOUSE: "#00953C",
+  DISTRIBUTOR: "#facb2d",
+  RETAILER: "#C62828",
+  SHOP: "#00A1DE",
+  REGULATOR: "#8994A3",
+  CONSUMER: "#5F6B7A",
+};
 
-const chartConfig = {
-  value: {
-    label: "Industries",
-  },
-  Manufacturing: {
-    label: "Manufacturing",
-    color: "#0057B8",
-  },
-  "Agro Processing": {
-    label: "Agro Processing",
-    color: "#00953C",
-  },
-  "Mining & Quarrying": {
-    label: "Mining & Quarrying",
-    color: "#fac600",
-  },
-  Construction: {
-    label: "Construction",
-    color: "#00A1DE",
-  },
-  Others: {
-    label: "Others",
-    color: "#8994A3",
-  },
-} satisfies ChartConfig;
+const CATEGORY_LABELS: Record<string, string> = {
+  MANUFACTURER: "Manufacturing",
+  WAREHOUSE: "Warehousing",
+  DISTRIBUTOR: "Distribution",
+  RETAILER: "Retail",
+  SHOP: "Shop",
+  REGULATOR: "Regulator",
+  CONSUMER: "Consumer",
+};
 
 export function CategoryChart() {
+  const { data: categories, isLoading } = useIndustryCategories();
+
+  const total = categories?.reduce((sum, c) => sum + c.count, 0) ?? 0;
+
+  const chartData =
+    categories?.map((c) => ({
+      category: CATEGORY_LABELS[c.category] ?? c.category,
+      value: total > 0 ? Math.round((c.count / total) * 100) : 0,
+      count: c.count,
+      employees: c.totalEmployees,
+      fill: CATEGORY_COLORS[c.category] ?? "#8994A3",
+    })) ?? [];
+
+  const chartConfig = Object.fromEntries(
+    chartData.map((d) => [
+      d.category,
+      { label: d.category, color: d.fill },
+    ])
+  ) satisfies ChartConfig;
+
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between">
@@ -68,7 +73,10 @@ export function CategoryChart() {
                 content={
                   <ChartTooltipContent
                     hideLabel
-                    formatter={(value) => [`${value}%`, "Share"]}
+                    formatter={(value, name) => [
+                      `${value}%`,
+                      String(name),
+                    ]}
                   />
                 }
               />
@@ -85,20 +93,36 @@ export function CategoryChart() {
 
           {/* Custom legend */}
           <div className="flex-1 space-y-3">
-            {chartData.map((item) => (
-              <div key={item.category} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="size-3 rounded-full"
-                    style={{ backgroundColor: item.fill }}
-                  />
-                  <span className="text-sm text-foreground">{item.category}</span>
-                </div>
-                <span className="text-sm font-semibold text-foreground">
-                  {item.value}%
-                </span>
+            {isLoading ? (
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between animate-pulse">
+                    <div className="flex items-center gap-3">
+                      <div className="size-3 rounded-full bg-muted" />
+                      <div className="h-3 w-24 rounded bg-muted" />
+                    </div>
+                    <div className="h-3 w-8 rounded bg-muted" />
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : chartData.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No data available</p>
+            ) : (
+              chartData.map((item) => (
+                <div key={item.category} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="size-3 rounded-full"
+                      style={{ backgroundColor: item.fill }}
+                    />
+                    <span className="text-sm text-foreground">{item.category}</span>
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">
+                    {item.value}%
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </CardContent>

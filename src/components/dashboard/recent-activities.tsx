@@ -5,6 +5,7 @@ import type { TableFeatures } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
+import { useAuditLog } from "@/hooks/audit";
 
 type Activity = {
   activity: string;
@@ -14,36 +15,50 @@ type Activity = {
   status: "success" | "pending";
 };
 
-const activities: Activity[] = [
-  {
-    activity: 'New industry "Inyange Milk Ltd" added',
-    module: "Industries",
-    user: "Pacifique Shema",
-    date: "18 Aug 2026 10:30",
-    status: "success",
-  },
-  {
-    activity: 'Inventory item "Cement" updated',
-    module: "Inventory",
-    user: "Claudine Niyonzima",
-    date: "18 Aug 2026 09:15",
-    status: "success",
-  },
-  {
-    activity: "Production batch #PRD-00876 completed",
-    module: "Production",
-    user: "Jean Uwamahoro",
-    date: "18 Aug 2026 08:47",
-    status: "success",
-  },
-  {
-    activity: "Maintenance request #MNT-0023 created",
-    module: "Maintenance",
-    user: "Mugisha Didier",
-    date: "18 Aug 2026 08:20",
-    status: "pending",
-  },
-];
+function deriveModule(path: string): string {
+  const segment = path.split("/").filter(Boolean)[1] ?? "";
+  const map: Record<string, string> = {
+    items: "Items",
+    inventory: "Inventory",
+    organizations: "Organizations",
+    productionorders: "Production",
+    transfers: "Transfers",
+    licenses: "Licensing",
+    employees: "Employees",
+    invoices: "Commerce",
+    sales: "Sales",
+    audit: "Security",
+    auth: "Auth",
+  };
+  return map[segment.toLowerCase()] ?? "System";
+}
+
+function deriveActivity(method: string, path: string): string {
+  const module = deriveModule(path);
+  const verb: Record<string, string> = {
+    POST: "Created",
+    PUT: "Updated",
+    PATCH: "Updated",
+    DELETE: "Deleted",
+    GET: "Viewed",
+  };
+  return `${verb[method] ?? method} ${module}`;
+}
+
+function formatDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
 
 const columns: ColumnDef<TableFeatures, Activity>[] = [
   {
@@ -90,21 +105,43 @@ const columns: ColumnDef<TableFeatures, Activity>[] = [
 ];
 
 export function RecentActivities() {
+  const { data: auditData, isLoading } = useAuditLog(10);
+
+  const activities: Activity[] =
+    auditData?.entries?.map((entry) => ({
+      activity: deriveActivity(entry.method, entry.path),
+      module: deriveModule(entry.path),
+      user: entry.actor,
+      date: formatDate(entry.performedAt),
+      status: entry.statusCode < 400 ? "success" : "pending",
+    })) ?? [];
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Recent Activities</CardTitle>
       </CardHeader>
       <CardContent>
-        <DataTable
-          columns={columns}
-          data={activities}
-          filterColumn="activity"
-          filterPlaceholder="Search activities..."
-          pageSize={5}
-          showPagination={false}
-          noBorder
-        />
+        {isLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between animate-pulse">
+                <div className="h-3 w-48 rounded bg-muted" />
+                <div className="h-3 w-20 rounded bg-muted" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={activities}
+            filterColumn="activity"
+            filterPlaceholder="Search activities..."
+            pageSize={5}
+            showPagination={false}
+            noBorder
+          />
+        )}
       </CardContent>
     </Card>
   );

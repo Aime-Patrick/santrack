@@ -15,30 +15,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useItems } from "@/hooks/items";
 
 type InventoryItem = {
   id: string;
   name: string;
   code: string;
-  category: string;
-  unitOfMeasure: string;
-  currentStock: number;
-  reorderLevel: number;
-  unitCost: number;
+  kind: string;
+  quantity: number;
   location: string;
   status: "in_stock" | "low_stock" | "out_of_stock";
+  rawStatus: string;
 };
 
-const items: InventoryItem[] = [
-  { id: "INV-001", name: "Portland Cement", code: "CEM-001", category: "Raw Materials", unitOfMeasure: "Bags", currentStock: 2400, reorderLevel: 500, unitCost: 9500, location: "Warehouse A", status: "in_stock" },
-  { id: "INV-002", name: "Steel Rebars 12mm", code: "STL-012", category: "Raw Materials", unitOfMeasure: "Tons", currentStock: 45, reorderLevel: 50, unitCost: 850000, location: "Warehouse B", status: "low_stock" },
-  { id: "INV-003", name: "Packaging Boxes (Small)", code: "PKG-S01", category: "Packaging", unitOfMeasure: "Units", currentStock: 12000, reorderLevel: 2000, unitCost: 150, location: "Warehouse A", status: "in_stock" },
-  { id: "INV-004", name: "PVC Pipes 4 inch", code: "PVC-004", category: "Finished Goods", unitOfMeasure: "Meters", currentStock: 0, reorderLevel: 100, unitCost: 3200, location: "Warehouse C", status: "out_of_stock" },
-  { id: "INV-005", name: "Milk Powder", code: "MLK-001", category: "Raw Materials", unitOfMeasure: "Kg", currentStock: 850, reorderLevel: 200, unitCost: 4500, location: "Cold Store", status: "in_stock" },
-  { id: "INV-006", name: "Sugar (Granulated)", code: "SGR-001", category: "Raw Materials", unitOfMeasure: "Kg", currentStock: 120, reorderLevel: 150, unitCost: 1200, location: "Warehouse A", status: "low_stock" },
-  { id: "INV-007", name: "Tea Leaves (Green)", code: "TEA-001", category: "Raw Materials", unitOfMeasure: "Kg", currentStock: 3200, reorderLevel: 500, unitCost: 2800, location: "Warehouse D", status: "in_stock" },
-  { id: "INV-008", name: "Paint (White Emulsion)", code: "PNT-W01", category: "Finished Goods", unitOfMeasure: "Liters", currentStock: 340, reorderLevel: 100, unitCost: 15000, location: "Warehouse B", status: "in_stock" },
-];
+function mapStatus(qty: number, rawStatus: string): InventoryItem["status"] {
+  if (rawStatus === "ACTIVE") return qty > 0 ? "in_stock" : "out_of_stock";
+  if (rawStatus === "QUARANTINED" || rawStatus === "RECALLED") return "out_of_stock";
+  if (qty <= 0) return "out_of_stock";
+  return "in_stock";
+}
 
 function StatusBadge({ status }: { status: InventoryItem["status"] }) {
   return (
@@ -72,38 +67,26 @@ const columns: ColumnDef<TableFeatures, InventoryItem>[] = [
           </Avatar>
           <div>
             <div className="font-medium">{item.name}</div>
-            <div className="text-xs text-muted-foreground">{item.code}</div>
+            <div className="text-xs text-muted-foreground font-mono">{item.code}</div>
           </div>
         </div>
       );
     },
   },
-  { accessorKey: "category", header: "Category" },
   {
-    accessorKey: "currentStock",
-    header: "Stock",
-    cell: ({ row }) => {
-      const item = row.original;
-      return (
-        <div>
-          <span className="font-medium">{item.currentStock.toLocaleString()}</span>
-          <span className="text-muted-foreground ml-1">{item.unitOfMeasure}</span>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "reorderLevel",
-    header: "Reorder Level",
+    accessorKey: "kind",
+    header: "Type",
     cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.reorderLevel.toLocaleString()}</span>
+      <Badge variant="outline" className="text-xs">
+        {row.original.kind}
+      </Badge>
     ),
   },
   {
-    accessorKey: "unitCost",
-    header: "Unit Cost",
+    accessorKey: "quantity",
+    header: "Stock",
     cell: ({ row }) => (
-      <span className="font-medium">{row.original.unitCost.toLocaleString()} RWF</span>
+      <span className="font-medium">{row.original.quantity.toLocaleString()}</span>
     ),
   },
   { accessorKey: "location", header: "Location" },
@@ -131,6 +114,20 @@ const columns: ColumnDef<TableFeatures, InventoryItem>[] = [
 ];
 
 export default function InventoryPage() {
+  const { data: itemData, isLoading } = useItems({ size: 50 });
+
+  const items: InventoryItem[] =
+    itemData?.content?.map((item) => ({
+      id: item.qrCode,
+      name: item.productName ?? item.code,
+      code: item.code,
+      kind: item.kind,
+      quantity: item.quantity,
+      location: item.locationName ?? "—",
+      status: mapStatus(item.quantity, item.status),
+      rawStatus: item.status,
+    })) ?? [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -150,7 +147,24 @@ export default function InventoryPage() {
 
       <Card>
         <CardContent className="pt-6">
-          <DataTable columns={columns} data={items} filterColumn="name" filterPlaceholder="Search items..." pageSize={5} noBorder />
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="size-9 rounded-full bg-muted" />
+                    <div className="space-y-1">
+                      <div className="h-3 w-32 rounded bg-muted" />
+                      <div className="h-2 w-16 rounded bg-muted" />
+                    </div>
+                  </div>
+                  <div className="h-3 w-20 rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <DataTable columns={columns} data={items} filterColumn="name" filterPlaceholder="Search items..." pageSize={5} noBorder />
+          )}
         </CardContent>
       </Card>
     </div>

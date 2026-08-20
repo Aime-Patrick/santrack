@@ -17,6 +17,13 @@ export function useIndustrySummary() {
   });
 }
 
+export function useIndustryCategories() {
+  return useQuery({
+    queryKey: ["analytics", "industry-categories"],
+    queryFn: analyticsService.industryCategories,
+  });
+}
+
 export function useSupplyChainSummary() {
   return useQuery({
     queryKey: ["analytics", "supply-chain"],
