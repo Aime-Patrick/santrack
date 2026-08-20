@@ -48,6 +48,9 @@ export default function LoginPage() {
   });
 
   return (
+    < div className="min-h-screen">
+       {/* Imigongo Pattern - Top (full width) */}
+      <div className="w-full h-3 shrink-0 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
     <AuthShell>
       {/* Floating White Card */}
       <div className="w-full rounded-2xl bg-white p-7 sm:p-9 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-100/90 transition-all duration-300">
@@ -212,9 +215,12 @@ export default function LoginPage() {
       {/* Footer Copyright */}
       <footer className="mt-7 text-center">
         <p className="text-xs text-slate-400 font-normal">
-          &copy; 2026 SAN TECH Ltd. All rights reserved.
+          &copy; 2026 SAN TECH. All rights reserved.
         </p>
       </footer>
     </AuthShell>
+      {/* Imigongo Pattern - Bottom (full width) */}
+      <div className="w-full h-3 shrink-0 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
+    </div>
   );
 }
