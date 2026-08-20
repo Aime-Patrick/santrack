@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import { SanTrackBrand } from "@/components/auth/san-track-logo";
+import { SanTrackBrand, SanTrackLogoMark } from "@/components/auth/san-track-logo";
 
 /**
  * Rwandan Flag Wave Ribbon — uses the processed ribbon-full.png asset.
@@ -28,7 +28,7 @@ export function RwandaWave() {
 /**
  * Shared split-screen shell for auth flows:
  * Left: Dynamic, responsive Brand Panel with landscape, 24-ray sun, typography, and official curved flag wave.
- * Right: Clean, elevated Form container.
+ * Right: Clean, elevated Form container with Imigongo background.
  */
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
@@ -45,7 +45,6 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
             sizes="50vw"
             className="object-cover object-bottom scale-100"
           />
-          {/* Deep Cerulean Sky Gradient Overlay (Top to Mid only) */}
           <div className="absolute inset-0 bg-gradient-to-b from-[#004d9c] via-[#0062c2]/90 via-35% via-[#0074db]/60 via-55% to-transparent to-75%" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
         </div>
@@ -64,14 +63,11 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Content Container (Precisely sized & spaced) */}
+        {/* Content Container */}
         <div className="relative z-10 w-full mt-28 pl-10 xl:pl-16 2xl:pl-20 pr-8 pt-16 xl:pt-24">
-          {/* Brand Header */}
           <div>
             <SanTrackBrand theme="dark" />
           </div>
-
-          {/* Tagline Content (Comfortable, readable size) */}
           <div className="mt-8 xl:mt-12 max-w-sm">
             <p className="text-sm xl:text-[15px] font-normal tracking-wide text-white drop-shadow-md">
               Smart. Accurate. Networked.
@@ -82,33 +78,30 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* 3D Rwanda Flag Wave Ribbon with Solid Green Base filling to bottom */}
         <RwandaWave />
       </section>
 
-      {/* Form Panel (Centered, Clean, with Imigongo background) */}
+      {/* Form Panel */}
       <section className="col-span-12 lg:col-span-6 xl:col-span-6 flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 relative overflow-hidden min-h-0 bg-[#f8fafc]">
-        {/* Rotated Imigongo background pattern with gaps */}
-        <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
-          <div
-            className="absolute -inset-20 opacity-[0.12]"
-            style={{
-              backgroundImage: "url('/images/imigongo2.png')",
-              backgroundSize: "160px auto",
-              backgroundRepeat: "repeat",
-              backgroundPosition: "center",
-              transform: "rotate(45deg)",
-            }}
-          />
+        {/* Imigongo background with CSS grid gaps */}
+        <div className="absolute inset-0 z-0" aria-hidden="true">
+          <svg width="100%" height="100%" className="absolute inset-0 opacity-[0.08]">
+            <defs>
+              <pattern id="imigongo" x="0" y="0" width="140" height="140" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <image href="/images/imigongo2.png" x="10" y="10" width="120" height="120" preserveAspectRatio="xMidYMid slice" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#imigongo)" />
+          </svg>
         </div>
 
-        {/* Mobile Header (Shown on screens < lg) */}
-        <div className="mb-4 flex flex-col items-center gap-2 lg:hidden shrink-0 relative z-10">
-          <SanTrackBrand theme="light" />
+        {/* Mobile Logo — matches landing nav (emblem only) */}
+        <div className="mb-5 flex flex-col items-center gap-2 lg:hidden shrink-0 relative z-10">
+          <SanTrackLogoMark className="size-12" />
         </div>
 
         {/* Form Container */}
-        <div className="w-full max-w-[440px] z-10 min-h-0 overflow-y-auto relative px-2">
+        <div className="w-full max-w-[440px] z-10 min-h-0 overflow-y-auto relative">
           {children}
         </div>
       </section>
