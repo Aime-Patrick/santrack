@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { DashboardMockup } from "./dashboard-mockup";
@@ -83,19 +84,35 @@ export function HeroSection() {
               </div>
 
               {/* Headline — 2 lines at desktop */}
-              <h1 className="text-[26px] sm:text-[32px] lg:text-[34px] xl:text-[40px] font-extrabold text-white leading-[1.14] tracking-tight drop-shadow-lg">
-                The All-in-One Management
-                <br />Platform for Modern Businesses
-              </h1>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <h1 className="text-[26px] sm:text-[32px] lg:text-[34px] xl:text-[40px] font-extrabold text-white leading-[1.14] tracking-tight drop-shadow-lg">
+                  The All-in-One Management
+                  <br />Platform for Modern Businesses
+                </h1>
+              </motion.div>
 
               {/* Subtitle */}
-              <p className="text-[12.5px] sm:text-[13.5px] text-white/90 leading-snug max-w-[400px] font-normal">
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="text-[12.5px] sm:text-[13.5px] text-white/90 leading-snug max-w-[400px] font-normal"
+              >
                 From industry to final consumption, SAN TRACK empowers your operations
                 with traceability, inventory, manufacturing, logistics, finance, HR and more.
-              </p>
+              </motion.p>
 
               {/* CTAs */}
-              <div className="flex flex-wrap items-center gap-3 pt-0.5">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="flex flex-wrap items-center gap-3 pt-0.5"
+              >
                 <Link href="/register">
                   <Button
                     size="lg"
@@ -113,13 +130,18 @@ export function HeroSection() {
                     Explore Features <ArrowRight className="size-4 stroke-[2.5]" />
                   </Button>
                 </Link>
-              </div>
+              </motion.div>
             </div>
 
             {/* Right — Dashboard Devices Mockup */}
-            <div className="lg:col-span-6 xl:col-span-7 flex items-center justify-center lg:justify-end">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="lg:col-span-6 xl:col-span-7 flex items-center justify-center lg:justify-end"
+            >
               <DashboardMockup />
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>

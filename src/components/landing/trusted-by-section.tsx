@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { motion } from "framer-motion";
 
 export function TrustedBySection() {
   return (
@@ -18,7 +19,13 @@ export function TrustedBySection() {
           <div className="hidden lg:block w-px h-10 bg-slate-200 shrink-0" />
 
           {/* Logos row */}
-          <div className="flex-1 w-full overflow-x-auto">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.5 }}
+            className="flex-1 w-full overflow-x-auto"
+          >
             <div className="flex items-center justify-between min-w-[720px] lg:min-w-0 gap-0">
 
               {/* 1. CIMERWA — real image */}
@@ -130,7 +137,7 @@ export function TrustedBySection() {
                 </span>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

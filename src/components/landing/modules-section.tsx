@@ -1,4 +1,7 @@
-﻿import Link from "next/link";
+﻿"use client";
+
+import Link from "next/link";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   Package,
@@ -97,11 +100,15 @@ export function ModulesSection() {
 
             {/* Module Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-              {MODULES.map((mod) => {
+              {MODULES.map((mod, index) => {
                 const Icon = mod.icon;
                 return (
-                  <div
+                  <motion.div
                     key={mod.title}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-50px" }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
                     className="bg-white rounded-xl p-4 border border-slate-100 hover:border-[#067eda]/30 hover:shadow-md transition-all cursor-pointer group"
                   >
                     <div className={`p-2.5 rounded-lg ${mod.bg} w-fit mb-3 group-hover:scale-105 transition-transform`}>
@@ -109,7 +116,7 @@ export function ModulesSection() {
                     </div>
                     <p className="text-sm font-bold text-slate-800">{mod.title}</p>
                     <p className="text-[11px] text-slate-400 mt-0.5 leading-tight">{mod.desc}</p>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>

@@ -1,5 +1,6 @@
 import React from "react";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { SanTrackBrand, SanTrackLogoMark } from "@/components/auth/san-track-logo";
 
 /**
@@ -65,17 +66,26 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
 
         {/* Content Container */}
         <div className="relative z-10 w-full mt-28 pl-10 xl:pl-16 2xl:pl-20 pr-8 pt-16 xl:pt-24">
-          <div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
             <SanTrackBrand theme="dark" />
-          </div>
-          <div className="mt-8 xl:mt-12 max-w-sm">
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="mt-8 xl:mt-12 max-w-sm"
+          >
             <p className="text-sm xl:text-[15px] font-normal tracking-wide text-white drop-shadow-md">
               Smart. Accurate. Networked.
             </p>
             <p className="mt-1 text-sm xl:text-[15px] font-normal tracking-wide text-white drop-shadow-md">
               Powering Rwanda&apos;s Industries.
             </p>
-          </div>
+          </motion.div>
         </div>
 
         <RwandaWave />
@@ -85,7 +95,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       <section className="col-span-12 lg:col-span-6 xl:col-span-6 flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 relative overflow-hidden min-h-0 bg-[#f8fafc]">
         {/* Imigongo background pattern */}
         <div
-          className="absolute inset-0 z-0 opacity-[0.08]"
+          className="absolute inset-0 z-0 opacity-[0.05]"
           style={{
             backgroundImage: "url('/images/imigongo2.png')",
             backgroundSize: "160px auto",
@@ -98,14 +108,24 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         />
 
         {/* Mobile Logo — matches landing nav (emblem only) */}
-        <div className="mb-5 flex flex-col items-center gap-2 lg:hidden shrink-0 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="mb-5 flex flex-col items-center gap-2 lg:hidden shrink-0 relative z-10"
+        >
           <SanTrackLogoMark className="size-12" />
-        </div>
+        </motion.div>
 
         {/* Form Container */}
-        <div className="w-full max-w-[440px] z-10 min-h-0 overflow-y-auto relative">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="w-full max-w-[440px] z-10 min-h-0 overflow-y-auto relative"
+        >
           {children}
-        </div>
+        </motion.div>
       </section>
     </main>
   );
