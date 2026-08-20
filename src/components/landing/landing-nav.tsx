@@ -161,7 +161,7 @@ export function LandingNav() {
         </div>
       </div>
       {/* Imigongo pattern border */}
-      <div className="w-full h-4 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} />
+      <div className="w-full h-3 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} />
     </header>
   );
 }
