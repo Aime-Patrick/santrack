@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { I18nProvider } from "@/components/providers/i18n-provider";
+import { NotificationProvider } from "@/components/providers/notification-provider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -36,7 +37,9 @@ export default async function RootLayout({
     >
       <body className="min-h-full bg-background text-foreground">
         <I18nProvider locale={locale} messages={messages}>
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            <NotificationProvider>{children}</NotificationProvider>
+          </QueryProvider>
           <Toaster position="top-right" richColors />
         </I18nProvider>
       </body>
