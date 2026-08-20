@@ -87,18 +87,19 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       </section>
 
       {/* Form Panel (Centered, Clean, with Imigongo background) */}
-      <section
-        className="col-span-12 lg:col-span-6 xl:col-span-6 flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 relative overflow-hidden min-h-0"
-        style={{
-          backgroundImage: "url('/images/imigongo2.png')",
-          backgroundSize: "auto 100%",
-          backgroundRepeat: "repeat",
-          backgroundColor: "#f8fafc",
-          backgroundBlendMode: "overlay",
-        }}
-      >
-        {/* Semi-transparent overlay to keep form readable */}
-        <div className="absolute inset-0 bg-[#f8fafc]/90" aria-hidden="true" />
+      <section className="col-span-12 lg:col-span-6 xl:col-span-6 flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 relative overflow-hidden min-h-0 bg-[#f8fafc]">
+        {/* Rotated Imigongo background pattern */}
+        <div
+          className="absolute inset-0 z-0 opacity-[0.12]"
+          style={{
+            backgroundImage: "url('/images/imigongo2.png')",
+            backgroundSize: "320px auto",
+            backgroundRepeat: "repeat",
+            transform: "rotate(45deg) scale(1.5)",
+            transformOrigin: "center center",
+          }}
+          aria-hidden="true"
+        />
 
         {/* Mobile Header (Shown on screens < lg) */}
         <div className="mb-4 flex flex-col items-center gap-2 lg:hidden shrink-0 relative z-10">
