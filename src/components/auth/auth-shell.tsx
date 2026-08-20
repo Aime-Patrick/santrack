@@ -34,7 +34,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <main className="h-screen grid lg:grid-cols-12 bg-slate-50 overflow-hidden">
       {/* Imigongo Pattern - Top (full width) */}
-      <div className="col-span-12 w-full h-3 shrink-0 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
+      <div className="col-span-12 w-full h-6 sm:h-8 shrink-0 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
 
       {/* Visual Brand Panel */}
       <section className="relative hidden lg:col-span-6 xl:col-span-6 lg:flex flex-col justify-between overflow-hidden select-none bg-[#004d9c]">
@@ -103,7 +103,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       </section>
 
       {/* Imigongo Pattern - Bottom (full width) */}
-      <div className="col-span-12 w-full h-3 shrink-0 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
+      <div className="col-span-12 w-full h-6 sm:h-8 shrink-0 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
     </main>
   );
 }
