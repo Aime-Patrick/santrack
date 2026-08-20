@@ -83,9 +83,9 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
 
       {/* Form Panel */}
       <section className="col-span-12 lg:col-span-6 xl:col-span-6 flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 relative overflow-hidden min-h-0 bg-[#f8fafc]">
-        {/* Imigongo background with CSS grid gaps */}
-        <div className="absolute inset-0 z-0" aria-hidden="true">
-          <svg width="100%" height="100%" className="absolute inset-0 opacity-[0.08]">
+        {/* Imigongo background covering entire panel */}
+        <div className="absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+          <svg className="absolute -inset-10 w-[calc(100%+80px)] h-[calc(100%+80px)] opacity-[0.08]">
             <defs>
               <pattern id="imigongo" x="0" y="0" width="140" height="140" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
                 <image href="/images/imigongo2.png" x="10" y="10" width="120" height="120" preserveAspectRatio="xMidYMid slice" />
