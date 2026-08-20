@@ -107,7 +107,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Form Container */}
-        <div className="w-full max-w-[440px] z-10 min-h-0 overflow-y-auto relative">
+        <div className="w-full max-w-[440px] z-10 min-h-0 overflow-y-auto relative px-2">
           {children}
         </div>
       </section>
