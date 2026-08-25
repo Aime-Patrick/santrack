@@ -1,24 +1,46 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-import { Package } from "lucide-react";
+import { AlertCircle, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateProduct } from "@/hooks/products";
+import { SymbologyPanelPicker } from "@/components/barcode/symbology-panel-picker";
+
+import { useSymbologies } from "@/hooks/barcodes";
+import { useCreateProduct, useProductCategories, useBrands } from "@/hooks/products";
+import Link from "next/link";
+import type { Symbology } from "@/services/barcode.service";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const schema = z.object({
   name: z.string().min(1, "Product name is required"),
   sku: z.string().optional(),
-  category: z.string().optional(),
-  brand: z.string().optional(),
+  categoryId: z.string().optional(),
+  brandId: z.string().optional(),
   model: z.string().optional(),
   specification: z.string().optional(),
+  gtin: z.string().optional(),
+  barcodeSymbology: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -32,17 +54,48 @@ export default function NewProductPage() {
     defaultValues: {
       name: "",
       sku: "",
-      category: "",
-      brand: "",
+      categoryId: "",
+      brandId: "",
       model: "",
       specification: "",
+      gtin: "",
+      barcodeSymbology: "QR",
     },
   });
 
+  const { data: catalogue } = useSymbologies();
+  const { data: categories } = useProductCategories();
+  const { data: brands } = useBrands();
+  // Withdrawn marks stay readable on old products but cannot be chosen for new ones.
+  const activeBrands = (brands ?? []).filter((brand) => brand.active);
+  const chosenSymbology = useWatch({ control: form.control, name: "barcodeSymbology" });
+  const gtin = useWatch({ control: form.control, name: "gtin" });
+
+  const chosenSpec = catalogue?.symbologies.find(
+    (s) => s.symbology === chosenSymbology,
+  );
+  const needsGtin =
+    chosenSpec?.use === "RETAIL" || chosenSpec?.use === "PUBLICATION";
+
   const onSubmit = (values: FormValues) => {
-    createProduct.mutate(values, {
-      onSuccess: () => router.push("/dashboard/products"),
-    });
+    createProduct.mutate(
+      {
+        ...values,
+        categoryId: values.categoryId ? Number(values.categoryId) : undefined,
+        brandId: values.brandId ? Number(values.brandId) : undefined,
+        barcodeSymbology: values.barcodeSymbology as Symbology | undefined,
+      },
+      {
+        onSuccess: (product) => {
+          form.reset();
+          if (product?.id) {
+            router.push(`/dashboard/products/${product.id}`);
+          } else {
+            router.push("/dashboard/products");
+          }
+        },
+      },
+    );
   };
 
   return (
@@ -96,12 +149,30 @@ export default function NewProductPage() {
                 />
                 <FormField
                   control={form.control}
-                  name="category"
+                  name="categoryId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Category</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. Home Decor, Textiles" {...field} />
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="w-full h-10">
+                            <SelectValue placeholder="Select a category">
+                              {field.value
+                                ? categories?.find((c) => String(c.id) === String(field.value))?.name
+                                : undefined}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories?.map((cat) => (
+                              <SelectItem key={cat.id} value={String(cat.id)}>
+                                {cat.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -109,31 +180,117 @@ export default function NewProductPage() {
                 />
                 <FormField
                   control={form.control}
-                  name="brand"
+                  name="brandId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Brand</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. SANTRACK" {...field} />
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="w-full h-10">
+                            <SelectValue
+                              placeholder={
+                                activeBrands.length > 0
+                                  ? "Select a brand"
+                                  : "No brands yet"
+                              }
+                            >
+                              {field.value
+                                ? activeBrands.find((b) => String(b.id) === String(field.value))?.name
+                                : undefined}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {activeBrands.map((brand) => (
+                              <SelectItem key={brand.id} value={String(brand.id)}>
+                                {brand.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </FormControl>
+                      <FormDescription>
+                        {activeBrands.length > 0 ? (
+                          "The mark this is sold under."
+                        ) : (
+                          <>
+                            Add one under{" "}
+                            <Link
+                              href="/dashboard/products/categories"
+                              className="text-primary underline"
+                            >
+                              Categories &amp; Brands
+                            </Link>
+                            .
+                          </>
+                        )}
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
-                  name="model"
+                  name="gtin"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Model</FormLabel>
+                      <FormLabel>GTIN / Barcode</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. IG-2024-A" {...field} />
+                        <Input placeholder="e.g. 6291041500215" {...field} />
                       </FormControl>
+                      <FormDescription>
+                        The manufacturer barcode a till looks up — EAN, UPC or
+                        ISBN. Leave blank for a product that is never scanned at
+                        a point of sale.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
+
+              {/* Which code this product's label prints by default. A book
+                  takes an ISBN, a bottle of shampoo an EAN-13, a machine part
+                  a Code 128 — a property of the trade, so it belongs on the
+                  catalogue entry rather than being decided at the printer
+                  every time. */}
+              <FormField
+                control={form.control}
+                name="barcodeSymbology"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Default code type</FormLabel>
+                    <FormDescription className="mb-4">
+                      What this product&apos;s label prints unless someone
+                      chooses otherwise. Leave it as QR for anything not sold
+                      through a till.
+                    </FormDescription>
+                    <FormControl>
+                      <SymbologyPanelPicker
+                        value={field.value as Symbology | undefined}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* A retail or publication code encodes the GTIN, not the SKU.
+                  Saying so now beats a barcode that scans to nothing later. */}
+              {needsGtin && !gtin?.trim() && (
+                <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-xs leading-relaxed text-warning-foreground">
+                  <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+                  <span>
+                    {chosenSpec?.label} encodes the manufacturer barcode. Without
+                    a GTIN above, this product cannot print one — its labels will
+                    fall back to an internal code.
+                  </span>
+                </div>
+              )}
 
               <FormField
                 control={form.control}

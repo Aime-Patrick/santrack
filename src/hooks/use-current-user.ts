@@ -12,8 +12,12 @@ import { useDesignMode } from "@/components/providers/design-mode-provider";
  * Usage:
  *   const { data: me } = useCurrentUser();
  *   // me.role will reflect the role-switcher selection in design mode
+ *
+ * To decide what the UI shows, prefer `useCapabilities()` over reading
+ * `me.role`. A role is a job title; what somebody may actually do also depends
+ * on their organization's standing, and only the server resolves both.
  */
 export function useCurrentUser({ enabled = true } = {}) {
-  const { role } = useDesignMode();
-  return useMe({ enabled, previewRole: role });
+  const { role, standing } = useDesignMode();
+  return useMe({ enabled, previewRole: role, previewStanding: standing });
 }

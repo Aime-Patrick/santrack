@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { TableFeatures } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { useAuditLog } from "@/hooks/audit";
+import { RecentActivitiesDialog } from "./recent-activities-dialog";
 
 type Activity = {
   activity: string;
@@ -106,6 +108,7 @@ const columns: ColumnDef<TableFeatures, Activity>[] = [
 
 export function RecentActivities() {
   const { data: auditData, isLoading } = useAuditLog(10);
+  const [showAll, setShowAll] = useState(false);
 
   const activities: Activity[] =
     auditData?.entries?.map((entry) => ({
@@ -117,32 +120,43 @@ export function RecentActivities() {
     })) ?? [];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent Activities</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center justify-between animate-pulse">
-                <div className="h-3 w-48 rounded bg-muted" />
-                <div className="h-3 w-20 rounded bg-muted" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={activities}
-            filterColumn="activity"
-            filterPlaceholder="Search activities..."
-            pageSize={5}
-            showPagination={false}
-            noBorder
-          />
-        )}
-      </CardContent>
-    </Card>
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Recent Activities</CardTitle>
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="text-xs font-medium text-primary hover:text-primary-dark transition-colors"
+          >
+            View More →
+          </button>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between animate-pulse">
+                  <div className="h-3 w-48 rounded bg-muted" />
+                  <div className="h-3 w-20 rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={activities}
+              filterColumn="activity"
+              filterPlaceholder="Search activities..."
+              pageSize={5}
+              showPagination={false}
+              noBorder
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      <RecentActivitiesDialog open={showAll} onOpenChange={setShowAll} />
+    </>
   );
 }

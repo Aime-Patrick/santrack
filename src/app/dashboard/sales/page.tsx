@@ -1,200 +1,122 @@
 "use client";
 
-import Link from "next/link";
-import { type ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Plus, ShoppingCart, Building2, User, DollarSign } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { DataTable, type TableFeatures } from "@/components/ui/data-table";
-import { MetricCard } from "@/components/dashboard/stat-card";
-import { useSales } from "@/hooks/sales";
-import type { Sale } from "@/services/sale.service";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  ClipboardList,
+  FileText,
+  Receipt,
+  RotateCcw,
+  ShoppingCart,
+} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SalesOverviewPanel } from "@/components/sales/sales-overview-panel";
+import { QuotationsPanel } from "@/components/sales/quotations-panel";
+import { SalesOrdersPanel } from "@/components/sales/sales-orders-panel";
+import { InvoicesPanel } from "@/components/sales/invoices-panel";
+import { ReturnsPanel } from "@/components/sales/returns-panel";
 
-const columns: ColumnDef<TableFeatures, Sale>[] = [
-  {
-    accessorKey: "reference",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="h-8 px-2">
-        Reference
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => (
-      <span className="font-mono text-sm text-faint">{row.getValue("reference")}</span>
-    ),
-  },
-  {
-    accessorKey: "type",
-    header: "Type",
-    cell: ({ row }) => {
-      const type = row.getValue("type") as string;
-      return type === "BUSINESS" ? (
-        <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary gap-1">
-          <Building2 className="size-3" />
-          BUSINESS
-        </Badge>
-      ) : (
-        <Badge variant="outline" className="border-success/30 bg-success/10 text-success gap-1">
-          <User className="size-3" />
-          CONSUMER
-        </Badge>
-      );
-    },
-  },
-  {
-    id: "buyer",
-    header: "Buyer",
-    cell: ({ row }) => {
-      const sale = row.original;
-      if (sale.type === "CONSUMER") {
-        return (
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <User className="size-3.5" />
-            {sale.consumerRef || "Consumer"}
-          </div>
-        );
-      }
-      return (
-        <div className="flex items-center gap-1.5 text-sm">
-          <Building2 className="size-3.5 text-primary" />
-          {sale.buyerOrganizationName || "—"}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "lines",
-    header: "Items",
-    cell: ({ row }) => {
-      const lines = row.getValue("lines") as Sale["lines"];
-      return <span className="text-sm">{lines?.length ?? 0} item(s)</span>;
-    },
-  },
-  {
-    accessorKey: "totalAmount",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="h-8 px-2">
-        Amount
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => {
-      const amount = row.getValue("totalAmount") as string | null;
-      return amount ? (
-        <span className="text-sm font-medium">{Number(amount).toLocaleString()} RWF</span>
-      ) : "—";
-    },
-  },
-  {
-    accessorKey: "soldAt",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="h-8 px-2">
-        Date
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => {
-      const d = new Date(row.getValue("soldAt") as string);
-      return (
-        <div className="text-sm">
-          <p>{d.toLocaleDateString()}</p>
-          <p className="text-xs text-muted-foreground">{d.toLocaleTimeString()}</p>
-        </div>
-      );
-    },
-  },
-];
+/**
+ * The commercial pipeline, on one screen.
+ *
+ * Quotation, order, invoice and return are four stages of one document moving
+ * through its life, not four separate places. As four sidebar entries they read
+ * as unrelated, so somebody chasing one deal had to remember which menu held
+ * the stage it had reached — and the menu gave no hint that they were the same
+ * deal at all.
+ *
+ * The tab order is the order the work happens in. It is the only ordering that
+ * carries information here, so it is the one used.
+ */
+const TABS = [
+  { value: "sales", label: "Sales", icon: ShoppingCart },
+  { value: "quotations", label: "Quotations", icon: Receipt },
+  { value: "orders", label: "Orders", icon: ClipboardList },
+  { value: "invoices", label: "Invoices", icon: FileText },
+  { value: "returns", label: "Returns", icon: RotateCcw },
+] as const;
 
-export default function SalesPage() {
-  const { data, isLoading } = useSales();
-  const sales = data?.content ?? [];
-  const total = data?.total ?? 0;
+function SalesWorkspace() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState(() => searchParams.get("tab") ?? "sales");
 
-  const businessSales = sales.filter((s) => s.type === "BUSINESS").length;
-  const consumerSales = sales.filter((s) => s.type === "CONSUMER").length;
-  const totalRevenue = sales.reduce((sum, s) => sum + (s.totalAmount ? Number(s.totalAmount) : 0), 0);
+  // The retired /sales/orders, /sales/invoices and friends redirect here with
+  // ?tab=, so a saved link still opens the stage it named.
+  useEffect(() => {
+    const wanted = searchParams.get("tab");
+    if (wanted && wanted !== tab) setTab(wanted);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  /**
+   * The tab is mirrored into the URL so a stage stays linkable and survives a
+   * refresh. `replace` rather than `push`: flipping between tabs is looking
+   * around one screen, and filling the back button with it would mean Back
+   * walks the tabs instead of leaving the screen.
+   */
+  const select = (next: string) => {
+    setTab(next);
+    router.replace(`/dashboard/sales?tab=${next}`, { scroll: false });
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-success text-white">
-            <ShoppingCart className="size-4" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">Sales</h1>
-            <p className="text-sm text-muted-foreground">
-              Record sales by scanning item QR codes. Business sales trigger dispatch; consumer sales end the chain.
-            </p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="flex size-9 items-center justify-center rounded-lg bg-success text-white">
+          <ShoppingCart className="size-4" />
         </div>
-        <Button render={<Link href="/dashboard/sales/new" />}>
-          <Plus className="mr-2 size-4" />
-          New Sale
-        </Button>
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Sales &amp; Orders</h1>
+          <p className="text-sm text-muted-foreground">
+            A deal from quote to payment, and back again if it returns.
+          </p>
+        </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <MetricCard
-          title="Total Sales"
-          value={total}
-          icon={<ShoppingCart className="size-4" />}
-          iconBg="bg-primary"
-          caption="All recorded transactions"
-        />
-        <MetricCard
-          title="Revenue"
-          value={totalRevenue > 0 ? `${totalRevenue.toLocaleString()} RWF` : "—"}
-          icon={<DollarSign className="size-4" />}
-          iconBg="bg-success"
-          caption="Total sales value"
-        />
-        <MetricCard
-          title="Business Sales"
-          value={businessSales}
-          badge={total > 0 ? `${Math.round((businessSales / total) * 100)}%` : undefined}
-          badgeType="neutral"
-          icon={<Building2 className="size-4" />}
-          iconBg="bg-primary"
-          caption="Dispatch triggered"
-        />
-        <MetricCard
-          title="Consumer Sales"
-          value={consumerSales}
-          badge={total > 0 ? `${Math.round((consumerSales / total) * 100)}%` : undefined}
-          badgeType="neutral"
-          icon={<User className="size-4" />}
-          iconBg="bg-success"
-          caption="End of chain"
-        />
-      </div>
+      <Tabs value={tab} onValueChange={select} className="space-y-4">
+        <TabsList className="rounded-xl border border-border/80 bg-muted/50 p-1">
+          {TABS.map(({ value, label, icon: Icon }) => (
+            <TabsTrigger key={value} value={value} className="gap-2">
+              <Icon className="size-4" />
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {/* Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Sales History</CardTitle>
-          <CardDescription>{total} sales recorded</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex h-32 items-center justify-center text-muted-foreground">
-              Loading sales...
-            </div>
-          ) : (
-            <DataTable
-              columns={columns}
-              data={sales}
-              filterPlaceholder="Search by reference..."
-              filterColumn="reference"
-              pageSize={10}
-              noBorder
-            />
-          )}
-        </CardContent>
-      </Card>
+        {/*
+          Each panel mounts only while its tab is open. Every one of them runs
+          its own queries, and mounting all five at once would fire five list
+          requests to open a screen where four of the answers are not on view.
+        */}
+        <TabsContent value="sales">
+          <SalesOverviewPanel />
+        </TabsContent>
+        <TabsContent value="quotations">
+          <QuotationsPanel />
+        </TabsContent>
+        <TabsContent value="orders">
+          <SalesOrdersPanel />
+        </TabsContent>
+        <TabsContent value="invoices">
+          <InvoicesPanel />
+        </TabsContent>
+        <TabsContent value="returns">
+          <ReturnsPanel />
+        </TabsContent>
+      </Tabs>
     </div>
+  );
+}
+
+/**
+ * useSearchParams needs a Suspense boundary above it, or the whole route opts
+ * out of static rendering and Next fails the build.
+ */
+export default function SalesPage() {
+  return (
+    <Suspense fallback={null}>
+      <SalesWorkspace />
+    </Suspense>
   );
 }

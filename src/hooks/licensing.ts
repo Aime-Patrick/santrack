@@ -9,6 +9,8 @@ export const licenseKeys = {
   queue: () => [...licenseKeys.all, "queue"] as const,
   categories: () => [...licenseKeys.all, "categories"] as const,
   documents: (id: number) => [...licenseKeys.all, id, "documents"] as const,
+  regulatorDocuments: (id: number) =>
+    [...licenseKeys.all, id, "documents", "regulator"] as const,
   history: (id: number) => [...licenseKeys.all, id, "history"] as const,
 };
 
@@ -68,12 +70,61 @@ export function useSubmitLicense() {
   });
 }
 
+/** Cancel a draft licence application. */
+export function useCancelLicense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (licenseId: number) => licenseService.cancel(licenseId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: licenseKeys.my() });
+    },
+  });
+}
+
 /** Documents attached to a specific license. */
 export function useLicenseDocuments(licenseId: number) {
   return useQuery({
     queryKey: licenseKeys.documents(licenseId),
     queryFn: () => licenseService.documents(licenseId),
     enabled: licenseId > 0,
+  });
+}
+
+/**
+ * The same list, read as the regulator screening it.
+ *
+ * A separate hook rather than a flag on the one above, because it is a
+ * different route with a different rule: `useLicenseDocuments` answers "my
+ * paperwork" and refuses anything else, while this one answers "the paperwork
+ * on the application in front of me" and is refused to anyone who is not a
+ * licensing authority.
+ */
+export function useRegulatorDocuments(licenseId: number) {
+  return useQuery({
+    queryKey: licenseKeys.regulatorDocuments(licenseId),
+    queryFn: () => licenseService.regulatorDocuments(licenseId),
+    enabled: licenseId > 0,
+  });
+}
+
+/** Saves a certificate to the visitor's machine. */
+export function useDownloadDocument() {
+  return useMutation({
+    mutationFn: async ({
+      documentId,
+      filename,
+    }: {
+      documentId: number;
+      filename: string;
+    }) => {
+      const blob = await licenseService.downloadDocument(documentId);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    },
   });
 }
 
@@ -182,6 +233,7 @@ export function statusLabel(status: string): string {
     EXPIRED: "Expired",
     SUSPENDED: "Suspended",
     REVOKED: "Revoked",
+    CANCELLED: "Cancelled",
   };
   return labels[status] ?? status;
 }
@@ -190,19 +242,21 @@ export function statusLabel(status: string): string {
 export function statusColor(status: string): string {
   switch (status) {
     case "ACTIVE":
-      return "bg-success/10 text-success border-success/20";
+      return "bg-success text-white border-success";
     case "SUBMITTED":
     case "UNDER_REVIEW":
-      return "bg-info/10 text-info border-info/20";
+      return "bg-info text-white border-info";
     case "DRAFT":
       return "bg-muted text-muted-foreground border-border";
     case "EXPIRED":
-      return "bg-warning/10 text-warning-foreground border-warning/20";
+      return "bg-warning text-white border-warning";
     case "SUSPENDED":
     case "REJECTED":
-      return "bg-danger/10 text-danger border-danger/20";
+      return "bg-danger text-white border-danger";
     case "REVOKED":
-      return "bg-danger/15 text-danger border-danger/30";
+      return "bg-danger text-white border-danger";
+    case "CANCELLED":
+      return "bg-muted text-muted-foreground border-border";
     default:
       return "bg-muted text-muted-foreground border-border";
   }

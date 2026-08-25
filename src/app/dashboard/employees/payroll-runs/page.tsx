@@ -1,128 +1,77 @@
 "use client";
 
-import { type ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, PlayCircle, DollarSign, CheckCircle, Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { DataTable, type TableFeatures } from "@/components/ui/data-table";
-import { MetricCard } from "@/components/dashboard/stat-card";
-import { usePayrollRuns } from "@/hooks/payroll";
-import type { PayrollRun } from "@/services/payroll.service";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { BarChart3, Wallet } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PayrollRunsPanel } from "@/components/people/payroll-runs-panel";
+import { PayrollReportsPanel } from "@/components/people/payroll-reports-panel";
 
-const statusColors: Record<string, string> = {
-  DRAFT: "border-warning/30 bg-warning/10 text-warning-foreground",
-  PROCESSED: "border-primary/30 bg-primary/10 text-primary",
-  PAID: "border-success/30 bg-success/10 text-success",
-  CANCELLED: "border-danger/30 bg-danger/10 text-danger",
-};
+/**
+ * A payroll run and the report of that run are one monthly job. Splitting them
+ * across two menu entries meant finishing the run and then hunting for its
+ * output somewhere else.
+ *
+ * Retired routes redirect here with ?tab=, so saved links still land where
+ * they named.
+ */
+function PayrollWorkspace() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState(() => searchParams.get("tab") ?? "runs");
 
-const columns: ColumnDef<TableFeatures, PayrollRun>[] = [
-  {
-    accessorKey: "runNumber",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="h-8 px-2">
-        Run #
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => <span className="text-sm font-mono text-faint">{row.getValue("runNumber")}</span>,
-  },
-  {
-    accessorKey: "period",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="h-8 px-2">
-        Period
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => <span className="text-sm font-medium">{row.getValue("period")}</span>,
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      return <Badge variant="outline" className={statusColors[status] ?? "border-border bg-muted/60 text-muted-foreground"}>{status}</Badge>;
-    },
-  },
-  {
-    accessorKey: "lines",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="h-8 px-2">
-        Employees
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => {
-      const run = row.original;
-      return <span className="text-sm">{run.lines.length}</span>;
-    },
-  },
-  {
-    id: "totalNet",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="h-8 px-2">
-        Total Net
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    accessorFn: (row) => row.lines.reduce((sum, l) => sum + l.net, 0),
-    cell: ({ row }) => {
-      const val = row.getValue("totalNet") as number;
-      return <span className="text-sm font-mono">{val.toLocaleString()} RWF</span>;
-    },
-  },
-  {
-    accessorKey: "createdAt",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="h-8 px-2">
-        Created
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => <span className="text-sm text-muted-foreground">{new Date(row.getValue("createdAt") as string).toLocaleDateString()}</span>,
-  },
-];
+  useEffect(() => {
+    const wanted = searchParams.get("tab");
+    if (wanted && wanted !== tab) setTab(wanted);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
-export default function PayrollRunsPage() {
-  const { data, isLoading } = usePayrollRuns();
-  const runs = data ?? [];
-  const total = runs.length;
-  const totalNet = runs.reduce((sum, r) => sum + r.lines.reduce((s, l) => s + l.net, 0), 0);
-  const paidCount = runs.filter((r) => r.status === "PAID").length;
+  const select = (next: string) => {
+    setTab(next);
+    router.replace(`/dashboard/employees/payroll-runs?tab=${next}`, { scroll: false });
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
-          <PlayCircle className="size-4" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">Payroll Runs</h1>
-          <p className="text-sm text-muted-foreground">Track and manage payroll processing cycles.</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-success text-white">
+            <Wallet className="size-4" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Payroll</h1>
+            <p className="text-sm text-muted-foreground">Run the payroll, then read what it produced.</p>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <MetricCard title="Total Runs" value={total} icon={<PlayCircle className="size-4" />} iconBg="bg-primary" caption="Payroll cycles" />
-        <MetricCard title="Total Net" value={`${totalNet.toLocaleString()} RWF`} icon={<DollarSign className="size-4" />} iconBg="bg-success" caption="All runs" />
-        <MetricCard title="Paid" value={paidCount} icon={<CheckCircle className="size-4" />} iconBg="bg-success" caption="Completed" />
-      </div>
+      <Tabs value={tab} onValueChange={select} className="space-y-4">
+        <TabsList className="rounded-xl border border-border/80 bg-muted/50 p-1">
+          <TabsTrigger value="runs" className="gap-2">
+            <Wallet className="size-4" />
+            Runs
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="gap-2">
+            <BarChart3 className="size-4" />
+            Reports
+          </TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Payroll Runs</CardTitle>
-          <CardDescription>{total} runs</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex h-32 items-center justify-center text-muted-foreground">Loading payroll runs...</div>
-          ) : (
-            <DataTable columns={columns} data={runs} filterPlaceholder="Search runs..." filterColumn="period" pageSize={10} noBorder />
-          )}
-        </CardContent>
-      </Card>
+        <TabsContent value="runs">
+          <PayrollRunsPanel />
+        </TabsContent>
+        <TabsContent value="reports">
+          <PayrollReportsPanel />
+        </TabsContent>
+      </Tabs>
     </div>
+  );
+}
+
+export default function PayrollPage() {
+  return (
+    <Suspense fallback={null}>
+      <PayrollWorkspace />
+    </Suspense>
   );
 }

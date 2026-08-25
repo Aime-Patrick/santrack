@@ -95,11 +95,25 @@ export const productionService = {
   list: (status?: string, page = 0, size = 20) =>
     api.get<PaginatedResponse<ProductionOrder>>("/api/production-orders", { params: { status, page, size } }).then((r) => r.data),
   get: (id: number) => api.get<ProductionOrder>(`/api/production-orders/${id}`).then((r) => r.data),
-  create: (data: { productId: number; plannedQuantity: number; bomId?: number; machineId?: number; scheduledStartOn?: string; scheduledEndOn?: string; notes?: string }) =>
+  /**
+   * `facilityId` is conditionally required (DR-07 WU-1): with one open site the
+   * server infers it, with two or more it refuses to guess — a guess would put
+   * a recall at the wrong plant. Creation also evaluates eligibility server-side
+   * and refuses with 409 carrying the failing checks when the decision blocks.
+   */
+  create: (data: { productId: number; plannedQuantity: number; facilityId?: number; bomId?: number; machineId?: number; scheduledStartOn?: string; scheduledEndOn?: string; notes?: string }) =>
     api.post<ProductionOrder>("/api/production-orders", data).then((r) => r.data),
   start: (id: number) => api.post<ProductionOrder>(`/api/production-orders/${id}/start`).then((r) => r.data),
-  complete: (id: number, data?: { producedQuantity?: number }) =>
+  /**
+   * `expiresOn` is the lot's shelf date, and completion is the only place it
+   * can be set: items copy it from their batch when they are registered, so a
+   * run finished without one produces stock that can never expire.
+   */
+  complete: (id: number, data?: { producedQuantity?: number; expiresOn?: string; notes?: string }) =>
     api.post<ProductionOrder>(`/api/production-orders/${id}/complete`, data).then((r) => r.data),
+  /** Corrects a completed run's output. Cannot go below the identities already registered. */
+  amendQuantity: (id: number, data: { newQuantity: number; reason: string }) =>
+    api.post<ProductionOrder>(`/api/production-orders/${id}/amend-quantity`, data).then((r) => r.data),
   cancel: (id: number, data: { reason: string }) =>
     api.post<ProductionOrder>(`/api/production-orders/${id}/cancel`, data).then((r) => r.data),
   allocateMaterials: (id: number, data: { materials: { materialId: number; quantity: number }[] }) =>

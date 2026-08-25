@@ -31,7 +31,7 @@ const RECENT = [
 export function DashboardMockup() {
   return (
     /* Outer wrapper — reduced max-w vs before */
-    <div className="relative w-full max-w-[400px] lg:max-w-[420px] xl:max-w-[440px] mx-auto select-none">
+    <div className="relative w-full max-w-[350px] lg:max-w-[375px] xl:max-w-[400px] mx-auto select-none">
 
       {/* ── LAPTOP MOCKUP ── */}
       <div className="relative w-full drop-shadow-[0_16px_44px_rgba(0,0,0,0.38)]">

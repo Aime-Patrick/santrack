@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,8 +19,6 @@ const ORG_TYPE_VALUES = [
   "DISTRIBUTOR",
   "RETAILER",
   "SHOP",
-  "REGULATOR",
-  "CONSUMER",
 ] as const;
 
 type OrgType = (typeof ORG_TYPE_VALUES)[number];
@@ -50,16 +49,6 @@ const ORG_TYPES: { value: OrgType; label: string; hint: string }[] = [
     label: "Shop",
     hint: "Receive, open and sell to the final customer.",
   },
-  {
-    value: "REGULATOR",
-    label: "Regulator",
-    hint: "Monitor batches, recalls and compliance.",
-  },
-  {
-    value: "CONSUMER",
-    label: "Consumer",
-    hint: "Verify authenticity and follow a product's history.",
-  },
 ];
 
 const organizationSchema = z.object({
@@ -71,19 +60,22 @@ type OrganizationFormValues = z.infer<typeof organizationSchema>;
 
 const NEXT_STEPS = [
   {
-    icon: MapPin,
-    title: "Add your first location",
-    hint: "A warehouse or shop — the anchor for your inventory.",
-  },
-  {
     icon: Package,
     title: "Create your first product",
     hint: "Give it a permanent QR identity.",
+    href: "/dashboard/products/new",
+  },
+  {
+    icon: MapPin,
+    title: "View your facility",
+    hint: "Your main site was created during setup.",
+    href: "/dashboard/compliance",
   },
   {
     icon: Printer,
     title: "Print QR labels",
     hint: "Stick them on units and packages.",
+    href: "/dashboard/products",
   },
 ];
 
@@ -150,9 +142,10 @@ export function OnboardingForm() {
 
           <div className="mt-6 w-full space-y-2 text-left">
             {NEXT_STEPS.map((step) => (
-              <div
+              <Link
                 key={step.title}
-                className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3"
+                href={step.href}
+                className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3 hover:border-[#067eda]/40 hover:bg-sky-50/40 transition-colors"
               >
                 <step.icon
                   className="mt-0.5 size-4 shrink-0 text-[#067eda]"
@@ -164,7 +157,7 @@ export function OnboardingForm() {
                   </p>
                   <p className="text-[11px] text-slate-500">{step.hint}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
 

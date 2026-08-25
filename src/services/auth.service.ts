@@ -1,4 +1,13 @@
-import { api, type AuthResponse, type UserResponse, type RegisterInput, type LoginInput, type CreateOrganizationInput, type OrganizationResponse } from "@/lib/api";
+import {
+  api,
+  type AuthResponse,
+  type CapabilityCatalogue,
+  type CreateOrganizationInput,
+  type LoginInput,
+  type OrganizationResponse,
+  type RegisterInput,
+  type UserResponse,
+} from "@/lib/api";
 
 export const authService = {
   register(input: RegisterInput): Promise<AuthResponse> {
@@ -11,6 +20,13 @@ export const authService = {
 
   me(): Promise<UserResponse> {
     return api.get<UserResponse>("/api/auth/me").then((r) => r.data);
+  },
+
+  /** The role/capability reference table. Reference data, not the caller's. */
+  capabilities(): Promise<CapabilityCatalogue> {
+    return api
+      .get<CapabilityCatalogue>("/api/auth/capabilities")
+      .then((r) => r.data);
   },
 
   createOrganization(input: CreateOrganizationInput): Promise<OrganizationResponse> {

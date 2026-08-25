@@ -5,7 +5,7 @@ import { ChevronDown, Users, Eye } from "lucide-react";
 import { useDesignMode } from "@/components/providers/design-mode-provider";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/lib/api";
-import { ROLE_CAPABILITIES } from "@/lib/api";
+import { PREVIEW_ROLE_CAPABILITIES, PREVIEW_STANDING_CAPABILITIES } from "@/lib/design-fixtures";
 
 /** Friendly labels and descriptions for each role. */
 const ROLE_META: Record<
@@ -95,7 +95,7 @@ const ALL_ROLES: UserRole[] = [
 ];
 
 export function RoleSwitcher() {
-  const { isDesignMode, role, setRole } = useDesignMode();
+  const { isDesignMode, role, setRole, standing, setStanding } = useDesignMode();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -113,7 +113,6 @@ export function RoleSwitcher() {
   if (!isDesignMode) return null;
 
   const current = ROLE_META[role];
-  const caps = ROLE_CAPABILITIES[role];
 
   return (
     <div ref={ref} className="fixed bottom-6 right-6 z-50">
@@ -147,12 +146,36 @@ export function RoleSwitcher() {
             </p>
           </div>
 
+          {/* Standing toggle. Some screens — the industry register above all —
+              are reached through the organization's standing rather than the
+              job title, so a role picker alone cannot preview them. */}
+          <label className="flex cursor-pointer items-start gap-2.5 border-b border-border px-4 py-3 hover:bg-muted/50">
+            <input
+              type="checkbox"
+              checked={standing}
+              onChange={(e) => setStanding(e.target.checked)}
+              className="mt-0.5 size-3.5 accent-[var(--color-primary)]"
+            />
+            <span className="min-w-0">
+              <span className="block text-xs font-semibold text-foreground">
+                Works for a licensing authority
+              </span>
+              <span className="mt-0.5 block text-[11px] leading-relaxed text-muted-foreground">
+                Adds{" "}
+                {PREVIEW_STANDING_CAPABILITIES.map((cap) =>
+                  cap.replace(/_/g, " ").toLowerCase(),
+                ).join(", ")}
+                {" "}on top of the role — how a regulator sees the platform.
+              </span>
+            </span>
+          </label>
+
           {/* Role list */}
           <div className="p-2">
             {ALL_ROLES.map((r) => {
               const meta = ROLE_META[r];
               const isSelected = r === role;
-              const capabilities = ROLE_CAPABILITIES[r];
+              const capabilities = PREVIEW_ROLE_CAPABILITIES[r];
 
               return (
                 <button

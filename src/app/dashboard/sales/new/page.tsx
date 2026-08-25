@@ -1,15 +1,15 @@
-﻿"use client";
+"use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingCart, Plus, Trash2, Building2, User, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ShoppingCart, Trash2, Building2, User, CheckCircle2, AlertTriangle, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { QrScanInput } from "@/components/ui/qr-scanner";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useItem } from "@/hooks/items";
 import { useSell } from "@/hooks/sales";
 import { useOrganizations } from "@/hooks/organizations";
@@ -27,41 +27,47 @@ interface ScannedEntry {
 export default function NewSalePage() {
   const router = useRouter();
   const [saleType, setSaleType] = useState<SaleType>("CONSUMER");
-  const [scanInput, setScanInput] = useState("");
+  const [pendingCode, setPendingCode] = useState("");
   const [scannedItems, setScannedItems] = useState<ScannedEntry[]>([]);
   const [buyerOrgId, setBuyerOrgId] = useState("");
   const [consumerRef, setConsumerRef] = useState("");
   const [totalAmount, setTotalAmount] = useState("");
   const [notes, setNotes] = useState("");
+  const [lastAdded, setLastAdded] = useState<string | null>(null);
+  const addedRef = useRef(new Set<string>());
 
-  const { data: scanResult } = useItem(scanInput.trim());
+  const { data: scanResult, isLoading: scanning } = useItem(pendingCode.trim());
   const sell = useSell();
   const { data: orgs } = useOrganizations();
 
-  const addItem = () => {
-    const code = scanInput.trim();
-    if (!code || scannedItems.some((i) => i.qrCode === code)) {
-      setScanInput("");
+  // Auto-add item when scan resolves
+  useEffect(() => {
+    if (!scanResult || !pendingCode) return;
+    if (addedRef.current.has(scanResult.qrCode)) return;
+    if (scannedItems.some((i) => i.qrCode === scanResult.qrCode)) {
+      addedRef.current.add(scanResult.qrCode);
       return;
     }
 
-    if (scanResult) {
-      setScannedItems((prev) => [
-        ...prev,
-        {
-          qrCode: scanResult.qrCode,
-          code: scanResult.code,
-          productName: scanResult.productName,
-          productSku: scanResult.productSku,
-          batchCode: scanResult.batchCode,
-          status: scanResult.status,
-        },
-      ]);
-    }
-    setScanInput("");
-  };
+    addedRef.current.add(scanResult.qrCode);
+    setScannedItems((prev) => [
+      ...prev,
+      {
+        qrCode: scanResult.qrCode,
+        code: scanResult.code,
+        productName: scanResult.productName,
+        productSku: scanResult.productSku,
+        batchCode: scanResult.batchCode,
+        status: scanResult.status,
+      },
+    ]);
+    setLastAdded(scanResult.productName || scanResult.code);
+    setTimeout(() => setLastAdded(null), 2000);
+    setPendingCode("");
+  }, [scanResult, pendingCode, scannedItems]);
 
   const removeItem = (qrCode: string) => {
+    addedRef.current.delete(qrCode);
     setScannedItems((prev) => prev.filter((i) => i.qrCode !== qrCode));
   };
 
@@ -97,13 +103,13 @@ export default function NewSalePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
-          <ShoppingCart className="size-5 text-primary" />
+        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
+          <ShoppingCart className="size-4" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">New Sale</h1>
-          <p className="text-muted-foreground">
-            Scan item QR codes, choose sale type, and complete the transaction.
+          <h1 className="text-xl font-bold tracking-tight">New Sale</h1>
+          <p className="text-sm text-muted-foreground">
+            Scan items to add them to the sale, choose sale type, and complete the transaction.
           </p>
         </div>
       </div>
@@ -119,6 +125,7 @@ export default function NewSalePage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <button
+                  type="button"
                   onClick={() => setSaleType("CONSUMER")}
                   className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
                     saleType === "CONSUMER"
@@ -133,6 +140,7 @@ export default function NewSalePage() {
                   </div>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setSaleType("BUSINESS")}
                   className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
                     saleType === "BUSINESS"
@@ -151,18 +159,19 @@ export default function NewSalePage() {
               {saleType === "BUSINESS" && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Buyer Organization</label>
-                  <Select value={buyerOrgId} onValueChange={(v) => setBuyerOrgId(v ?? "")}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select buyer..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(orgs ?? []).map((org) => (
-                        <SelectItem key={org.id} value={String(org.id)}>
-                          {org.name} ({org.type})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={buyerOrgId}
+                    onValueChange={setBuyerOrgId}
+                    placeholder="Select buyer..."
+                    searchPlaceholder="Search businesses by name, type…"
+                    items={(orgs ?? [])
+                      .filter((o) => o.type !== "REGULATOR" && o.type !== "CONSUMER")
+                      .map((org) => ({
+                        value: String(org.id),
+                        label: org.name,
+                        badge: org.type,
+                      }))}
+                  />
                 </div>
               )}
 
@@ -182,24 +191,29 @@ export default function NewSalePage() {
           <Card>
             <CardHeader>
               <CardTitle>Scan Items</CardTitle>
-              <CardDescription>Scan each item&apos;s QR code to add it to the sale</CardDescription>
+              <CardDescription>Scan each item&apos;s QR code — items are added automatically</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <QrScanInput
                 onScan={(code) => {
-                  if (!scannedItems.some((i) => i.qrCode === code)) {
-                    setScanInput(code);
+                  if (!scannedItems.some((i) => i.qrCode === code) && !addedRef.current.has(code)) {
+                    setPendingCode(code);
                   }
                 }}
-                placeholder="Scan item QR code..."
+                placeholder="Scan item QR code or barcode..."
               />
 
-              {scanResult && !scannedItems.some((i) => i.qrCode === scanResult.qrCode) && (
-                <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-1">
-                  <p className="font-medium text-sm">{scanResult.productName || scanResult.code}</p>
-                  <p className="text-xs text-muted-foreground">
-                    SKU: {scanResult.productSku || "\u2014"} | Batch: {scanResult.batchCode || "\u2014"} | Status: {scanResult.status}
-                  </p>
+              {scanning && pendingCode && (
+                <div className="flex items-center gap-2 rounded-lg border bg-primary/5 px-3 py-2 text-sm">
+                  <ScanLine className="size-4 text-primary animate-pulse" />
+                  <span>Looking up <span className="font-mono">{pendingCode}</span>...</span>
+                </div>
+              )}
+
+              {lastAdded && (
+                <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+                  <CheckCircle2 className="size-4" />
+                  Added: <span className="font-medium">{lastAdded}</span>
                 </div>
               )}
 
@@ -210,7 +224,7 @@ export default function NewSalePage() {
                   <div key={item.qrCode} className="flex items-center justify-between rounded-lg border p-2">
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-sm truncate">{item.productName || item.code}</p>
-                      <p className="text-xs text-muted-foreground font-mono">{item.qrCode}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{item.code}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {isSellable(item.status) ? (
@@ -238,70 +252,71 @@ export default function NewSalePage() {
           <Card>
             <CardHeader>
               <CardTitle>Sale Summary</CardTitle>
-              <CardDescription>Review and complete the transaction</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Sale Type</span>
-                  <Badge variant="outline">{saleType}</Badge>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Items</span>
-                  <span className="font-medium">{scannedItems.length}</span>
-                </div>
-                {scannedItems.some((i) => !isSellable(i.status)) && (
-                  <div className="flex items-center gap-2 rounded-lg bg-red-50 p-2 text-sm text-red-800">
-                    <AlertTriangle className="size-4" />
-                    Some items are not sellable
-                  </div>
-                )}
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Type</span>
+                <Badge variant={saleType === "CONSUMER" ? "secondary" : "default"}>
+                  {saleType === "CONSUMER" ? "Consumer" : "Business"}
+                </Badge>
               </div>
 
+              {saleType === "BUSINESS" && buyerOrgId && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Buyer</span>
+                  <span className="font-medium">
+                    {orgs?.find((o) => String(o.id) === buyerOrgId)?.name || buyerOrgId}
+                  </span>
+                </div>
+              )}
+
+              {saleType === "CONSUMER" && consumerRef && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Consumer Ref</span>
+                  <span className="font-mono text-xs">{consumerRef}</span>
+                </div>
+              )}
+
               <Separator />
+
+              <div className="flex justify-between text-sm font-medium">
+                <span>Items Count</span>
+                <span>{scannedItems.length}</span>
+              </div>
+
+              {scannedItems.some((i) => !isSellable(i.status)) && (
+                <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">
+                  <AlertTriangle className="size-4 shrink-0 text-amber-600" />
+                  <span>Some items are not sellable (must be ACTIVE). Remove them to proceed.</span>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Total Amount (optional)</label>
                 <Input
-                  type="number"
-                  placeholder="0.00"
+                  placeholder="e.g. 150000"
                   value={totalAmount}
                   onChange={(e) => setTotalAmount(e.target.value)}
+                  className="font-mono"
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Notes (optional)</label>
                 <Input
-                  placeholder="Additional notes..."
+                  placeholder="Invoice number, payment terms..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                 />
               </div>
 
               <Button
-                className="w-full"
-                size="lg"
                 onClick={handleSubmit}
                 disabled={!canSubmit}
+                className="w-full"
               >
-                {sell.isPending ? (
-                  "Processing Sale..."
-                ) : sell.isError ? (
-                  "Sale Failed - Try Again"
-                ) : (
-                  <>
-                    <CheckCircle2 className="mr-2 size-4" />
-                    Complete Sale
-                  </>
-                )}
+                {sell.isPending ? "Recording Sale..." : `Complete Sale (${scannedItems.length} items)`}
               </Button>
-
-              {sell.isError && (
-                <p className="text-sm text-destructive text-center">
-                  {sell.error instanceof Error ? sell.error.message : "Sale failed"}
-                </p>
-              )}
             </CardContent>
           </Card>
         </div>

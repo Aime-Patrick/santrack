@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { accountService, budgetService, costCentreService, journalService, financeReportService } from "@/services/finance.service";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/api";
 
 export function useAccounts() {
   return useQuery({ queryKey: ["finance", "accounts"], queryFn: accountService.list });
@@ -13,7 +14,7 @@ export function useCreateAccount() {
   return useMutation({
     mutationFn: accountService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["finance", "accounts"] }); toast.success("Account created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -43,7 +44,7 @@ export function useCreateBudget() {
   return useMutation({
     mutationFn: budgetService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["finance", "budgets"] }); toast.success("Budget created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -52,7 +53,7 @@ export function useUpdateBudget() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<Pick<import("@/services/finance.service").Budget, "period" | "amount">> }) => budgetService.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["finance", "budgets"] }); toast.success("Budget updated"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -62,7 +63,7 @@ export function useCreateCostCentre() {
   return useMutation({
     mutationFn: costCentreService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["finance", "cost-centres"] }); toast.success("Cost centre created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -71,7 +72,7 @@ export function useUpdateCostCentre() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<Pick<import("@/services/finance.service").CostCentre, "name" | "active">> }) => costCentreService.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["finance", "cost-centres"] }); toast.success("Cost centre updated"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -81,6 +82,6 @@ export function useCreateJournalEntry() {
   return useMutation({
     mutationFn: journalService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["finance", "journal"] }); toast.success("Journal entry created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }

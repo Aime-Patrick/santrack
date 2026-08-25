@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { employeeService, departmentService, attendanceService, leaveService, payItemService } from "@/services/payroll.service";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/api";
 
 // ── Employees ──
 export function useEmployees() {
@@ -14,7 +15,7 @@ export function useCreateEmployee() {
   return useMutation({
     mutationFn: employeeService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "employees"] }); toast.success("Employee added"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -28,7 +29,7 @@ export function useCreateDepartment() {
   return useMutation({
     mutationFn: departmentService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "departments"] }); toast.success("Department created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -42,7 +43,7 @@ export function useMarkAttendance() {
   return useMutation({
     mutationFn: attendanceService.mark,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "attendance"] }); toast.success("Attendance marked"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -56,7 +57,7 @@ export function useRequestLeave() {
   return useMutation({
     mutationFn: leaveService.request,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "leaves"] }); toast.success("Leave requested"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -65,7 +66,7 @@ export function useApproveLeave() {
   return useMutation({
     mutationFn: leaveService.approve,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "leaves"] }); toast.success("Leave approved"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -81,7 +82,7 @@ export function useCreateJobPosition() {
   return useMutation({
     mutationFn: jobPositionService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "job-positions"] }); toast.success("Job position created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -90,7 +91,7 @@ export function useUpdateJobPosition() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<import("@/services/payroll.service").JobPosition> }) => jobPositionService.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "job-positions"] }); toast.success("Job position updated"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -104,7 +105,7 @@ export function useCreatePayrollRun() {
   return useMutation({
     mutationFn: payrollRunService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "runs"] }); toast.success("Payroll run created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -113,7 +114,7 @@ export function usePayPayrollRun() {
   return useMutation({
     mutationFn: payrollRunService.pay,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "runs"] }); toast.success("Payroll marked as paid"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -132,7 +133,7 @@ export function useUpdateDepartment() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<import("@/services/payroll.service").Department> }) => departmentService.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "departments"] }); toast.success("Department updated"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -142,7 +143,7 @@ export function useRejectLeave() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: { reason: string } }) => leaveService.reject(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "leaves"] }); toast.success("Leave rejected"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -153,7 +154,7 @@ export function useAddPayItem() {
     mutationFn: ({ employeeId, data }: { employeeId: number; data: { code: string; name: string; type: string; amount: number } }) =>
       payItemService.add(employeeId, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "pay-items"] }); toast.success("Pay item added"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -163,6 +164,6 @@ export function useRemovePayItem() {
     mutationFn: ({ employeeId, payItemId }: { employeeId: number; payItemId: number }) =>
       payItemService.remove(employeeId, payItemId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["payroll", "pay-items"] }); toast.success("Pay item removed"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }

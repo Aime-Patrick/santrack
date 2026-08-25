@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Check,
   Search,
+  ScanLine,
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -26,10 +27,15 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useLogout } from "@/hooks/auth";
+import { useNotifications } from "@/components/providers/notification-provider";
+import { cn } from "@/lib/utils";
 
 export function DashboardHeader() {
   const { data: me } = useCurrentUser();
   const logout = useLogout();
+  const { notifications, unreadCount, markAllRead, connected } = useNotifications();
+
+  const displayNotifications = notifications.slice(0, 5);
 
   const userDisplayName = me?.fullName || "Design Admin";
   const userEmail = me?.email || "admin@santrack.rw";
@@ -53,6 +59,16 @@ export function DashboardHeader() {
 
       {/* ── Right: Search, Notification Bell & User Profile ── */}
       <div className="flex items-center gap-2">
+        {/* Global Scan Action */}
+        <Link
+          href="/dashboard/manufacturing/trace"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all text-xs font-semibold cursor-pointer border border-primary/20 shadow-2xs"
+          title="Scan & Trace Any Code"
+        >
+          <ScanLine className="size-4" />
+          <span className="hidden sm:inline">Scan Code</span>
+        </Link>
+
         {/* Search Icon */}
         <button
           type="button"
@@ -74,26 +90,51 @@ export function DashboardHeader() {
             }
           >
             <Bell className="size-4.5" />
-            <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-[#067eda] ring-2 ring-white" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-danger ring-2 ring-white" />
+            )}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80 p-2 shadow-lg">
             <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/50 pb-2">
-              <span className="text-xs font-bold text-foreground">Notifications</span>
-              <span className="text-[11px] text-primary font-medium cursor-pointer hover:underline">
-                Mark all as read
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-foreground">Notifications</span>
+                {unreadCount > 0 && (
+                  <span className="flex size-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllRead}
+                  className="text-[11px] text-primary font-medium hover:underline cursor-pointer"
+                >
+                  Mark all as read
+                </button>
+              )}
             </div>
             <div className="space-y-1.5 pt-2">
-              <div className="p-2 rounded-lg hover:bg-muted/60 transition-colors text-xs space-y-0.5 cursor-pointer">
-                <p className="font-semibold text-foreground">Inyange Milk Batch #PRD-00876</p>
-                <p className="text-[11px] text-muted-foreground">Production batch completed and awaiting QC clearance</p>
-                <p className="text-[10px] text-muted-foreground/80 pt-0.5">10 min ago</p>
-              </div>
-              <div className="p-2 rounded-lg hover:bg-muted/60 transition-colors text-xs space-y-0.5 cursor-pointer">
-                <p className="font-semibold text-foreground">Cimerwa Cement Low Stock</p>
-                <p className="text-[11px] text-muted-foreground">Clinker inventory below 15% minimum threshold</p>
-                <p className="text-[10px] text-muted-foreground/80 pt-0.5">1 hour ago</p>
-              </div>
+              {displayNotifications.length === 0 ? (
+                <div className="py-6 text-center">
+                  <p className="text-xs text-muted-foreground">No notifications yet</p>
+                </div>
+              ) : (
+                displayNotifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={cn(
+                      "p-2 rounded-lg hover:bg-muted/60 transition-colors text-xs space-y-0.5 cursor-pointer",
+                      !notification.read && "bg-muted/50"
+                    )}
+                  >
+                    <p className="font-semibold text-foreground">{notification.title}</p>
+                    <p className="text-[11px] text-muted-foreground">{notification.message}</p>
+                    <p className="text-[10px] text-muted-foreground/80 pt-0.5">
+                      {new Date(notification.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
           </DropdownMenuContent>
         </DropdownMenu>

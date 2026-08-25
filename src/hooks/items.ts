@@ -10,6 +10,7 @@ import {
   type ItemKind,
 } from "@/services/item.service";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/api";
 
 // ---------------------------------------------------------------------------
 // Queries
@@ -50,8 +51,8 @@ export function useRegisterUnits() {
       qc.invalidateQueries({ queryKey: ["items"] });
       toast.success(`${items.length} unit(s) registered`);
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Failed to register units");
+    onError: (err: unknown) => {
+      toast.error(getApiErrorMessage(err, "Failed to register units"));
     },
   });
 }
@@ -64,8 +65,8 @@ export function useRegisterPackage() {
       qc.invalidateQueries({ queryKey: ["items"] });
       toast.success(`Package registered: ${item.code}`);
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Failed to register package");
+    onError: (err: unknown) => {
+      toast.error(getApiErrorMessage(err, "Failed to register package"));
     },
   });
 }
@@ -80,8 +81,8 @@ export function usePackItems() {
       qc.invalidateQueries({ queryKey: ["item-contents"] });
       toast.success("Items packed successfully");
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Failed to pack items");
+    onError: (err: unknown) => {
+      toast.error(getApiErrorMessage(err, "Failed to pack items"));
     },
   });
 }
@@ -95,8 +96,56 @@ export function useOpenPackage() {
       qc.invalidateQueries({ queryKey: ["items"] });
       toast.success("Package opened");
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Failed to open package");
+    onError: (err: unknown) => {
+      toast.error(getApiErrorMessage(err, "Failed to open package"));
+    },
+  });
+}
+
+/**
+ * Identifies a scanned code, on demand.
+ *
+ * A scanner input needs the answer at the moment of the scan, not on the next
+ * render, so this is a mutation rather than a query — the caller awaits it and
+ * decides what to do with what came back. It is how one scan box can serve a
+ * whole workflow: the platform already records whether an identity is a unit
+ * or a container, so the operator never has to say which they are holding.
+ *
+ * Deliberately silent on failure. An unknown code is an ordinary event at a
+ * packing bench — someone scans the courier's own label — and the calling
+ * screen says so in place, where the operator is looking.
+ */
+export function useResolveScan() {
+  return useMutation({
+    mutationFn: (qrCode: string) => itemService.get(qrCode.trim()),
+  });
+}
+
+/**
+ * Takes one item back out of an open container.
+ *
+ * Removal is an event, not a deletion — the item keeps its identity and the
+ * container keeps the record that it was once inside (business rule 9).
+ */
+export function useRemoveUnit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      qrCode,
+      childQrCode,
+      notes,
+    }: {
+      qrCode: string;
+      childQrCode: string;
+      notes?: string;
+    }) => itemService.removeUnit(qrCode, childQrCode, notes),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["items"] });
+      qc.invalidateQueries({ queryKey: ["item-contents"] });
+      toast.success("Item removed from the container");
+    },
+    onError: (err: unknown) => {
+      toast.error(getApiErrorMessage(err, "Failed to remove the item"));
     },
   });
 }
@@ -118,8 +167,8 @@ export function useLifecycleAction() {
       qc.invalidateQueries({ queryKey: ["item"] });
       toast.success("Lifecycle action applied");
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Failed to apply lifecycle action");
+    onError: (err: unknown) => {
+      toast.error(getApiErrorMessage(err, "Failed to apply lifecycle action"));
     },
   });
 }

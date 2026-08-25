@@ -2,6 +2,7 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { OrgGuard } from "@/components/auth/org-guard";
+import { RouteGuard } from "@/components/auth/route-guard";
 import { DesignModeProvider } from "@/components/providers/design-mode-provider";
 import { RoleSwitcher } from "@/components/layout/role-switcher";
 
@@ -20,17 +21,12 @@ export default function DashboardLayout({
 
           {/* ── Main Content Area ── */}
           <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-white">
-            <OrgGuard>{children}</OrgGuard>
+            {/* Onboarding first, then permission: someone with no
+                organization yet has no capabilities to check. */}
+            <OrgGuard>
+              <RouteGuard>{children}</RouteGuard>
+            </OrgGuard>
           </div>
-
-          {/* ── Imigongo pattern border ── */}
-          <div
-            className="w-full h-4 shrink-0 bg-repeat-x bg-center"
-            style={{
-              backgroundImage: "url('/images/imigongo2.png')",
-              backgroundSize: "auto 100%",
-            }}
-          />
         </SidebarInset>
       </SidebarProvider>
 

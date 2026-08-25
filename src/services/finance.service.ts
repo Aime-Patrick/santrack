@@ -32,7 +32,8 @@ export interface Budget {
 
 export const budgetService = {
   list: () => api.get<Budget[]>("/api/finance/budgets").then((r) => r.data),
-  create: (data: { accountId: number; costCentreId?: number; period: string; amount: number }) =>
+  /** `amount` is sent as a string — the API validates it with IsNumberString. */
+  create: (data: { accountId: number; costCentreId?: number; period: string; amount: string }) =>
     api.post<Budget>("/api/finance/budgets", data).then((r) => r.data),
   update: (id: number, data: Partial<Pick<Budget, "period" | "amount">>) =>
     api.patch<Budget>(`/api/finance/budgets/${id}`, data).then((r) => r.data),

@@ -57,7 +57,7 @@
   --color-sidebar-ring: #fac600;
 
   /* ── Type ── */
-  --font-sans: var(--font-inter), Inter, system-ui, sans-serif;
+  --font-sans: var(--font-exo), 'Exo', system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono), monospace;
 
   /* ── Radius ── */
@@ -70,7 +70,8 @@
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
-  font-family: var(--font-sans);
+  /* Apply Exo directly — nested CSS vars don't resolve in font-family */
+  font-family: var(--font-exo), 'Exo', system-ui, -apple-system, sans-serif;
 }
 
 /* ── Hide scrollbars globally while keeping scroll functionality ── */

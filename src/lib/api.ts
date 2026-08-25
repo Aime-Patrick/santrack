@@ -20,8 +20,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && typeof window !== "undefined") {
       clearAuthToken();
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   },
@@ -63,6 +64,19 @@ export type UserRole =
   | "MANAGEMENT"
   | "AUDITOR";
 
+/**
+ * What a user may do. The names match the backend's Capability enum exactly,
+ * because that is where they are decided.
+ *
+ * There is deliberately no role→capability table here any more. There used to
+ * be one, hand-copied from the API, and it drifted: it was missing six
+ * capabilities the backend had added, and it granted MANAGE_CATALOG holders
+ * sight of the industry registry, which is why a production manager could open
+ * a list of every company on the platform. The server now sends the caller's
+ * resolved capability list with `/api/auth/me` and the UI reads that — see
+ * `useCapabilities`. A list that cannot be recomputed here cannot disagree
+ * with the guard that enforces it.
+ */
 export type Capability =
   | "REGISTER_IDENTITY"
   | "HANDLE_PACKAGING"
@@ -71,37 +85,28 @@ export type Capability =
   | "APPLY_LIFECYCLE"
   | "MANAGE_RECALL"
   | "MANAGE_CATALOG"
+  | "RUN_PRODUCTION"
+  | "PERFORM_QC"
+  | "MANAGE_LOGISTICS"
+  | "MANAGE_CLIENTS"
+  | "MANAGE_FINANCE"
+  | "MANAGE_PAYROLL"
   | "VIEW_OPERATIONS"
   | "MANAGE_USERS"
+  | "OVERSEE_INDUSTRIES"
+  | "DECIDE_LICENCES"
   | "ADMINISTER_PLATFORM";
 
-/** Capability set per role — mirrors the backend ROLE_CAPABILITIES table. */
-export const ROLE_CAPABILITIES: Record<UserRole, Capability[]> = {
-  SYSTEM_ADMIN: [
-    "REGISTER_IDENTITY", "HANDLE_PACKAGING", "MOVE_STOCK", "SELL",
-    "APPLY_LIFECYCLE", "MANAGE_RECALL", "MANAGE_CATALOG",
-    "VIEW_OPERATIONS", "MANAGE_USERS", "ADMINISTER_PLATFORM",
-  ],
-  ORG_ADMIN: [
-    "REGISTER_IDENTITY", "HANDLE_PACKAGING", "MOVE_STOCK", "SELL",
-    "APPLY_LIFECYCLE", "MANAGE_RECALL", "MANAGE_CATALOG",
-    "VIEW_OPERATIONS", "MANAGE_USERS",
-  ],
-  PRODUCTION_MANAGER: ["REGISTER_IDENTITY", "HANDLE_PACKAGING", "MANAGE_CATALOG", "VIEW_OPERATIONS"],
-  PRODUCTION_OFFICER: ["REGISTER_IDENTITY", "HANDLE_PACKAGING", "VIEW_OPERATIONS"],
-  WAREHOUSE_MANAGER: ["HANDLE_PACKAGING", "MOVE_STOCK", "APPLY_LIFECYCLE", "VIEW_OPERATIONS"],
-  WAREHOUSE_OFFICER: ["HANDLE_PACKAGING", "MOVE_STOCK", "VIEW_OPERATIONS"],
-  QUALITY_OFFICER: ["APPLY_LIFECYCLE", "MANAGE_RECALL", "VIEW_OPERATIONS"],
-  LOGISTICS_OFFICER: ["MOVE_STOCK", "VIEW_OPERATIONS"],
-  SALES_OFFICER: ["SELL", "MOVE_STOCK", "VIEW_OPERATIONS"],
-  MANAGEMENT: ["VIEW_OPERATIONS"],
-  AUDITOR: ["VIEW_OPERATIONS"],
-};
-
-/** Check if a role holds a capability. */
-export function can(role: UserRole, capability: Capability): boolean {
-  if (role === "SYSTEM_ADMIN") return true;
-  return ROLE_CAPABILITIES[role]?.includes(capability) ?? false;
+/** The reference table behind the Roles screen, served by the API. */
+export interface CapabilityCatalogue {
+  capabilities: {
+    capability: Capability;
+    description: string;
+    /** True when the organization's standing grants it, not the job title. */
+    conferredByStanding: boolean;
+  }[];
+  roles: { role: UserRole; capabilities: Capability[] }[];
+  standing: { organizationType: OrganizationType; capabilities: Capability[] }[];
 }
 
 // ---------------------------------------------------------------------------
@@ -114,6 +119,11 @@ export interface UserResponse {
   fullName: string;
   role: UserRole;
   organization: OrganizationResponse | null;
+  /**
+   * Everything this person may do, resolved by the server from their role and
+   * their organization's standing. The only thing the UI should gate on.
+   */
+  capabilities: Capability[];
 }
 
 export interface AuthResponse {

@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Building2,
   Package,
+  Tags,
   Factory,
   ShoppingCart,
   Users,
@@ -31,15 +32,16 @@ import {
   FileText,
   Receipt,
   Layers,
-  Droplets,
   Calendar,
   Wallet,
   MapPin,
   AlertTriangle,
+  PlayCircle,
+  ScrollText,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCurrentUser } from "@/hooks/use-current-user";
-import { can, type Capability, type UserRole } from "@/lib/api";
+import { useCapabilities } from "@/hooks/permissions";
+import { type Capability } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
   Sidebar,
@@ -56,26 +58,38 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { SanTrackLogoMark } from "@/components/auth/san-track-logo";
 
 interface SubNavEntry {
   title: string;
   href: string;
   icon?: React.ComponentType<{ className?: string }>;
+  /** Child links are filtered on their own, not just with their parent. */
+  requires?: Capability[];
 }
 
 interface NavEntry {
   title: string;
   href?: string;
   icon: React.ComponentType<{ className?: string }>;
+  /**
+   * Every capability listed must be held.
+   *
+   * This used to be "any of", which is how a production manager ended up
+   * looking at the industry register: the Industries entry asked for
+   * MANAGE_CATALOG or ADMINISTER_PLATFORM, and holding the first was enough.
+   * "All of" is the safer default — an entry that genuinely accepts
+   * alternatives says so with `requiresAny`.
+   */
   requires?: Capability[];
+  /** At least one of these. For entries a few different roles legitimately reach. */
+  requiresAny?: Capability[];
   children?: SubNavEntry[];
 }
 
 export function AppSidebar() {
   const pathname = usePathname();
   const t = useTranslations("sidebar");
-  const { data: me } = useCurrentUser();
+  const permissions = useCapabilities();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
 
@@ -84,6 +98,8 @@ export function AppSidebar() {
     manufacturing: false,
     inventory: false,
     employees: false,
+    compliance: false,
+    regulators: false,
   });
 
   const toggleSubmenu = (key: string) => {
@@ -93,12 +109,21 @@ export function AppSidebar() {
     }));
   };
 
-  const role = me?.role as UserRole | undefined;
-
-  const hasAccess = (requires?: Capability[]) => {
-    if (!requires || requires.length === 0) return true;
-    if (!role) return false;
-    return requires.some((cap) => can(role, cap));
+  /**
+   * Whether to draw a nav entry.
+   *
+   * Answered from the capability list the server sent, never recomputed from
+   * the role here — a second copy of the rules is what put the industry
+   * register in a manufacturer's sidebar.
+   */
+  const hasAccess = (entry: {
+    requires?: Capability[];
+    requiresAny?: Capability[];
+  }) => {
+    if (permissions.loading) return false;
+    if (entry.requires && !permissions.canAll(entry.requires)) return false;
+    if (entry.requiresAny && !permissions.canAny(entry.requiresAny)) return false;
+    return true;
   };
 
   // ── Platform Group ──
@@ -114,99 +139,155 @@ export function AppSidebar() {
       key: "industries",
       title: t("industries"),
       icon: Building2,
-      requires: ["MANAGE_CATALOG", "ADMINISTER_PLATFORM"],
+      // The register of every business on the platform. Proposal section 3
+      // puts industry registration and supervision with the licensing
+      // authorities, so this belongs to them and to the platform operator —
+      // not to a manufacturer's staff, however senior. Registering a business
+      // is stricter still, hence the child requirement below.
+      requires: ["OVERSEE_INDUSTRIES"],
       children: [
         { title: "All Industries", href: "/dashboard/industries", icon: List },
-        { title: "Add Industry", href: "/dashboard/industries/new", icon: PlusCircle },
       ],
     },
     {
       key: "manufacturing",
       title: "Manufacturing",
       icon: Factory,
-      requires: ["MANAGE_CATALOG", "REGISTER_IDENTITY", "HANDLE_PACKAGING"],
+      // Consolidated place-based navigation:
+      // - Products: Catalog, pools, batches, labels
+      // - Production: Orders, runs, claim codes, QC, confirm
+      // - Resources: Machines, Raw Materials, BOMs
+      // - Quality: QC inspection verdicts
+      requiresAny: [
+        "MANAGE_CATALOG",
+        "REGISTER_IDENTITY",
+        "RUN_PRODUCTION",
+        "PERFORM_QC",
+      ],
       children: [
         { title: "Products", href: "/dashboard/products", icon: Package },
-        { title: "Create Product", href: "/dashboard/products/new", icon: PlusCircle },
-        { title: "Register Units", href: "/dashboard/manufacturing/register-units", icon: Hash },
-        { title: "Register Package", href: "/dashboard/manufacturing/register-package", icon: PackagePlus },
-        { title: "Pack Items", href: "/dashboard/manufacturing/pack", icon: PackageCheck },
-        { title: "QR Generator", href: "/dashboard/manufacturing/qr-generator", icon: QrCode },
-        { title: "QR Scanner", href: "/dashboard/manufacturing/scan", icon: ScanLine },
-        { title: "Machines", href: "/dashboard/manufacturing/machines", icon: Wrench },
-        { title: "Production Orders", href: "/dashboard/manufacturing/production", icon: Factory },
-        { title: "Raw Materials", href: "/dashboard/manufacturing/raw-materials", icon: Package },
-        { title: "Quality Inspections", href: "/dashboard/manufacturing/quality", icon: ShieldCheck },
-        { title: "Bill of Materials", href: "/dashboard/manufacturing/boms", icon: Layers },
+        { title: "Production", href: "/dashboard/manufacturing/production", icon: Factory, requires: ["RUN_PRODUCTION"] },
+        { title: "Resources", href: "/dashboard/manufacturing/resources", icon: Wrench, requires: ["RUN_PRODUCTION"] },
+        { title: "Quality Control", href: "/dashboard/manufacturing/quality", icon: ShieldCheck, requires: ["PERFORM_QC"] },
       ],
     },
     {
       key: "inventory",
       title: "Stock & Inventory",
       icon: Box,
-      requires: ["VIEW_OPERATIONS", "MOVE_STOCK"],
+      // Stock & Inventory is a manufacturer concern. Regulators hold only
+      // VIEW_OPERATIONS + OVERSEE_INDUSTRIES; they must not see this section.
+      // Requiring at least one physical-operations capability ensures only
+      // manufacturing/warehouse/logistics roles see the menu.
+      requiresAny: ["HANDLE_PACKAGING", "MOVE_STOCK", "REGISTER_IDENTITY", "RUN_PRODUCTION", "MANAGE_LOGISTICS"],
+      // Inventory Overview and Items answered the same question from the same
+      // rows, so they are one destination with two tabs. Register, pack and
+      // transfer are verbs that act on stock, so they are buttons on that
+      // destination rather than places of their own.
+      //
+      // Opening Stock stays a destination: adopting an existing warehouse is a
+      // journey a business walks once, not an action on stock already here.
       children: [
-        { title: "Inventory Overview", href: "/dashboard/inventory", icon: List },
-        { title: "Items", href: "/dashboard/items", icon: Package },
-        { title: "Stock Transfer", href: "/dashboard/manufacturing/stock-transfer", icon: Truck },
-        { title: "Stock Relocate", href: "/dashboard/manufacturing/stock-relocate", icon: ArrowRightLeft },
-        { title: "Locations", href: "/dashboard/inventory/locations", icon: MapPin },
+        { title: "Inventory", href: "/dashboard/inventory", icon: Box },
+        { title: "Opening Stock", href: "/dashboard/inventory/opening-stock", icon: PackagePlus, requires: ["REGISTER_IDENTITY"] },
+        { title: "Locations", href: "/dashboard/inventory/locations", icon: MapPin, requires: ["MANAGE_CATALOG"] },
       ],
     },
     {
       key: "sales",
       title: t("salesOrders"),
       icon: ShoppingCart,
-      requires: ["SELL"],
+      // Recording a sale and running a customer account are different
+      // capabilities on the API, and the children say which is which.
+      requiresAny: ["SELL", "MANAGE_CLIENTS"],
+      // Quotation -> order -> invoice -> return is one document moving through
+      // four stages, so it is one destination with four tabs. As four menu
+      // entries it read as four unrelated places, and somebody chasing a deal
+      // had to know which one held the stage it had reached.
+      //
+      // Customers stays separate because it is a different subject: people the
+      // business deals with, not documents it issues them.
       children: [
-        { title: "All Sales", href: "/dashboard/sales", icon: List },
-        { title: "New Sale", href: "/dashboard/sales/new", icon: PlusCircle },
-        { title: "Customers", href: "/dashboard/sales/customers", icon: Users },
-        { title: "Invoices", href: "/dashboard/sales/invoices", icon: FileText },
-        { title: "Returns", href: "/dashboard/sales/returns", icon: ArrowRightLeft },
-        { title: "Quotations", href: "/dashboard/sales/quotations", icon: Receipt },
+        { title: "Sales", href: "/dashboard/sales", icon: ShoppingCart, requires: ["SELL"] },
+        { title: "Customers", href: "/dashboard/sales/customers", icon: Users, requires: ["MANAGE_CLIENTS"] },
       ],
     },
     {
       key: "employees",
       title: t("employees"),
       icon: Users,
-      requires: ["MANAGE_USERS"],
+      // Payroll, not user administration. These screens are the HR record —
+      // employees, attendance, leave, pay runs — and the API guards every one
+      // of them with MANAGE_PAYROLL. Asking for MANAGE_USERS here showed the
+      // whole menu to anyone who could add a login, and then every page inside
+      // it returned 403.
+      requires: ["MANAGE_PAYROLL"],
+      // Three different jobs were sharing this heading: the HR record, daily
+      // time-keeping, and monthly payroll. They are used by different people at
+      // different rhythms — attendance daily, payroll monthly, job positions
+      // twice a year — so flattening them into one list of eight made the daily
+      // task exactly as hard to find as the annual one.
       children: [
-        { title: "All Employees", href: "/dashboard/employees", icon: List },
-        { title: "Add Employee", href: "/dashboard/employees/new", icon: PlusCircle },
-        { title: "Departments", href: "/dashboard/employees/departments", icon: Building2 },
-        { title: "Job Positions", href: "/dashboard/employees/job-positions", icon: ClipboardList },
-        { title: "Attendance", href: "/dashboard/employees/attendance", icon: Clock },
-        { title: "Leave", href: "/dashboard/employees/leave", icon: Calendar },
-        { title: "Payroll Runs", href: "/dashboard/employees/payroll-runs", icon: Wallet },
-        { title: "Payroll Reports", href: "/dashboard/employees/payroll-reports", icon: BarChart3 },
+        { title: "People", href: "/dashboard/employees", icon: Users },
+        { title: "Time", href: "/dashboard/employees/attendance", icon: Clock },
+        { title: "Payroll", href: "/dashboard/employees/payroll-runs", icon: Wallet },
       ],
     },
     {
       key: "finance",
       title: "Finance",
       icon: Wallet,
-      requires: ["VIEW_OPERATIONS"],
+      // The ledger. VIEW_OPERATIONS is held by every role including the
+      // warehouse floor, so asking for it here put the chart of accounts in
+      // everyone's sidebar.
+      requires: ["MANAGE_FINANCE"],
+      // Accounts, journal, budgets and cost centres are one ledger seen four
+      // ways, and a posting gets checked against all four. Reports stays its
+      // own place: it answers questions about the books rather than keeping
+      // them.
       children: [
-        { title: "Chart of Accounts", href: "/dashboard/finance/accounts", icon: List },
-        { title: "Budgets", href: "/dashboard/finance/budgets", icon: Wallet },
-        { title: "Cost Centres", href: "/dashboard/finance/cost-centres", icon: Building2 },
-        { title: "Journal Entries", href: "/dashboard/finance/journal", icon: ClipboardList },
-        { title: "Finance Reports", href: "/dashboard/finance/reports", icon: BarChart3 },
+        { title: "Accounting", href: "/dashboard/finance/accounts", icon: Wallet },
+        { title: "Reports", href: "/dashboard/finance/reports", icon: BarChart3 },
       ],
     },
     {
       key: "logistics",
       title: "Logistics",
       icon: Truck,
+      requires: ["MANAGE_LOGISTICS"],
+      // Who can carry this (fleet) and what is being carried (shipments) are
+      // the two questions logistics actually asks. Five entries made them look
+      // like five.
+      children: [
+        { title: "Fleet", href: "/dashboard/logistics/vehicles", icon: Truck },
+        { title: "Shipments", href: "/dashboard/logistics/shipments", icon: Package },
+      ],
+    },
+    {
+      key: "compliance",
+      title: "Compliance",
+      icon: ScrollText,
+      // Where the business stands against its licences, and the sites it
+      // operates. Both screens render what the server decided — the browser
+      // works out no part of a licensing verdict, for the same reason the
+      // entries in this file are not computed from a role.
       requires: ["VIEW_OPERATIONS"],
       children: [
-        { title: "Vehicles", href: "/dashboard/logistics/vehicles", icon: List },
-        { title: "Drivers", href: "/dashboard/logistics/drivers", icon: Users },
-        { title: "Transporters", href: "/dashboard/logistics/transporters", icon: Building2 },
-        { title: "Routes", href: "/dashboard/logistics/routes", icon: MapPin },
-        { title: "Shipments", href: "/dashboard/logistics/shipments", icon: Truck },
+        { title: "Overview", href: "/dashboard/compliance", icon: ShieldCheck },
+        { title: "Sites", href: "/dashboard/compliance/facilities", icon: Factory },
+      ],
+    },
+    {
+      key: "regulators",
+      title: "Regulators",
+      icon: ShieldCheck,
+      // Standing up an authority is the platform operator's act; reviewing the
+      // licence queue is the authority's own work, which is a different
+      // capability and a different person.
+      requiresAny: ["ADMINISTER_PLATFORM", "MANAGE_RECALL"],
+      children: [
+        { title: "Manage Regulators", href: "/dashboard/regulators", icon: List, requires: ["ADMINISTER_PLATFORM"] },
+        { title: "License Review", href: "/dashboard/regulator", icon: FileBadge, requires: ["MANAGE_RECALL"] },
       ],
     },
   ];
@@ -214,7 +295,8 @@ export function AppSidebar() {
   // ── Operations & Records ──
   const operationsNavItems: NavEntry[] = [
     {
-      title: "Traceability",
+      // The working screen: scan an identity and act on it without leaving.
+      title: "Trace & Act",
       href: "/dashboard/manufacturing/trace",
       icon: Clock,
       requires: ["VIEW_OPERATIONS"],
@@ -238,12 +320,6 @@ export function AppSidebar() {
       requires: ["VIEW_OPERATIONS"],
     },
     {
-      title: "Regulator View",
-      href: "/dashboard/regulator",
-      icon: ShieldCheck,
-      requires: ["ADMINISTER_PLATFORM"],
-    },
-    {
       title: t("auditLogs"),
       href: "/dashboard/audit",
       icon: ClipboardList,
@@ -256,6 +332,8 @@ export function AppSidebar() {
       requires: ["APPLY_LIFECYCLE"],
     },
     {
+      // Reading the recall register is open; issuing one is not, and the page
+      // itself gates the action.
       title: "Recalls",
       href: "/dashboard/recall",
       icon: AlertTriangle,
@@ -271,9 +349,19 @@ export function AppSidebar() {
     },
   ];
 
-  const visiblePlatform = platformNavItems.filter((i) => hasAccess(i.requires));
-  const visibleOperations = operationsNavItems.filter((i) => hasAccess(i.requires));
-  const visibleUtilities = utilityNavItems.filter((i) => hasAccess(i.requires));
+  // Menus whose every child is out of reach are dropped rather than shown
+  // empty: a heading that opens onto nothing reads as a broken screen.
+  const withVisibleChildren = (entry: NavEntry & { key: string }) => ({
+    ...entry,
+    children: entry.children?.filter((child) => hasAccess(child)),
+  });
+
+  const visiblePlatform = platformNavItems
+    .filter(hasAccess)
+    .map(withVisibleChildren)
+    .filter((entry) => !entry.children || entry.children.length > 0);
+  const visibleOperations = operationsNavItems.filter(hasAccess);
+  const visibleUtilities = utilityNavItems.filter(hasAccess);
 
   return (
     <Sidebar variant="inset" collapsible="icon" className="border-none bg-rwanda-blue text-white">
@@ -283,8 +371,12 @@ export function AppSidebar() {
           href="/dashboard"
           className="flex items-center gap-2.5 py-1 rounded-lg transition-opacity hover:opacity-90 cursor-pointer"
         >
-          <SanTrackLogoMark className="size-9.5 shrink-0 drop-shadow-md" />
-          <div className="flex flex-col leading-none">
+          <img
+            src="/images/logo-symbol.png"
+            alt="SANTRACK"
+            className="size-9.5 shrink-0 drop-shadow-md"
+          />
+          <div className="flex flex-col leading-none group-data-[state=collapsed]:hidden">
             <div className="flex items-center gap-1 leading-none">
               <span className="font-extrabold text-white text-base tracking-tight">SAN</span>
               <span className="font-extrabold text-rwanda-yellow text-base tracking-tight">TRACK</span>
@@ -448,21 +540,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
-      {/* ── Company Footer Card ── */}
-      <div className="px-3 pb-3 group-data-[collapsible=icon]:hidden">
-        <div className="rounded-xl bg-rwanda-green border border-white/15 overflow-hidden">
-          {/* Imigongo Top */}
-          <div className="w-full h-3 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
-          <div className="px-3 py-3 text-center space-y-1">
-            <p className="text-lg font-bold text-white uppercase tracking-wider">SAN TECH</p>
-            <p className="text-xs text-white/60">Powering Rwanda&apos;s Industries</p>
-            <p className="text-xs text-white/40">&copy; 2026 All rights reserved</p>
-          </div>
-          {/* Imigongo Bottom */}
-          <div className="w-full h-3 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} aria-hidden="true" />
-        </div>
-      </div>
     </Sidebar>
   );
 }

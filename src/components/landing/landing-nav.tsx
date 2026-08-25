@@ -1,15 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { SanTrackLogoMark } from "@/components/auth/san-track-logo";
-import { ChevronDown, Menu, X, Globe, Check } from "lucide-react";
+import { ChevronDown, Menu, X, Globe, Check, ShieldCheck, QrCode } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { locales, localeNames, type Locale } from "@/i18n/config";
+
+const NAV_LINKS = [
+  { href: "/", label: "Home" },
+  { href: "/about", label: "About" },
+  { href: "/updates", label: "Updates" },
+  { href: "/verify", label: "Verify" },
+  { href: "/contact", label: "Contact" },
+];
 
 export function LandingNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -19,8 +27,6 @@ export function LandingNav() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
-  const t = useTranslations("common");
-  const tNav = useTranslations("nav");
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -34,7 +40,6 @@ export function LandingNav() {
   }, []);
 
   function switchLocale(newLocale: Locale) {
-    // Remove the current locale prefix from the pathname if present
     let newPath = pathname;
     for (const loc of locales) {
       if (pathname.startsWith(`/${loc}/`) || pathname === `/${loc}`) {
@@ -42,7 +47,6 @@ export function LandingNav() {
         break;
       }
     }
-    // Prefix with the new locale (unless it's the default)
     if (newLocale === "en") {
       router.push(newPath);
     } else {
@@ -56,48 +60,82 @@ export function LandingNav() {
     label: localeNames[code],
   }));
 
+  const isActiveLink = (href: string) => {
+    if (href === "/") return pathname === "/" || pathname === `/${locale}`;
+    return pathname.startsWith(href) || pathname.startsWith(`/${locale}${href}`);
+  };
+
   return (
     <motion.nav
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="fixed top-0 left-0 right-0 z-50 bg-white backdrop-blur-md shadow-sm"
+      className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-xs border-b border-slate-100"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-6">
+          {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <SanTrackLogoMark className="size-9" />
+            <Image src="/images/logo-symbol.png" alt="SANTRACK" width={36} height={36} className="size-9" />
             <div className="flex flex-col leading-none">
               <div className="flex items-baseline gap-1">
-                <span className="text-[17px] font-extrabold tracking-tight text-slate-900">SAN</span>
-                <span className="text-[17px] font-extrabold tracking-tight text-[#067eda]">TRACK</span>
+                <span className="text-[17px] font-extrabold tracking-tight text-rwanda-blue">SAN</span>
+                <span className="text-[17px] font-extrabold tracking-tight text-rwanda-yellow">TRACK</span>
               </div>
               <span className="text-[7px] font-bold tracking-[0.18em] text-slate-400 uppercase">
-                {tNav("industryManagement")}
+                Product Traceability &amp; GS1 Rwanda
               </span>
             </div>
           </Link>
 
-          <div className="hidden lg:flex items-center gap-2">
+          {/* Desktop Navigation Links — UPPERCASE, font-weight 600 */}
+          <div className="hidden lg:flex items-center gap-7">
+            {NAV_LINKS.map((link) => {
+              const active = isActiveLink(link.href);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "text-[13px] font-[600] uppercase tracking-wider transition-colors relative py-1",
+                    active
+                      ? "text-rwanda-blue font-bold"
+                      : "text-slate-700 hover:text-rwanda-blue"
+                  )}
+                >
+                  {link.label}
+                  {active && (
+                    <motion.div
+                      layoutId="activeNavIndicator"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-rwanda-blue rounded-full"
+                    />
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Right Action buttons */}
+          <div className="hidden lg:flex items-center gap-3">
             {/* Language dropdown */}
             <div ref={langRef} className="relative">
               <button
                 onClick={() => setLangOpen(!langOpen)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-[13px] font-medium text-slate-600 border border-slate-200 rounded-full hover:border-[#067eda] hover:text-[#067eda] transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-[600] text-slate-600 border border-slate-200 rounded-full hover:border-rwanda-blue hover:text-rwanda-blue transition-colors uppercase tracking-wider"
               >
                 <Globe className="size-3.5" />
                 <span>{locale.toUpperCase()}</span>
                 <ChevronDown className={cn("size-3 opacity-50 transition-transform", langOpen && "rotate-180")} />
               </button>
               {langOpen && (
-                <div className="absolute right-0 mt-2 w-40 py-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50">
+                <div className="absolute right-0 mt-2 w-40 py-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50">
                   {LANGUAGES.map((lang) => (
                     <button
                       key={lang.code}
                       onClick={() => switchLocale(lang.code)}
                       className={cn(
-                        "flex items-center justify-between w-full px-3 py-2 text-[13px] hover:bg-blue-50 transition-colors",
-                        locale === lang.code ? "text-[#067eda] font-semibold" : "text-slate-600"
+                        "flex items-center justify-between w-full px-3 py-2 text-[13px] hover:bg-blue-50 transition-colors text-left",
+                        locale === lang.code ? "text-rwanda-blue font-semibold" : "text-slate-600"
                       )}
                     >
                       <span>{lang.label}</span>
@@ -109,45 +147,67 @@ export function LandingNav() {
             </div>
 
             <Link href="/login">
-              <Button variant="ghost" size="lg" className="text-slate-700 hover:text-rwanda-blue font-medium">
-                {t("login")}
+              <Button variant="ghost" size="sm" className="text-slate-700 hover:text-rwanda-blue font-[600] uppercase tracking-wider text-[12px]">
+                Sign In
               </Button>
             </Link>
+
             <Link href="/register">
-              <Button size="lg" className="bg-rwanda-blue hover:bg-rwanda-yellow text-white font-semibold px-5 rounded-full shadow-sm">
-                {t("getStarted")}
+              <Button size="sm" className="bg-rwanda-blue hover:bg-blue-700 text-white font-[600] uppercase tracking-wider text-[12px] px-4 rounded-full shadow-xs">
+                Get Started
               </Button>
             </Link>
           </div>
 
+          {/* Mobile hamburger button */}
           <button
-            className="lg:hidden p-2 rounded-md text-slate-600 hover:bg-slate-100"
+            className="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
             onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle navigation"
           >
             {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
         </div>
       </div>
+
+      {/* Mobile Drawer */}
       <div
         className={cn(
           "lg:hidden border-t border-slate-100 bg-white overflow-hidden transition-all duration-300",
-          mobileOpen ? "max-h-screen" : "max-h-0"
+          mobileOpen ? "max-h-screen pb-4" : "max-h-0"
         )}
       >
-        <div className="px-4 py-4 flex flex-col gap-2">
-          {/* Mobile language selector */}
-          <div className="flex items-center gap-2 px-3 py-2 text-sm text-slate-500">
-            <Globe className="size-4" />
-            <span className="font-medium">{t("language")}:</span>
-            <div className="flex gap-1 ml-1">
+        <div className="px-4 pt-3 flex flex-col gap-1">
+          {NAV_LINKS.map((link) => {
+            const active = isActiveLink(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  "px-3 py-2.5 text-sm font-[600] uppercase tracking-wider rounded-lg transition-colors",
+                  active
+                    ? "bg-blue-50 text-rwanda-blue font-bold"
+                    : "text-slate-700 hover:bg-slate-50"
+                )}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+
+          <div className="flex items-center justify-between border-t border-slate-100 pt-3 mt-2 px-3">
+            <span className="text-xs font-[600] uppercase tracking-wider text-slate-500">Language:</span>
+            <div className="flex gap-1">
               {LANGUAGES.map((lang) => (
                 <button
                   key={lang.code}
                   onClick={() => switchLocale(lang.code)}
                   className={cn(
-                    "px-2 py-0.5 text-xs font-medium rounded-md transition-colors",
+                    "px-2.5 py-1 text-xs font-semibold rounded-md transition-colors",
                     locale === lang.code
-                      ? "bg-[#067eda] text-white"
+                      ? "bg-rwanda-blue text-white"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   )}
                 >
@@ -156,18 +216,24 @@ export function LandingNav() {
               ))}
             </div>
           </div>
-          <div className="flex gap-2 border-t pt-3">
-            <Link href="/login" className="flex-1">
-              <Button variant="outline" size="sm" className="w-full">{t("login")}</Button>
+
+          <div className="grid grid-cols-2 gap-2 pt-3">
+            <Link href="/login" onClick={() => setMobileOpen(false)}>
+              <Button variant="outline" size="sm" className="w-full font-[600] uppercase tracking-wider text-xs">
+                Sign In
+              </Button>
             </Link>
-            <Link href="/register" className="flex-1">
-              <Button size="sm" className="w-full bg-[#067eda] hover:bg-[#0569c0] text-white">{t("getStarted")}</Button>
+            <Link href="/register" onClick={() => setMobileOpen(false)}>
+              <Button size="sm" className="w-full bg-rwanda-blue hover:bg-blue-700 text-white font-[600] uppercase tracking-wider text-xs">
+                Get Started
+              </Button>
             </Link>
           </div>
         </div>
       </div>
+
       {/* Imigongo pattern border */}
-      <div className="w-full h-3 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} />
+      <div className="w-full h-1.5 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} />
     </motion.nav>
   );
 }

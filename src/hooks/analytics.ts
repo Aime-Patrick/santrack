@@ -10,6 +10,20 @@ export function useExecutiveSummary() {
   });
 }
 
+export function useCounts() {
+  return useQuery({
+    queryKey: ["analytics", "counts"],
+    queryFn: analyticsService.counts,
+  });
+}
+
+export function useProductionTrend() {
+  return useQuery({
+    queryKey: ["analytics", "production-trend"],
+    queryFn: analyticsService.productionTrend,
+  });
+}
+
 export function useIndustrySummary() {
   return useQuery({
     queryKey: ["analytics", "industry"],

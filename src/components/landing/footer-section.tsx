@@ -1,6 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { SanTrackLogoMark } from "@/components/auth/san-track-logo";
 import { ArrowRight, Mail, MapPin, Phone } from "lucide-react";
 
 const PLATFORM_LINKS = [
@@ -13,11 +13,11 @@ const PLATFORM_LINKS = [
 ];
 
 const COMPANY_LINKS = [
-  { label: "About Us", href: "#about" },
-  { label: "Solutions", href: "#solutions" },
-  { label: "Industries", href: "#industries" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Resources", href: "#resources" },
+  { label: "Home", href: "/" },
+  { label: "About Us", href: "/about" },
+  { label: "Updates & News", href: "/updates" },
+  { label: "Verify Product", href: "/verify" },
+  { label: "Contact Support", href: "/contact" },
 ];
 
 const LEGAL_LINKS = [
@@ -25,11 +25,10 @@ const LEGAL_LINKS = [
   { label: "Terms of Service", href: "#terms" },
 ];
 
-/** Placeholder contact details — replace with the real ones. */
 const CONTACT = {
-  address: "Kigali, Rwanda",
-  email: "info@santrack.rw",
-  phone: "+250 000 000 000",
+  address: "KG 548 St, Kigali, Rwanda",
+  email: "support@santrack.rw",
+  phone: "+250 788 123 456",
 };
 
 const SOCIALS = [
@@ -76,7 +75,7 @@ export function FooterSection() {
           {/* Brand */}
           <div className="lg:col-span-4 flex flex-col gap-5">
             <Link href="/" className="flex items-center gap-2.5 w-fit">
-              <SanTrackLogoMark className="size-10" />
+              <Image src="/images/logo-symbol.png" alt="SANTRACK" width={40} height={40} className="size-10" />
               <div className="flex flex-col leading-none">
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-extrabold tracking-tight text-white">SAN</span>
@@ -88,8 +87,8 @@ export function FooterSection() {
               </div>
             </Link>
 
-            <p className="text-sm text-white/70 leading-relaxed max-w-sm">
-              The all-in-one management platform for modern businesses — traceability,
+            <p className="text-lg text-white/70 leading-relaxed max-w-sm">
+              The all-in-one management platform for modern businesses: traceability,
               inventory, manufacturing, logistics, finance and HR, from industry to
               final consumption.
             </p>
@@ -184,15 +183,6 @@ export function FooterSection() {
                   Get Started <ArrowRight className="size-4" />
                 </Button>
               </Link>
-              <Link href="/login">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-white/40 text-white hover:bg-white/10 hover:border-white font-semibold px-5 rounded-full bg-transparent"
-                >
-                  Login
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
@@ -226,8 +216,6 @@ export function FooterSection() {
           </div>
         </div>
       </div>
-      {/* Imigongo pattern border */}
-      <div className="w-full h-3 bg-repeat-x bg-center" style={{ backgroundImage: "url('/images/imigongo2.png')", backgroundSize: "auto 100%" }} />
     </footer>
   );
 }

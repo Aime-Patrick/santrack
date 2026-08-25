@@ -13,5 +13,6 @@ export interface Machine {
 export const machineService = {
   list: () => api.get<Machine[]>("/api/machines").then((r) => r.data),
   get: (id: number) => api.get<Machine>(`/api/machines/${id}`).then((r) => r.data),
-  create: (data: { code: string; name: string; type: string }) => api.post<Machine>("/api/machines", data).then((r) => r.data),
+  /** Code and type are optional — the API generates a code when omitted. */
+  create: (data: { name: string; code?: string; type?: string }) => api.post<Machine>("/api/machines", data).then((r) => r.data),
 };

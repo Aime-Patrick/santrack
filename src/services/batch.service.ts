@@ -11,11 +11,16 @@ export interface Batch {
   expiresOn: string | null;
   status: string;
   statusReason: string | null;
+  /** What the lot was before its last transition, so a lifted recall can restore it. */
+  previousStatus: string | null;
+  statusChangedAt: string | null;
 }
 
 export interface CreateBatchInput {
   productId: number;
   batchCode: string;
+  /** The site that made this lot — what a scanned code names as the plant. */
+  facilityId?: number;
   manufacturedOn?: string;
   expiresOn?: string;
 }

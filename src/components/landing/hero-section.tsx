@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { DashboardMockup } from "./dashboard-mockup";
-import { FeaturesStrip } from "./features-strip";
 
 export function HeroSection() {
   return (
@@ -77,8 +76,8 @@ export function HeroSection() {
             <div className="lg:col-span-6 xl:col-span-5 flex flex-col gap-3 sm:gap-4">
               {/* Kicker */}
               <div className="inline-flex items-center gap-2.5 w-fit">
-                <span className="w-7 sm:w-8 h-[3px] bg-[#fac600] rounded-full" />
-                <span className="text-[#fac600] text-[11px] sm:text-xs font-bold tracking-[0.22em] uppercase">
+                <span className="w-7 sm:w-8 h-[3px] bg-rwanda-yellow rounded-full" />
+                <span className="text-rwanda-yellow text-[11px] sm:text-xs font-bold tracking-[0.22em] uppercase">
                   WELCOME TO SAN TRACK
                 </span>
               </div>
@@ -89,7 +88,7 @@ export function HeroSection() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <h1 className="text-[26px] sm:text-[32px] lg:text-[34px] xl:text-[40px] font-extrabold text-white leading-[1.14] tracking-tight drop-shadow-lg">
+                <h1 className="text-[26px] sm:text-[32px] lg:text-[34px] font-extrabold text-white leading-[1.14] tracking-tight drop-shadow-lg">
                   The All-in-One Management
                   <br />Platform for Modern Businesses
                 </h1>
@@ -100,7 +99,7 @@ export function HeroSection() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="text-[12.5px] sm:text-[13.5px] text-white/90 leading-snug max-w-[400px] font-normal"
+                className="text-lg sm:text-xl text-white/90 leading-snug max-w-[400px] font-normal"
               >
                 From industry to final consumption, SAN TRACK empowers your operations
                 with traceability, inventory, manufacturing, logistics, finance, HR and more.
@@ -121,15 +120,7 @@ export function HeroSection() {
                     Request a Demo <ArrowRight className="size-4 stroke-[2.5]" />
                   </Button>
                 </Link>
-                <Link href="#features">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="h-10 sm:h-11 border border-white/75 text-white hover:bg-white/15 hover:border-white font-bold text-[13.5px] sm:text-[14px] px-5 sm:px-7 rounded-lg gap-2 bg-white/10 backdrop-blur-sm cursor-pointer transition-all"
-                  >
-                    Explore Features <ArrowRight className="size-4 stroke-[2.5]" />
-                  </Button>
-                </Link>
+
               </motion.div>
             </div>
 
@@ -146,13 +137,7 @@ export function HeroSection() {
         </div>
       </section>
 
-      {/* ── Features Strip — overlaps hero bottom edge ── */}
-      <div
-        id="features"
-        className="relative z-30 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 -mt-10 lg:-mt-12 pb-6"
-      >
-        <FeaturesStrip />
-      </div>
+
     </>
   );
 }

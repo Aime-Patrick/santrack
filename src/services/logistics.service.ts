@@ -2,8 +2,15 @@ import { api } from "@/lib/api";
 
 export interface Vehicle {
   id: number;
-  plateNumber: string;
-  type: string;
+  transporterId: number;
+  transporterName: string | null;
+  /**
+   * The plate. Named `registrationNumber` because that is what the API
+   * returns — this interface said `plateNumber`, so the column bound to it
+   * rendered blank for every vehicle ever registered.
+   */
+  registrationNumber: string;
+  type: string | null;
   capacity: number | null;
   status: string;
   active: boolean;
@@ -47,16 +54,30 @@ export interface Route {
   createdAt: string;
 }
 
+/**
+ * A shipment carries one dispatched transfer. Origin and destination are not
+ * fields on it — they come from the transfer, which is why this now mirrors
+ * what the API actually returns instead of two strings nobody ever sent.
+ */
 export interface Shipment {
   id: number;
   shipmentNumber: string;
   status: string;
-  vehicleId: number | null;
-  vehiclePlate: string | null;
+  transferId: number;
+  transferReference: string | null;
+  transporterId: number;
   transporterName: string | null;
-  origin: string;
-  destination: string;
-  dispatchedAt: string | null;
+  vehicleId: number | null;
+  vehicleRegistration: string | null;
+  driverId: number | null;
+  driverName: string | null;
+  routeId: number | null;
+  routeName: string | null;
+  destinationOrganizationId: number | null;
+  destinationOrganizationName: string | null;
+  scheduledDepartureOn: string | null;
+  scheduledDeliveryOn: string | null;
+  departedAt: string | null;
   deliveredAt: string | null;
   createdAt: string;
 }
@@ -73,7 +94,17 @@ export interface ShipmentEvent {
 export const vehicleService = {
   list: () => api.get<{ total: number; content: Vehicle[] }>("/api/logistics/vehicles").then((r) => r.data),
   get: (id: number) => api.get<Vehicle>(`/api/logistics/vehicles/${id}`).then((r) => r.data),
-  create: (data: { plateNumber: string; type: string; capacity?: number }) =>
+  /**
+   * A vehicle belongs to a transporter — the API requires one, and the field
+   * is `registrationNumber`, not `plateNumber`. Both were wrong here, so every
+   * submission was refused before it reached the service.
+   */
+  create: (data: {
+    transporterId: number;
+    registrationNumber: string;
+    type?: string;
+    capacity?: number;
+  }) =>
     api.post<Vehicle>("/api/logistics/vehicles", data).then((r) => r.data),
   update: (id: number, data: Partial<Vehicle>) => api.patch<Vehicle>(`/api/logistics/vehicles/${id}`, data).then((r) => r.data),
 };
@@ -105,7 +136,19 @@ export const shipmentService = {
   list: (page = 0, size = 20) =>
     api.get<{ total: number; content: Shipment[] }>("/api/logistics/shipments", { params: { page, size } }).then((r) => r.data),
   get: (id: number) => api.get<Shipment>(`/api/logistics/shipments/${id}`).then((r) => r.data),
-  create: (data: { vehicleId?: number; transporterId?: number; origin: string; destination: string }) =>
+  /**
+   * A shipment carries a dispatched transfer; it is not a free-text journey.
+   * The origin and destination come from the transfer itself, which is why the
+   * API asks for `transferId` rather than two strings.
+   */
+  create: (data: {
+    transferId: number;
+    transporterId: number;
+    vehicleId?: number;
+    driverId?: number;
+    routeId?: number;
+    scheduledDepartureOn?: string;
+  }) =>
     api.post<Shipment>("/api/logistics/shipments", data).then((r) => r.data),
   depart: (id: number) => api.post<Shipment>(`/api/logistics/shipments/${id}/depart`).then((r) => r.data),
   deliver: (id: number) => api.post<Shipment>(`/api/logistics/shipments/${id}/deliver`).then((r) => r.data),

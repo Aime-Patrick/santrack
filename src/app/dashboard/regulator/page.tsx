@@ -1,29 +1,271 @@
 "use client";
 
 import { useState } from "react";
+import { type ColumnDef } from "@tanstack/react-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { DataTable, type TableFeatures } from "@/components/ui/data-table";
 import {
   useRegulatorQueue,
   useReviewLicense,
   useDecideOnLicense,
-  useSuspendLicense,
-  useRevokeLicense,
-  useReinstateLicense,
-  useLicenseDocuments,
+  useRegulatorDocuments,
+  useLicenseHistory,
   statusLabel,
   statusColor,
 } from "@/hooks/licensing";
-import { getApiErrorMessage } from "@/lib/api";
-import type { License } from "@/lib/api";
+import { getApiErrorMessage, type License, type LicenseDocument } from "@/lib/api";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { LoaderCircle } from "lucide-react";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
+import { Document, Page, pdfjs } from "react-pdf";
+import {
+  FileText,
+  ExternalLink,
+  LoaderCircle,
+  X,
+  CheckCircle2,
+  Circle,
+  Shield,
+  Building2,
+  Calendar,
+  History,
+  Eye,
+} from "lucide-react";
+
+// Configure pdfjs worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function formatDate(value: string | null): string {
+  return value ? new Date(value).toLocaleDateString() : "—";
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** CERTIFICATE_OF_INCORPORATION -> Certificate of incorporation. */
+function docLabel(documentType: string): string {
+  const words = documentType.replace(/_/g, " ").toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** Whether a document is a viewable image or PDF. */
+function isViewable(doc: LicenseDocument): boolean {
+  return (
+    doc.contentType === "application/pdf" ||
+    doc.contentType.startsWith("image/")
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Document viewer — inline preview instead of download
+// ---------------------------------------------------------------------------
+
+function DocumentViewer({ document: doc }: { document: LicenseDocument }) {
+  const [open, setOpen] = useState(false);
+
+  if (!isViewable(doc)) {
+    return (
+      <div className="flex items-center justify-between rounded-lg border border-border p-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <FileText className="size-4 shrink-0 text-muted-foreground" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{docLabel(doc.documentType)}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {doc.filename} · {formatBytes(doc.sizeBytes)}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex w-full items-center justify-between rounded-lg border border-border p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/30"
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <FileText className="size-4 shrink-0 text-primary" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{docLabel(doc.documentType)}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {doc.filename} · {formatBytes(doc.sizeBytes)}
+            </p>
+          </div>
+        </div>
+        <Eye className="size-4 shrink-0 text-primary" />
+      </button>
+
+      {open && (
+        <DocumentPreviewModal document={doc} onClose={() => setOpen(false)} />
+      )}
+    </>
+  );
+}
+
+function PdfViewer({
+  url,
+  filename,
+  onClose,
+}: {
+  url: string;
+  filename: string;
+  onClose: () => void;
+}) {
+  const [numPages, setNumPages] = useState<number>(0);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative flex max-h-[92vh] max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">{filename}</p>
+            <p className="text-xs text-muted-foreground">
+              Page {currentPage} of {numPages || "—"}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {numPages > 1 && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                >
+                  Prev
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  disabled={currentPage >= numPages}
+                  onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="size-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* PDF content */}
+        <div className="overflow-auto p-4" style={{ maxHeight: "calc(92vh - 56px)" }}>
+          <div className="flex justify-center">
+            <Document
+              file={url}
+              onLoadSuccess={({ numPages: n }) => {
+                setNumPages(n);
+                setCurrentPage(1);
+              }}
+              onLoadError={(err) => console.error("PDF load error:", err)}
+              loading={
+                <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground">
+                  <LoaderCircle className="size-4 animate-spin" />
+                  Loading PDF...
+                </div>
+              }
+              error={
+                <div className="py-12 text-center text-sm text-danger">
+                  Could not load PDF
+                </div>
+              }
+            >
+              <Page
+                pageNumber={currentPage}
+                renderTextLayer={true}
+                renderAnnotationLayer={true}
+                className="shadow-md"
+                width={Math.min(800, typeof window !== "undefined" ? window.innerWidth - 100 : 800)}
+              />
+            </Document>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DocumentPreviewModal({
+  document: doc,
+  onClose,
+}: {
+  document: LicenseDocument;
+  onClose: () => void;
+}) {
+  const isImage = doc.contentType.startsWith("image/");
+  const isPdf = doc.contentType === "application/pdf";
+  const fileUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081"}/api/licenses/documents/${doc.id}`;
+
+  if (isPdf) {
+    return <PdfViewer url={fileUrl} filename={doc.filename} onClose={onClose} />;
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-h-[92vh] max-w-5xl overflow-hidden rounded-xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">{doc.filename}</p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="size-4" />
+          </Button>
+        </div>
+
+        {/* Image content */}
+        <div className="flex items-center justify-center overflow-auto p-4" style={{ maxHeight: "calc(92vh - 56px)" }}>
+          <img
+            src={fileUrl}
+            alt={doc.filename}
+            className="max-h-[85vh] max-w-full object-contain"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Review dialog — enriched with applicant details, documents, history
+// ---------------------------------------------------------------------------
 
 function ReviewDialog({
-  license,
+  license: lic,
   onClose,
 }: {
   license: License;
@@ -31,7 +273,8 @@ function ReviewDialog({
 }) {
   const reviewMutation = useReviewLicense();
   const decideMutation = useDecideOnLicense();
-  const { data: documents } = useLicenseDocuments(license.id);
+  const { data: documents, isLoading: docsLoading } = useRegulatorDocuments(lic.id);
+  const { data: history, isLoading: historyLoading } = useLicenseHistory(lic.id);
   const [decision, setDecision] = useState<"APPROVE" | "REJECT" | null>(null);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +282,7 @@ function ReviewDialog({
   const handleStartReview = async () => {
     setError(null);
     try {
-      await reviewMutation.mutateAsync(license.id);
+      await reviewMutation.mutateAsync(lic.id);
     } catch (err) {
       setError(getApiErrorMessage(err));
     }
@@ -50,7 +293,7 @@ function ReviewDialog({
     setError(null);
     try {
       await decideMutation.mutateAsync({
-        licenseId: license.id,
+        licenseId: lic.id,
         decision: { decision, reason: reason || undefined },
       });
       onClose();
@@ -59,195 +302,364 @@ function ReviewDialog({
     }
   };
 
-  const isUnderReview = license.status === "UNDER_REVIEW";
+  const isUnderReview = lic.status === "UNDER_REVIEW";
 
   return (
-    <Card className="border-primary/30">
-      <CardHeader>
-        <div className="flex items-start justify-between">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative flex max-h-[92vh] w-full max-w-7xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div>
-            <CardTitle className="text-lg">{license.categoryName}</CardTitle>
+            <h2 className="text-lg font-bold text-foreground">{lic.categoryName}</h2>
             <p className="text-sm text-muted-foreground">
-              {license.licenseNumber} • {license.organizationName}
+              {lic.licenseNumber} · {lic.organizationName}
             </p>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            ✕
-          </Button>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className={statusColor(lic.status)}>
+              {statusLabel(lic.status)}
+            </Badge>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="size-4" />
+            </Button>
+          </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Documents */}
-        {documents && documents.length > 0 && (
-          <div>
-            <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">
-              Documents ({documents.length})
-            </p>
-            <div className="space-y-1">
-              {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="flex items-center justify-between rounded bg-muted px-3 py-2 text-sm"
-                >
-                  <div>
-                    <p className="font-medium">{doc.filename}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {doc.documentType}
-                    </p>
-                  </div>
-                  <a
-                    href={`/api/licenses/documents/${doc.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline"
-                  >
-                    View
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* Notes */}
-        {license.statusReason && (
-          <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
-            <span className="font-medium">Applicant notes:</span>{" "}
-            {license.statusReason}
-          </div>
-        )}
-
-        {/* Actions */}
-        {!isUnderReview ? (
-          <Button
-            onClick={handleStartReview}
-            disabled={reviewMutation.isPending}
-          >
-            {reviewMutation.isPending ? "Starting..." : "Start Review"}
-          </Button>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <Button
-                variant={decision === "APPROVE" ? "default" : "outline"}
-                onClick={() => setDecision("APPROVE")}
-              >
-                Approve
-              </Button>
-              <Button
-                variant={decision === "REJECT" ? "destructive" : "outline"}
-                onClick={() => setDecision("REJECT")}
-              >
-                Reject
-              </Button>
-            </div>
-
-            {decision === "REJECT" && (
+        {/* Body — split layout */}
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          {/* Left: applicant details + history */}
+          <div className="flex w-1/2 flex-col overflow-y-auto border-r border-border">
+            {/* Applicant info */}
+            <div className="space-y-3 border-b border-border p-5">
+              <h3 className="text-xs font-medium uppercase text-muted-foreground">
+                Applicant
+              </h3>
               <div className="space-y-2">
-                <Label htmlFor="reject-reason">Rejection Reason *</Label>
-                <Textarea
-                  id="reject-reason"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="Explain what needs to be corrected..."
-                />
+                <div className="flex items-center gap-2 text-sm">
+                  <Building2 className="size-4 text-muted-foreground" />
+                  <span className="font-medium">{lic.organizationName}</span>
+                </div>
+                <dl className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <dt className="text-muted-foreground">Licence</dt>
+                    <dd className="font-mono text-foreground">{lic.licenseNumber}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Category</dt>
+                    <dd className="text-foreground">{lic.categoryName}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Activity</dt>
+                    <dd className="text-foreground">{lic.activity}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Provisional</dt>
+                    <dd className="text-foreground">{lic.provisional ? "Yes" : "No"}</dd>
+                  </div>
+                </dl>
               </div>
-            )}
 
-            {decision && (
-              <Button
-                onClick={handleDecide}
-                disabled={
-                  decideMutation.isPending ||
-                  (decision === "REJECT" && !reason.trim())
-                }
-                variant={decision === "REJECT" ? "destructive" : "default"}
-              >
-                {decideMutation.isPending
-                  ? "Processing..."
-                  : decision === "APPROVE"
-                    ? "Approve License"
-                    : "Reject Application"}
-              </Button>
-            )}
-          </div>
-        )}
+              {lic.statusReason && (
+                <div className="rounded-md bg-muted p-3 text-xs text-muted-foreground">
+                  <span className="font-medium">Applicant notes:</span>{" "}
+                  {lic.statusReason}
+                </div>
+              )}
+            </div>
 
-        {error && (
-          <div className="rounded-md bg-danger/5 p-3 text-sm text-danger">
-            {error}
+            {/* Audit trail */}
+            <div className="flex-1 p-5">
+              <h3 className="mb-3 flex items-center gap-1.5 text-xs font-medium uppercase text-muted-foreground">
+                <History className="size-3" />
+                Audit trail
+              </h3>
+              {historyLoading ? (
+                <div className="flex justify-center py-4">
+                  <LoaderCircle className="size-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : !history || history.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No events recorded.</p>
+              ) : (
+                <ol className="space-y-2 border-l border-border pl-4">
+                  {history.map((event) => (
+                    <li key={event.id} className="relative">
+                      <span className="absolute -left-[21px] top-1.5 size-2 rounded-full bg-primary" />
+                      <p className="text-sm text-foreground">
+                        {docLabel(event.type)}
+                        {event.toStatus && (
+                          <span className="text-muted-foreground">
+                            {" — "}
+                            {statusLabel(event.toStatus)}
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(event.recordedAt).toLocaleString()}
+                        {event.actor ? ` · ${event.actor}` : ""}
+                      </p>
+                      {event.notes && (
+                        <p className="text-xs text-faint">{event.notes}</p>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          {/* Right: documents + decision */}
+          <div className="flex w-1/2 flex-col overflow-y-auto">
+            {/* Documents */}
+            <div className="flex-1 p-5">
+              <h3 className="mb-3 text-xs font-medium uppercase text-muted-foreground">
+                Supporting Documents
+              </h3>
+              {docsLoading ? (
+                <div className="flex justify-center py-8">
+                  <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : !documents || documents.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border p-6 text-center">
+                  <FileText className="mx-auto size-8 text-muted-foreground/40" />
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    No documents filed
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {documents.map((doc) => (
+                    <DocumentViewer key={doc.id} document={doc} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Decision area */}
+            <div className="border-t border-border p-5">
+              {!isUnderReview ? (
+                <Button
+                  onClick={handleStartReview}
+                  disabled={reviewMutation.isPending}
+                  className="w-full"
+                >
+                  {reviewMutation.isPending ? (
+                    <LoaderCircle className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <Shield className="mr-2 size-4" />
+                  )}
+                  {reviewMutation.isPending ? "Starting Review..." : "Start Review"}
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Decision
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={decision === "APPROVE" ? "default" : "outline"}
+                      onClick={() => setDecision("APPROVE")}
+                      className={cn(
+                        "flex-1",
+                        decision === "APPROVE" && "bg-success hover:bg-success/90",
+                      )}
+                    >
+                      <CheckCircle2 className="mr-1.5 size-4" />
+                      Approve
+                    </Button>
+                    <Button
+                      variant={decision === "REJECT" ? "destructive" : "outline"}
+                      onClick={() => setDecision("REJECT")}
+                      className="flex-1"
+                    >
+                      <X className="mr-1.5 size-4" />
+                      Reject
+                    </Button>
+                  </div>
+
+                  {decision === "REJECT" && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="reject-reason" className="text-xs">
+                        Rejection reason *
+                      </Label>
+                      <Textarea
+                        id="reject-reason"
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="What needs to be corrected..."
+                        className="min-h-[80px] text-sm"
+                      />
+                    </div>
+                  )}
+
+                  {decision && (
+                    <Button
+                      onClick={handleDecide}
+                      disabled={
+                        decideMutation.isPending ||
+                        (decision === "REJECT" && !reason.trim())
+                      }
+                      variant={decision === "REJECT" ? "destructive" : "default"}
+                      className="w-full"
+                    >
+                      {decideMutation.isPending ? (
+                        <LoaderCircle className="mr-2 size-4 animate-spin" />
+                      ) : null}
+                      {decideMutation.isPending
+                        ? "Processing..."
+                        : decision === "APPROVE"
+                          ? "Approve Licence"
+                          : "Reject Application"}
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {error && (
+                <div className="mt-3 rounded-md bg-danger/5 p-3 text-sm text-danger">
+                  {error}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Queue table columns
+// ---------------------------------------------------------------------------
+
+function QueueActions({
+  license,
+  onSelect,
+}: {
+  license: License;
+  onSelect: (lic: License) => void;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="h-7 px-2 text-xs"
+      onClick={() => onSelect(license)}
+    >
+      <Eye className="size-3" />
+      <span className="ml-1">Review</span>
+    </Button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 export default function RegulatorPage() {
   const { data: queue, isLoading } = useRegulatorQueue();
   const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
 
+  const columns: ColumnDef<TableFeatures, License>[] = [
+    {
+      accessorKey: "organizationName",
+      header: "Applicant",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <Building2 className="size-4 shrink-0 text-muted-foreground" />
+          <span className="text-sm font-medium">{row.getValue("organizationName")}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "licenseNumber",
+      header: "Licence",
+      cell: ({ row }) => (
+        <span className="font-mono text-sm">{row.getValue("licenseNumber")}</span>
+      ),
+    },
+    {
+      accessorKey: "categoryName",
+      header: "Category",
+      cell: ({ row }) => (
+        <span className="text-sm">{row.getValue("categoryName")}</span>
+      ),
+    },
+    {
+      accessorKey: "activity",
+      header: "Activity",
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground">{row.getValue("activity")}</span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.getValue("status") as string;
+        return (
+          <Badge variant="outline" className={statusColor(status)}>
+            {statusLabel(status)}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <QueueActions license={row.original} onSelect={setSelectedLicense} />
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          License Review Queue
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Review and decide on pending license applications
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
+          <Shield className="size-4" />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">License Review Queue</h1>
+          <p className="text-sm text-muted-foreground">
+            Review and decide on pending licence applications
+          </p>
+        </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : queue && queue.length > 0 ? (
-        <div className="space-y-4">
-          {queue.map((license) => (
-            <Card
-              key={license.id}
-              className={cn(
-                "cursor-pointer transition-all hover:border-primary/50",
-                selectedLicense?.id === license.id &&
-                  "border-primary ring-1 ring-primary",
-              )}
-              onClick={() => setSelectedLicense(license)}
-            >
-              <CardContent className="flex items-center justify-between p-4">
-                <div>
-                  <p className="font-medium text-foreground">
-                    {license.organizationName}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {license.categoryName} • {license.licenseNumber}
-                  </p>
-                </div>
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                    statusColor(license.status),
-                  )}
-                >
-                  {statusLabel(license.status)}
-                </span>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Queue Empty</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              No license applications are currently awaiting review. Applications
-              will appear here when businesses submit them for screening.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardContent className="pt-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : queue && queue.length > 0 ? (
+            <DataTable
+              columns={columns}
+              data={queue}
+              filterPlaceholder="Search by applicant or licence number..."
+              filterColumn="organizationName"
+              pageSize={10}
+              noBorder
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="flex size-12 items-center justify-center rounded-full bg-muted mb-4">
+                <Shield className="size-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium text-foreground">Queue empty</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                No licence applications are currently awaiting review
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {selectedLicense && (
         <ReviewDialog

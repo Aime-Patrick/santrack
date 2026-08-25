@@ -4,6 +4,17 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { customerService, invoiceService, returnService, quotationService, salesOrderService } from "@/services/commerce.service";
 import { toast } from "sonner";
 
+/**
+ * Commerce rules answer with a sentence worth reading - "has no reserved stock
+ * - confirm it first". Axios reports "Request failed with status code 409", so
+ * unwrap the API message before showing it.
+ */
+function commerceError(error: unknown, fallback: string): string {
+  return (
+    (error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? fallback
+  );
+}
+
 // ── Customers ──
 export function useCustomers() {
   return useQuery({ queryKey: ["commerce", "customers"], queryFn: customerService.list });
@@ -17,8 +28,8 @@ export function useCreateCustomer() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: customerService.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "customers"] }); toast.success("Customer created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "customers"] }); toast.success("Customer added"); },
+    onError: (e) => toast.error(commerceError(e, "Could not add the customer")),
   });
 }
 
@@ -35,8 +46,11 @@ export function useCreateInvoice() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: invoiceService.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "invoices"] }); toast.success("Invoice created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["commerce", "invoices"] });
+      toast.success("Invoice drafted");
+    },
+    onError: (e) => toast.error(commerceError(e, "Could not create the invoice")),
   });
 }
 
@@ -45,16 +59,17 @@ export function useIssueInvoice() {
   return useMutation({
     mutationFn: invoiceService.issue,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "invoices"] }); toast.success("Invoice issued"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(commerceError(e, "Could not issue the invoice")),
   });
 }
 
 export function usePayInvoice() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { amount: number; method: string; reference?: string } }) => invoiceService.pay(id, data),
+    mutationFn: ({ id, data }: { id: number; data: { amount: string; method: string; reference?: string } }) =>
+      invoiceService.pay(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "invoices"] }); toast.success("Payment recorded"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(commerceError(e, "Could not record the payment")),
   });
 }
 
@@ -174,8 +189,8 @@ export function useCreateSalesOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: salesOrderService.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] }); toast.success("Sales order created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] }); toast.success("Sales order placed"); },
+    onError: (e) => toast.error(commerceError(e, "Could not place the order")),
   });
 }
 
@@ -183,8 +198,14 @@ export function useConfirmSalesOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: salesOrderService.confirm,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] }); toast.success("Sales order confirmed"); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: () => {
+      // Confirming reserves identities, so stock and item views change with it.
+      qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] });
+      qc.invalidateQueries({ queryKey: ["items"] });
+      qc.invalidateQueries({ queryKey: ["inventory"] });
+      toast.success("Stock reserved for this order");
+    },
+    onError: (e) => toast.error(commerceError(e, "Could not confirm the order")),
   });
 }
 
@@ -192,8 +213,18 @@ export function useFulfilSalesOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: salesOrderService.fulfil,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] }); toast.success("Sales order fulfilled"); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: (order) => {
+      qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] });
+      qc.invalidateQueries({ queryKey: ["items"] });
+      qc.invalidateQueries({ queryKey: ["inventory"] });
+      qc.invalidateQueries({ queryKey: ["transfers"] });
+      toast.success(
+        order?.transferId
+          ? "Dispatched — the buyer confirms on receipt"
+          : "Sold — the goods have left the chain",
+      );
+    },
+    onError: (e) => toast.error(commerceError(e, "Could not fulfil the order")),
   });
 }
 
@@ -201,7 +232,11 @@ export function useCancelSalesOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: salesOrderService.cancel,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] }); toast.success("Sales order cancelled"); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] });
+      qc.invalidateQueries({ queryKey: ["items"] });
+      toast.success("Sales order cancelled");
+    },
+    onError: (e) => toast.error(commerceError(e, "Could not cancel the order")),
   });
 }

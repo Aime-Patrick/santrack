@@ -2,7 +2,15 @@ import { api } from "@/lib/api";
 
 export interface Customer {
   id: number;
+  /** The seller. This is the tenant that owns the record, never the buyer. */
   organizationId: number;
+  /**
+   * The buying organization, when the buyer is a business on the platform.
+   * Null for everyone else — and that decides what fulfilment does: a transfer
+   * the buyer confirms, or a sale that takes the goods out of the chain.
+   */
+  buyerOrganizationId: number | null;
+  buyerOrganizationName: string | null;
   code: string;
   name: string;
   type: string;
@@ -105,6 +113,10 @@ export interface SalesOrder {
   taxPercent: number | null;
   totalAmount: number | null;
   notes: string;
+  /** Set when the goods went to a registered buyer, who confirms receipt. */
+  transferId: number | null;
+  /** Set when they left the chain instead. Exactly one of the two once fulfilled. */
+  saleId: number | null;
   createdAt: string;
   lines: SalesOrderLine[];
 }
@@ -120,13 +132,18 @@ export interface SalesOrderLine {
 }
 
 export const salesOrderService = {
-  list: (page = 0, size = 20) => api.get<PaginatedResponse<SalesOrder>>("/api/commerce/sales-orders", { params: { page, size } }).then((r) => r.data),
-  get: (id: number) => api.get<SalesOrder>(`/api/commerce/sales-orders/${id}`).then((r) => r.data),
-  create: (data: { customerId: number; quotationId?: number; lines: { productId: number; quantity: number; unitPrice: number; description?: string }[]; taxPercent?: number; notes?: string }) =>
-    api.post<SalesOrder>("/api/commerce/sales-orders", data).then((r) => r.data),
-  confirm: (id: number) => api.post<SalesOrder>(`/api/commerce/sales-orders/${id}/confirm`).then((r) => r.data),
-  fulfil: (id: number) => api.post<SalesOrder>(`/api/commerce/sales-orders/${id}/fulfil`).then((r) => r.data),
-  cancel: (id: number) => api.post<SalesOrder>(`/api/commerce/sales-orders/${id}/cancel`).then((r) => r.data),
+  list: (page = 0, size = 20) => api.get<PaginatedResponse<SalesOrder>>("/api/commerce/orders", { params: { page, size } }).then((r) => r.data),
+  get: (id: number) => api.get<SalesOrder>(`/api/commerce/orders/${id}`).then((r) => r.data),
+  /**
+   * Quantity, unit price and tax arrive as numeric *strings*: they are decimals
+   * the API keeps exact, and it validates them with @IsNumberString. Passing
+   * real numbers is rejected.
+   */
+  create: (data: { customerId: number; quotationId?: number; lines: { productId: number; quantity: string; unitPrice: string; description?: string }[]; taxPercent?: string; notes?: string }) =>
+    api.post<SalesOrder>("/api/commerce/orders", data).then((r) => r.data),
+  confirm: (id: number) => api.post<SalesOrder>(`/api/commerce/orders/${id}/confirm`).then((r) => r.data),
+  fulfil: (id: number) => api.post<SalesOrder>(`/api/commerce/orders/${id}/fulfil`).then((r) => r.data),
+  cancel: (id: number) => api.post<SalesOrder>(`/api/commerce/orders/${id}/cancel`).then((r) => r.data),
 };
 
 export const customerService = {
@@ -140,10 +157,24 @@ export const customerService = {
 export const invoiceService = {
   list: (page = 0, size = 20) => api.get<PaginatedResponse<Invoice>>("/api/commerce/invoices", { params: { page, size } }).then((r) => r.data),
   get: (id: number) => api.get<Invoice>(`/api/commerce/invoices/${id}`).then((r) => r.data),
-  create: (data: { customerId: number; lines: { productId: number; quantity: number; unitPrice: number }[]; taxPercent?: number; notes?: string }) =>
-    api.post<Invoice>("/api/commerce/invoices", data).then((r) => r.data),
+  /**
+   * An invoice bills a sales order, so `salesOrderId` is what identifies it —
+   * the customer and the amounts come from the order. There are no invoice
+   * lines: this posted { customerId, lines } before, which the API has never
+   * accepted.
+   *
+   * Amounts are numeric strings, kept exact and validated as such.
+   */
+  create: (data: {
+    salesOrderId: number;
+    issuedOn?: string;
+    dueOn?: string;
+    subtotal?: string;
+    totalAmount?: string;
+    notes?: string;
+  }) => api.post<Invoice>("/api/commerce/invoices", data).then((r) => r.data),
   issue: (id: number) => api.post<Invoice>(`/api/commerce/invoices/${id}/issue`).then((r) => r.data),
-  pay: (id: number, data: { amount: number; method: string; reference?: string }) =>
+  pay: (id: number, data: { amount: string; method: string; reference?: string }) =>
     api.post(`/api/commerce/invoices/${id}/pay`, data).then((r) => r.data),
   void: (id: number) => api.post<Invoice>(`/api/commerce/invoices/${id}/void`).then((r) => r.data),
 };

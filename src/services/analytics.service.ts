@@ -56,8 +56,23 @@ export interface SupplyChainSummary {
   totalValue: number;
 }
 
+export interface PlatformCounts {
+  totalUsers: number;
+  totalProducts: number;
+  totalEmployees: number;
+}
+
+export interface ProductionTrend {
+  date: string;
+  label: string;
+  produced: number;
+  target: number;
+}
+
 export const analyticsService = {
   executive: () => api.get<ExecutiveSummary>("/api/analytics/executive").then((r) => r.data),
+  counts: () => api.get<PlatformCounts>("/api/analytics/counts").then((r) => r.data),
+  productionTrend: () => api.get<ProductionTrend[]>("/api/analytics/production-trend").then((r) => r.data),
   industry: () => api.get<IndustrySummary[]>("/api/analytics/industry").then((r) => r.data),
   industryCategories: () => api.get<IndustrySummary[]>("/api/analytics/industry-categories").then((r) => r.data),
   supplyChain: () => api.get<SupplyChainSummary>("/api/analytics/supply-chain").then((r) => r.data),

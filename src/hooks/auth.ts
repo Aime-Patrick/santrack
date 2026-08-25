@@ -2,17 +2,35 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authService } from "@/services/auth.service";
 import type { RegisterInput, LoginInput, CreateOrganizationInput, UserResponse, UserRole } from "@/lib/api";
 import { clearAuthToken, getAuthToken, setAuthToken } from "@/lib/auth";
+import {
+  PREVIEW_ROLE_CAPABILITIES,
+  PREVIEW_STANDING_CAPABILITIES,
+} from "@/lib/design-fixtures";
 
 const DESIGN_MODE = process.env.NEXT_PUBLIC_DESIGN_MODE === "true";
 
-/** Build a mock user for a given role in design mode. */
-function mockUser(role: UserRole): UserResponse {
+/**
+ * Build a mock user for a given role in design mode.
+ *
+ * The capability list is the preview fixture, not the real table — see
+ * `design-fixtures.ts`. Outside design mode this function is never called and
+ * capabilities arrive from the server.
+ */
+function mockUser(role: UserRole, standing = false): UserResponse {
   return {
     id: 1,
     email: `admin@santrack.rw`,
     fullName: "Design Admin",
     role,
     organization: null,
+    capabilities: [
+      ...PREVIEW_ROLE_CAPABILITIES[role],
+      ...(standing
+        ? PREVIEW_STANDING_CAPABILITIES.filter(
+            (c) => !PREVIEW_ROLE_CAPABILITIES[role].includes(c),
+          )
+        : []),
+    ],
   };
 }
 
@@ -69,28 +87,40 @@ export function useCreateOrganization() {
  * In design mode, pass a `previewRole` to simulate a specific role.
  * When no previewRole is supplied the hook falls back to SYSTEM_ADMIN.
  */
-export function useMe({ enabled = true, previewRole }: { enabled?: boolean; previewRole?: UserRole } = {}) {
+export function useMe({
+  enabled = true,
+  previewRole,
+  previewStanding = false,
+}: {
+  enabled?: boolean;
+  previewRole?: UserRole;
+  /** Design mode only: preview the user as staff of a licensing authority. */
+  previewStanding?: boolean;
+} = {}) {
   // In design mode, the query is always disabled (no backend) and the
   // cache is keyed by the current preview role so React Query swaps
   // the mock user whenever the role changes.
   const designRole: UserRole = previewRole ?? "SYSTEM_ADMIN";
 
   return useQuery<UserResponse>({
-    queryKey: DESIGN_MODE ? [...authKeys.me, "design", designRole] : authKeys.me,
+    queryKey: DESIGN_MODE
+      ? [...authKeys.me, "design", designRole, previewStanding]
+      : authKeys.me,
     queryFn: authService.me,
     enabled: !DESIGN_MODE && enabled && typeof window !== "undefined" && !!getAuthToken(),
     staleTime: 5 * 60_000,
     retry: false,
-    ...(DESIGN_MODE ? { initialData: mockUser(designRole) } : {}),
+    ...(DESIGN_MODE ? { initialData: mockUser(designRole, previewStanding) } : {}),
   });
 }
 
-/** Clears the token and drops the cached user. */
+/** Clears the token, drops the cached user, and redirects to login. */
 export function useLogout() {
   const queryClient = useQueryClient();
 
   return () => {
     clearAuthToken();
     queryClient.removeQueries({ queryKey: authKeys.me });
+    window.location.href = "/login";
   };
 }

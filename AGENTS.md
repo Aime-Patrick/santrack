@@ -8,9 +8,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Full spec: `Product Traceability Platform — Core Architecture  *.md` at the repo root.
 
-## Domain rules (do not violate)
-
-- **QR identity starts at the manufacturer.** A product's permanent QR identity is minted when the manufacturer registers the product/package. Shops, warehouses and consumers never create identities — they only record events against existing ones. The identity never changes through the lifecycle.
+- **QR identity starts at the manufacturer via decoupled pools (DR-08).** A code is not a bottle. A manufacturer mints pools of permanent QR identities (label runs) prior to manufacturing (`IDENTITY_GENERATED`). Codes are claimed by production orders (`IDENTITY_ASSIGNED`). Defective or unused codes are cancelled with specific reasons (`IDENTITY_CANCELLED`). When production output is confirmed, assigned identities transition to `MANUFACTURED` and enter inventory/stock. Stock is only created upon production confirmation, never when minting label pools.
 - Products/units have one permanent QR identity; packages (box → pallet) have their own QR identities and parent-child relationships.
 - Traceability events are append-only; corrections create compensating events, never deletions.
 - One physical product keeps its identity from manufacturing to consumer/end-of-life (sale, return, expiry, damage, recall, destruction).

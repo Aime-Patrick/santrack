@@ -1,32 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Truck, ArrowUpRight, ArrowDownLeft, Plus, Trash2 } from "lucide-react";
+import { Truck, ArrowUpRight, ArrowDownLeft, Plus, Trash2, MapPin, Loader2, AlertCircle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { DataTable, type TableFeatures } from "@/components/ui/data-table";
 import { QrScanInput } from "@/components/ui/qr-scanner";
 import { type ColumnDef } from "@tanstack/react-table";
 import { useOutgoingTransfers, useIncomingTransfers, useDispatchTransfer, useReceiveTransfer } from "@/hooks/transfers";
-import { useItems } from "@/hooks/items";
+import { useItem } from "@/hooks/items";
 import { useLocations } from "@/hooks/locations";
+import { useOrganizations } from "@/hooks/organizations";
+import { useResolveCode } from "@/hooks/scan";
+import { cn } from "@/lib/utils";
+import type { ScanResult } from "@/services/scan.service";
 import type { Transfer } from "@/services/transfer.service";
-
-// Dispatch form
-const dispatchSchema = z.object({
-  destinationOrganizationId: z.string().min(1, "Destination is required"),
-  destinationLocationId: z.string().optional(),
-  sourceLocationId: z.string().optional(),
-  notes: z.string().optional(),
-});
-type DispatchFormValues = z.infer<typeof dispatchSchema>;
 
 const transferColumns: ColumnDef<TableFeatures, Transfer>[] = [
   {
@@ -34,10 +27,7 @@ const transferColumns: ColumnDef<TableFeatures, Transfer>[] = [
     header: "Reference",
     cell: ({ row }) => <span className="font-medium">{row.getValue("reference")}</span>,
   },
-  {
-    accessorKey: "destinationOrganizationName",
-    header: "Destination",
-  },
+  { accessorKey: "destinationOrganizationName", header: "Destination" },
   {
     accessorKey: "status",
     header: "Status",
@@ -46,10 +36,7 @@ const transferColumns: ColumnDef<TableFeatures, Transfer>[] = [
       return <Badge variant={status === "PENDING" ? "secondary" : status === "RECEIVED" ? "default" : "outline"}>{status}</Badge>;
     },
   },
-  {
-    accessorKey: "lineCount",
-    header: "Items",
-  },
+  { accessorKey: "lineCount", header: "Items" },
   {
     accessorKey: "dispatchedAt",
     header: "Dispatched",
@@ -63,10 +50,7 @@ const incomingColumns: ColumnDef<TableFeatures, Transfer>[] = [
     header: "Reference",
     cell: ({ row }) => <span className="font-medium">{row.getValue("reference")}</span>,
   },
-  {
-    accessorKey: "sourceOrganizationName",
-    header: "From",
-  },
+  { accessorKey: "sourceOrganizationName", header: "From" },
   {
     accessorKey: "status",
     header: "Status",
@@ -75,10 +59,7 @@ const incomingColumns: ColumnDef<TableFeatures, Transfer>[] = [
       return <Badge variant={status === "PENDING" ? "secondary" : status === "RECEIVED" ? "default" : "outline"}>{status}</Badge>;
     },
   },
-  {
-    accessorKey: "lineCount",
-    header: "Items",
-  },
+  { accessorKey: "lineCount", header: "Items" },
   {
     accessorKey: "dispatchedAt",
     header: "Dispatched",
@@ -98,73 +79,174 @@ const incomingColumns: ColumnDef<TableFeatures, Transfer>[] = [
 function ReceiveButton({ transferId }: { transferId: number }) {
   const receiveTransfer = useReceiveTransfer();
   return (
-    <Button
-      size="sm"
-      onClick={() => receiveTransfer.mutate({ transferId })}
-      disabled={receiveTransfer.isPending}
-    >
-      <ArrowDownLeft className="mr-1 size-3" />
-      Receive
+    <Button size="sm" onClick={() => receiveTransfer.mutate({ transferId })} disabled={receiveTransfer.isPending}>
+      <ArrowDownLeft className="mr-1 size-3" /> Receive
     </Button>
   );
 }
 
+function ScannedItemRow({ code, onRemove }: { code: string; onRemove: () => void }) {
+  const { data: item, isLoading } = useItem(code);
+  return (
+    <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2">
+      <div className="flex items-center gap-2 min-w-0">
+        <Badge variant="outline" className="shrink-0 font-mono text-xs">{code}</Badge>
+        {isLoading ? (
+          <span className="text-xs text-muted-foreground">Loading...</span>
+        ) : item ? (
+          <span className="text-xs text-muted-foreground truncate">
+            {item.productName || "Unknown"} {item.locationName ? `— ${item.locationName}` : ""}
+          </span>
+        ) : (
+          <span className="text-xs text-destructive">Not found</span>
+        )}
+      </div>
+      <button type="button" onClick={onRemove} className="ml-2 rounded-full p-0.5 hover:bg-muted shrink-0">
+        <Trash2 className="size-3" />
+      </button>
+    </div>
+  );
+}
+
+/** What one scan did, so a single input can still explain itself. */
+interface ScanOutcome {
+  id: number;
+  code: string;
+  tone: "added" | "destination" | "ignored" | "error";
+  message: string;
+}
+
 export default function StockTransferPage() {
-  const [childCodes, setChildCodes] = useState<string[]>([""]);
-  const [scanInput, setScanInput] = useState("");
+  const [childCodes, setChildCodes] = useState<string[]>([]);
+  const [destOrgId, setDestOrgId] = useState("");
+  const [destLocId, setDestLocId] = useState("");
+  const [destinationLocationName, setDestinationLocationName] = useState<string | null>(null);
+  const [choosingDestination, setChoosingDestination] = useState(false);
+  const [scanLog, setScanLog] = useState<ScanOutcome[]>([]);
+  const [notes, setNotes] = useState("");
+
+  const resolve = useResolveCode();
+
+  const note = (outcome: Omit<ScanOutcome, "id">) =>
+    setScanLog((prev) =>
+      [{ ...outcome, id: Date.now() + Math.random() }, ...prev].slice(0, 6),
+    );
 
   const { data: outgoingData, isLoading: outLoading } = useOutgoingTransfers();
   const { data: incomingData, isLoading: inLoading } = useIncomingTransfers();
-  const { data: itemsData } = useItems({ size: 200 });
   const { data: locations } = useLocations();
+  const { data: organizations } = useOrganizations();
   const dispatchTransfer = useDispatchTransfer();
 
-  const form = useForm<DispatchFormValues>({
-    resolver: zodResolver(dispatchSchema),
-    defaultValues: {
-      destinationOrganizationId: "",
-      destinationLocationId: "",
-      sourceLocationId: "",
-      notes: "",
-    },
-  });
+  const locationList = locations ?? [];
+  const orgList = (organizations ?? []).filter((o) => o.type !== "REGULATOR" && o.type !== "CONSUMER");
 
-  const addCode = () => {
-    const code = scanInput.trim();
-    if (code && !childCodes.includes(code)) {
-      setChildCodes((prev) => [...prev, code]);
-      setScanInput("");
+  // Auto-fill source location from first scanned item
+  const firstItem = useItem(childCodes[0] ?? "");
+  const [sourceLocId, setSourceLocId] = useState<string>("");
+
+  // Adopt the scanned item's location during render rather than in an effect.
+  // An effect renders the picker empty first and fills it a beat later, which
+  // reads as the field clearing itself just as the operator reaches for it.
+  const [adoptedFrom, setAdoptedFrom] = useState<number | null>(null);
+  const scannedLocationId = firstItem.data?.locationId ?? null;
+
+  if (scannedLocationId !== adoptedFrom) {
+    setAdoptedFrom(scannedLocationId);
+    setSourceLocId(scannedLocationId ? String(scannedLocationId) : "");
+  }
+
+  /**
+   * One scan box, routed by what the code turns out to be.
+   *
+   * The screen used to ask for four separate things: scan the goods, then read
+   * a source location off a banner, then pick a destination business from one
+   * dropdown and a destination location from another. Three of those the
+   * platform can work out on its own — the source comes from the first item
+   * scanned, and a bay label names both the place and the business that owns
+   * it — so the operator now only ever scans.
+   */
+  const handleScan = async (raw: string) => {
+    const code = raw.trim();
+    if (!code) return;
+
+    let result: ScanResult;
+    try {
+      result = await resolve.mutateAsync(code);
+    } catch {
+      note({ code, tone: "error", message: "Could not look that up" });
+      return;
     }
+
+    if (result.kind === "LOCATION") {
+      // A bay label answers "where to?" and "which business?" at once.
+      setDestOrgId(String(result.organizationId ?? ""));
+      setDestLocId(String(result.locationId ?? ""));
+      setDestinationLocationName(result.describes);
+      setChoosingDestination(false);
+      note({ code, tone: "destination", message: `Dispatching to ${result.describes}` });
+      return;
+    }
+
+    if (result.kind !== "ITEM" || !result.itemQrCode) {
+      note({
+        code,
+        tone: "error",
+        message:
+          result.kind === "PRODUCT"
+            ? "That is a product, not one specific unit — scan the label on the goods"
+            : result.describes,
+      });
+      return;
+    }
+
+    if (childCodes.includes(result.itemQrCode)) {
+      note({ code, tone: "ignored", message: "Already on the list" });
+      return;
+    }
+
+    setChildCodes((prev) => [...prev, result.itemQrCode!]);
+    note({ code, tone: "added", message: result.describes });
+  };
+
+  const clearDestination = () => {
+    setDestOrgId("");
+    setDestLocId("");
+    setDestinationLocationName(null);
   };
 
   const removeCode = (code: string) => {
-    setChildCodes((prev) => prev.filter((c) => c !== code));
+    setChildCodes((prev) => {
+      const next = prev.filter((c) => c !== code);
+      if (next.length === 0) setSourceLocId("");
+      return next;
+    });
   };
 
-  const onDispatch = (values: DispatchFormValues) => {
+  const onDispatch = () => {
     const validCodes = childCodes.filter((c) => c.trim());
-    if (validCodes.length === 0) return;
+    if (validCodes.length === 0 || !destOrgId) return;
     dispatchTransfer.mutate(
       {
-        destinationOrganizationId: Number(values.destinationOrganizationId),
-        destinationLocationId: values.destinationLocationId ? Number(values.destinationLocationId) : undefined,
-        sourceLocationId: values.sourceLocationId ? Number(values.sourceLocationId) : undefined,
+        destinationOrganizationId: Number(destOrgId),
+        destinationLocationId: destLocId ? Number(destLocId) : undefined,
+        sourceLocationId: sourceLocId ? Number(sourceLocId) : undefined,
         itemQrCodes: validCodes,
-        notes: values.notes || undefined,
+        notes: notes || undefined,
       },
-      { onSuccess: () => { setChildCodes([""]); form.reset(); } }
+      { onSuccess: () => { setChildCodes([]); setDestOrgId(""); setDestLocId(""); setSourceLocId(""); setNotes(""); } }
     );
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
-          <Truck className="size-5 text-primary" />
+        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
+          <Truck className="size-4" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Stock Transfer</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl font-bold tracking-tight">Stock Transfer</h1>
+          <p className="text-sm text-muted-foreground">
             Dispatch items to another organization or receive incoming transfers.
           </p>
         </div>
@@ -173,16 +255,13 @@ export default function StockTransferPage() {
       <Tabs defaultValue="outgoing" className="w-full">
         <TabsList>
           <TabsTrigger value="outgoing" className="gap-2">
-            <ArrowUpRight className="size-4" />
-            Outgoing
+            <ArrowUpRight className="size-4" /> Outgoing
           </TabsTrigger>
           <TabsTrigger value="incoming" className="gap-2">
-            <ArrowDownLeft className="size-4" />
-            Incoming
+            <ArrowDownLeft className="size-4" /> Incoming
           </TabsTrigger>
           <TabsTrigger value="new" className="gap-2">
-            <Plus className="size-4" />
-            New Transfer
+            <Plus className="size-4" /> New Transfer
           </TabsTrigger>
         </TabsList>
 
@@ -222,78 +301,178 @@ export default function StockTransferPage() {
           <Card>
             <CardHeader>
               <CardTitle>Dispatch Items</CardTitle>
-              <CardDescription>Scan items and select a destination to dispatch</CardDescription>
+              <CardDescription>
+                Keep scanning. Goods go onto the list, and a destination bay
+                addresses the whole dispatch — nothing else needs choosing.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onDispatch)} className="space-y-6">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="destinationOrganizationId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Destination Organization ID *</FormLabel>
-                          <FormControl>
-                            <Input type="number" placeholder="Enter org ID" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="sourceLocationId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Source Location</FormLabel>
-                          <Input type="number" placeholder="Location ID" {...field} />
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+            <CardContent className="space-y-6">
+              {/* ── One box, for everything ── */}
+              <div className="space-y-3">
+                <QrScanInput
+                  onScan={handleScan}
+                  scanning="goods, then the destination bay"
+                  placeholder="e.g. ST-LPT-000001 or LOC-000004"
+                />
 
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium">Items to Dispatch</p>
-                    <QrScanInput
-                      onScan={(code) => {
-                        if (!childCodes.includes(code)) {
-                          setChildCodes((prev) => [...prev, code]);
-                        }
-                      }}
-                      placeholder="Scan item QR code..."
-                    />
-                    <div className="flex flex-wrap gap-2">
-                      {childCodes.filter(Boolean).map((code) => (
-                        <Badge key={code} variant="secondary" className="gap-1 pr-1">
-                          {code}
-                          <button type="button" onClick={() => removeCode(code)} className="ml-1 rounded-full p-0.5 hover:bg-muted">
-                            <Trash2 className="size-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+                {resolve.isPending && (
+                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Working out what that was…
+                  </p>
+                )}
 
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Notes</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Optional transfer notes" {...field} />
-                        </FormControl>
-                      </FormItem>
+                {/* One input has to say what it decided with each scan, or the
+                    operator is scanning into a void. */}
+                {scanLog.length > 0 && (
+                  <div className="space-y-1">
+                    {scanLog.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className={cn(
+                          "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs",
+                          entry.tone === "added" && "bg-success/5 text-success",
+                          entry.tone === "destination" && "bg-primary/5 text-primary",
+                          entry.tone === "ignored" && "bg-muted text-muted-foreground",
+                          entry.tone === "error" && "bg-danger/5 text-danger",
+                        )}
+                      >
+                        {entry.tone === "error" ? (
+                          <AlertCircle className="size-3.5 shrink-0" />
+                        ) : entry.tone === "ignored" ? (
+                          <Info className="size-3.5 shrink-0" />
+                        ) : entry.tone === "destination" ? (
+                          <MapPin className="size-3.5 shrink-0" />
+                        ) : (
+                          <Plus className="size-3.5 shrink-0" />
+                        )}
+                        <span className="font-mono font-medium">{entry.code}</span>
+                        <span className="truncate opacity-80">{entry.message}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ── What is going ── */}
+              {childCodes.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">
+                    Going out ({childCodes.length})
+                  </p>
+                  {childCodes.map((code) => (
+                    <ScannedItemRow key={code} code={code} onRemove={() => removeCode(code)} />
+                  ))}
+                </div>
+              )}
+
+              {/* ── Where from, where to ── */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+                  <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-faint">
+                      From
+                    </p>
+                    <p className="text-sm text-foreground">
+                      {sourceLocId
+                        ? (locationList.find((l) => String(l.id) === sourceLocId)?.name ??
+                          `Location ${sourceLocId}`)
+                        : "Taken from the first item you scan"}
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  className={cn(
+                    "flex items-start gap-2 rounded-lg border px-3 py-2.5",
+                    destOrgId
+                      ? "border-primary/30 bg-primary/5"
+                      : "border-dashed border-border bg-muted/30",
+                  )}
+                >
+                  <MapPin
+                    className={cn(
+                      "mt-0.5 size-4 shrink-0",
+                      destOrgId ? "text-primary" : "text-muted-foreground",
                     )}
                   />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-faint">
+                      To
+                    </p>
+                    {destOrgId ? (
+                      <>
+                        <p className="text-sm font-medium text-foreground">
+                          {orgList.find((o) => String(o.id) === destOrgId)?.name ??
+                            `Organization ${destOrgId}`}
+                        </p>
+                        {destinationLocationName && (
+                          <p className="text-xs text-muted-foreground">
+                            {destinationLocationName}
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={clearDestination}
+                          className="mt-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                        >
+                          Change
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-muted-foreground">
+                          Scan the receiving bay&apos;s label
+                        </p>
+                        {/* The fallback for a partner whose bays are not
+                            labelled yet. Deliberately the smaller path. */}
+                        {choosingDestination ? (
+                          <div className="mt-2">
+                            <SearchableSelect
+                              value={destOrgId}
+                              onValueChange={(v) => {
+                                setDestOrgId(v);
+                                setChoosingDestination(false);
+                              }}
+                              placeholder="Choose a business…"
+                              searchPlaceholder="Search businesses by name, type…"
+                              items={orgList.map((org) => ({
+                                value: String(org.id),
+                                label: org.name,
+                                badge: org.type,
+                              }))}
+                            />
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setChoosingDestination(true)}
+                            className="mt-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                          >
+                            No label to scan? Pick the business instead
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-                  <Button type="submit" disabled={dispatchTransfer.isPending || childCodes.filter(Boolean).length === 0}>
-                    {dispatchTransfer.isPending ? "Dispatching..." : `Dispatch ${childCodes.filter(Boolean).length} Item(s)`}
-                  </Button>
-                </form>
-              </Form>
+              <Input
+                placeholder="Notes (optional)"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+
+              <Button
+                onClick={onDispatch}
+                disabled={dispatchTransfer.isPending || childCodes.length === 0 || !destOrgId}
+              >
+                {dispatchTransfer.isPending
+                  ? "Dispatching…"
+                  : `Dispatch ${childCodes.length} item${childCodes.length === 1 ? "" : "s"}`}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Plus, Droplets, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,8 +8,35 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type TableFeatures } from "@/components/ui/data-table";
 import { MetricCard } from "@/components/dashboard/stat-card";
-import { useRawMaterials } from "@/hooks/manufacturing";
+import { useRawMaterials, useCreateRawMaterial } from "@/hooks/manufacturing";
+import {
+  ResourceFormDialog,
+  num,
+  type SelectOption,
+} from "@/components/ui/resource-form-dialog";
 import type { RawMaterial } from "@/services/manufacturing.service";
+
+/**
+ * The units a material can be counted in.
+ *
+ * A fixed list rather than a free-text box: a bill of materials multiplies a
+ * quantity by this, and "kg" alongside "Kg" alongside "kilos" is three
+ * materials the system cannot reconcile.
+ */
+const UNITS: SelectOption[] = [
+  { value: "KG", label: "Kilogram", hint: "kg" },
+  { value: "G", label: "Gram", hint: "g" },
+  { value: "TONNE", label: "Tonne", hint: "t" },
+  { value: "L", label: "Litre", hint: "L" },
+  { value: "ML", label: "Millilitre", hint: "mL" },
+  { value: "M", label: "Metre", hint: "m" },
+  { value: "M2", label: "Square metre", hint: "m²" },
+  { value: "M3", label: "Cubic metre", hint: "m³" },
+  { value: "PIECE", label: "Piece", hint: "ea" },
+  { value: "BOX", label: "Box" },
+  { value: "ROLL", label: "Roll" },
+  { value: "SHEET", label: "Sheet" },
+];
 
 const columns: ColumnDef<TableFeatures, RawMaterial>[] = [
   {
@@ -67,6 +95,9 @@ const columns: ColumnDef<TableFeatures, RawMaterial>[] = [
 
 export default function RawMaterialsPage() {
   const { data, isLoading } = useRawMaterials();
+  const [creating, setCreating] = useState(false);
+  const create = useCreateRawMaterial();
+
   const materials = data ?? [];
   const total = materials.length;
   const categories = new Set(materials.map((m) => m.category).filter(Boolean)).size;
@@ -83,8 +114,87 @@ export default function RawMaterialsPage() {
             <p className="text-sm text-muted-foreground">Manage raw materials catalog and stock levels.</p>
           </div>
         </div>
-        <Button><Plus className="mr-2 size-4" /> Add Material</Button>
+        <Button onClick={() => setCreating(true)}>
+          <Plus className="mr-2 size-4" /> Add Material
+        </Button>
       </div>
+
+      <ResourceFormDialog
+        open={creating}
+        onOpenChange={setCreating}
+        title="Add a raw material"
+        description="What goes into production. Bills of material draw on this catalogue, so the unit of measure here is the one every recipe will be written in."
+        submitLabel="Add material"
+        pending={create.isPending}
+        fields={[
+          {
+            name: "name",
+            label: "Name",
+            kind: "text",
+            required: true,
+            placeholder: "e.g. Food-grade PET resin",
+          },
+          {
+            name: "code",
+            label: "Code",
+            kind: "text",
+            required: true,
+            half: true,
+            mono: true,
+            uppercase: true,
+            placeholder: "RM-PET-001",
+            hint: "Your own reference for it.",
+          },
+          {
+            name: "category",
+            label: "Category",
+            kind: "text",
+            required: true,
+            half: true,
+            placeholder: "Packaging",
+          },
+          {
+            name: "unitOfMeasure",
+            label: "Unit of measure",
+            kind: "select",
+            required: true,
+            half: true,
+            options: UNITS,
+            hint: "How this is counted, everywhere.",
+          },
+          {
+            name: "unitCost",
+            label: "Unit cost",
+            kind: "number",
+            required: true,
+            half: true,
+            min: 0,
+            step: 0.01,
+            suffix: "RWF",
+          },
+          {
+            name: "reorderLevel",
+            label: "Reorder level",
+            kind: "number",
+            half: true,
+            min: 0,
+            hint: "Stock at or below this raises a low-stock alert.",
+          },
+        ]}
+        onSubmit={(v) =>
+          create.mutate(
+            {
+              name: v.name.trim(),
+              code: v.code.trim(),
+              category: v.category.trim(),
+              unitOfMeasure: v.unitOfMeasure,
+              unitCost: num(v, "unitCost") ?? 0,
+              reorderLevel: num(v, "reorderLevel"),
+            },
+            { onSuccess: () => setCreating(false) },
+          )
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <MetricCard title="Total Materials" value={total} icon={<Droplets className="size-4" />} iconBg="bg-primary" caption="Registered materials" />

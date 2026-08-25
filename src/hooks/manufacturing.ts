@@ -3,6 +3,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productionService, rawMaterialService, qualityInspectionService, bomService } from "@/services/manufacturing.service";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/api";
+
+/**
+ * The API answers a broken business rule with a sentence worth reading — "batch
+ * is PENDING_QC and cannot be inspected". Axios throws "Request failed with
+ * status code 409" instead, so pull the real message out before showing it.
+ */
+export function apiMessage(error: unknown, fallback: string): string {
+  return (
+    (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+    fallback
+  );
+}
 
 // ── Production Orders ──
 export function useProductionOrders(status?: string, page = 0, size = 20) {
@@ -17,8 +30,13 @@ export function useCreateProductionOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: productionService.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["production-orders"] }); toast.success("Production order created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: () => {
+      // Planning an order opens its batch, so the batch list changes too.
+      qc.invalidateQueries({ queryKey: ["production-orders"] });
+      qc.invalidateQueries({ queryKey: ["batches"] });
+      toast.success("Production order created");
+    },
+    onError: (e) => toast.error(apiMessage(e, "Could not create the order")),
   });
 }
 
@@ -27,16 +45,35 @@ export function useStartProduction() {
   return useMutation({
     mutationFn: productionService.start,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["production-orders"] }); toast.success("Production started"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(apiMessage(e, "Could not start the run")),
   });
 }
 
 export function useCompleteProduction() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data?: { producedQuantity?: number } }) => productionService.complete(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["production-orders"] }); toast.success("Production completed"); },
-    onError: (e: Error) => toast.error(e.message),
+    mutationFn: ({ id, data }: { id: number; data?: { producedQuantity?: number; expiresOn?: string; notes?: string } }) =>
+      productionService.complete(id, data),
+    onSuccess: () => {
+      // Completion moves the lot to PENDING_QC, so the batch views are stale too.
+      qc.invalidateQueries({ queryKey: ["production-orders"] });
+      qc.invalidateQueries({ queryKey: ["batches"] });
+      toast.success("Production completed — lot awaiting quality control");
+    },
+    onError: (e) => toast.error(apiMessage(e, "Could not complete the run")),
+  });
+}
+
+export function useAmendQuantity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { newQuantity: number; reason: string } }) =>
+      productionService.amendQuantity(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["production-orders"] });
+      toast.success("Produced quantity amended");
+    },
+    onError: (e) => toast.error(apiMessage(e, "Could not amend the quantity")),
   });
 }
 
@@ -46,7 +83,7 @@ export function useAllocateMaterials() {
     mutationFn: ({ id, data }: { id: number; data: { materials: { materialId: number; quantity: number }[] } }) =>
       productionService.allocateMaterials(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["production-orders"] }); toast.success("Materials allocated"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -56,7 +93,7 @@ export function useIssueMaterials() {
     mutationFn: ({ id, data }: { id: number; data: { materials: { materialId: number; quantity: number }[] } }) =>
       productionService.issueMaterials(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["production-orders"] }); toast.success("Materials issued"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -65,7 +102,7 @@ export function useCloseProduction() {
   return useMutation({
     mutationFn: productionService.close,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["production-orders"] }); toast.success("Production closed"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -74,7 +111,7 @@ export function useCancelProduction() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: { reason: string } }) => productionService.cancel(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["production-orders"] }); toast.success("Production cancelled"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -88,7 +125,7 @@ export function useCreateRawMaterial() {
   return useMutation({
     mutationFn: rawMaterialService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["raw-materials"] }); toast.success("Raw material registered"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -101,8 +138,14 @@ export function useCreateInspection() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: qualityInspectionService.create,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["quality-inspections"] }); toast.success("Inspection recorded"); },
-    onError: (e: Error) => toast.error(e.message),
+    onSuccess: () => {
+      // The verdict moves the lot, so the batch and production views change with it.
+      qc.invalidateQueries({ queryKey: ["quality-inspections"] });
+      qc.invalidateQueries({ queryKey: ["batches"] });
+      qc.invalidateQueries({ queryKey: ["production-orders"] });
+      toast.success("Verdict recorded");
+    },
+    onError: (e) => toast.error(apiMessage(e, "Could not record the inspection")),
   });
 }
 
@@ -116,6 +159,6 @@ export function useCreateBom() {
   return useMutation({
     mutationFn: bomService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["boms"] }); toast.success("BOM created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }

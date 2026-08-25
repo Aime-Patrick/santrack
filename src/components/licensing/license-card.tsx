@@ -9,9 +9,11 @@ import {
   permitsOperation,
   useLicenseDocuments,
   useLicenseHistory,
+  useLicenseCategories,
 } from "@/hooks/licensing";
 import type { License } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { CheckCircle2, Circle, FileText } from "lucide-react";
 
 interface LicenseCardProps {
   license: License;
@@ -27,10 +29,16 @@ export function LicenseCard({
   const [expanded, setExpanded] = useState(false);
   const { data: documents } = useLicenseDocuments(license.id);
   const { data: history } = useLicenseHistory(license.id);
+  const { data: categories } = useLicenseCategories();
 
   const isDraft = license.status === "DRAFT";
   const isSubmitted = license.status === "SUBMITTED";
   const canOperate = permitsOperation(license.status);
+
+  const category = categories?.find((c) => c.id === license.categoryId);
+  const requiredDocs = category?.requiredDocuments ?? [];
+  const uploadedTypes = new Set(documents?.map((d) => d.documentType) ?? []);
+  const allDocsUploaded = requiredDocs.length > 0 && requiredDocs.every((d) => uploadedTypes.has(d));
 
   return (
     <Card
@@ -96,11 +104,41 @@ export function LicenseCard({
           </div>
         )}
 
-        {/* Documents */}
+        {/* Required documents progress for draft licences */}
+        {isDraft && requiredDocs.length > 0 && (
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">
+              Required Documents ({uploadedTypes.size}/{requiredDocs.length})
+            </p>
+            <div className="space-y-1.5">
+              {requiredDocs.map((docType) => {
+                const uploaded = uploadedTypes.has(docType);
+                return (
+                  <div
+                    key={docType}
+                    className={cn(
+                      "flex items-center gap-2 rounded px-3 py-1.5 text-sm",
+                      uploaded ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {uploaded ? (
+                      <CheckCircle2 className="size-4 shrink-0" />
+                    ) : (
+                      <Circle className="size-4 shrink-0" />
+                    )}
+                    <span className="truncate">{docType.replace(/_/g, " ").toLowerCase()}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Uploaded documents list */}
         {documents && documents.length > 0 && (
           <div>
             <p className="mb-2 text-xs font-medium uppercase text-muted-foreground">
-              Documents
+              Uploaded
             </p>
             <div className="space-y-1">
               {documents.map((doc) => (
@@ -108,9 +146,12 @@ export function LicenseCard({
                   key={doc.id}
                   className="flex items-center justify-between rounded bg-muted px-3 py-1.5 text-sm"
                 >
-                  <span className="truncate">{doc.filename}</span>
+                  <div className="flex items-center gap-2">
+                    <FileText className="size-3.5 text-muted-foreground" />
+                    <span className="truncate">{doc.filename}</span>
+                  </div>
                   <span className="ml-2 text-xs text-muted-foreground">
-                    {doc.documentType}
+                    {doc.documentType.replace(/_/g, " ")}
                   </span>
                 </div>
               ))}
@@ -131,8 +172,11 @@ export function LicenseCard({
             <Button
               size="sm"
               onClick={() => onSubmit?.(license.id)}
+              disabled={requiredDocs.length > 0 && !allDocsUploaded}
             >
-              Submit for Review
+              {requiredDocs.length > 0 && !allDocsUploaded
+                ? `Submit (${requiredDocs.length - uploadedTypes.size} docs missing)`
+                : "Submit for Review"}
             </Button>
           </div>
         )}

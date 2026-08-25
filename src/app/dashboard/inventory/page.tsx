@@ -1,132 +1,109 @@
 "use client";
 
-import { type ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Package, MapPin } from "lucide-react";
+import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Boxes,
+  Package,
+  PackageCheck,
+  PackagePlus,
+  Truck,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DataTable, type TableFeatures } from "@/components/ui/data-table";
-import { useInventoryPositions } from "@/hooks/inventory";
-import { useLocations } from "@/hooks/locations";
-import { useState } from "react";
-import type { InventoryPosition } from "@/services/inventory.service";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { StockPositionsPanel } from "@/components/inventory/stock-positions-panel";
+import { InventoryItemsPanel } from "@/components/inventory/inventory-items-panel";
 
-const columns: ColumnDef<TableFeatures, InventoryPosition>[] = [
-  {
-    accessorKey: "itemCode",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="h-8 px-2">
-        Item Code
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <Package className="size-4 text-muted-foreground" />
-        <span className="font-medium">{row.getValue("itemCode")}</span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "productName",
-    header: "Product",
-    cell: ({ row }) => row.getValue("productName") || "—",
-  },
-  {
-    accessorKey: "productSku",
-    header: "SKU",
-  },
-  {
-    accessorKey: "batchCode",
-    header: "Batch",
-    cell: ({ row }) => row.getValue("batchCode") || "—",
-  },
-  {
-    accessorKey: "locationName",
-    header: "Location",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-1">
-        <MapPin className="size-3 text-muted-foreground" />
-        <span>{row.getValue("locationName")}</span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "quantity",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="h-8 px-2">
-        Qty
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => (
-      <span className="font-bold">{row.getValue("quantity")}</span>
-    ),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      return <Badge variant={status === "ACTIVE" ? "default" : "secondary"}>{status}</Badge>;
-    },
-  },
-];
+/**
+ * One place for stock.
+ *
+ * There used to be two: /dashboard/inventory and /dashboard/items, both
+ * answering "what stock do we have?" from the same rows in two layouts — they
+ * even exported the same function name. Two menu entries for one question meant
+ * every person had to learn which of the two showed the column they wanted.
+ *
+ * The three movement actions below used to be menu entries too. Each of them
+ * acts on stock, so each is now a button here, where the stock already is —
+ * rather than a destination you navigate to and then have to find the goods
+ * from all over again.
+ */
+function InventoryWorkspace() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState(() => searchParams.get("tab") ?? "positions");
 
-export default function InventoryPage() {
-  const [locationFilter, setLocationFilter] = useState<string>("");
-  const { data: positions, isLoading } = useInventoryPositions(
-    locationFilter ? Number(locationFilter) : undefined
-  );
-  const { data: locations } = useLocations();
+  useEffect(() => {
+    const wanted = searchParams.get("tab");
+    if (wanted && wanted !== tab) setTab(wanted);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const select = (next: string) => {
+    setTab(next);
+    router.replace(`/dashboard/inventory?tab=${next}`, { scroll: false });
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Inventory</h1>
-          <p className="text-muted-foreground">
-            Current stock positions across all your locations.
-          </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
+            <Boxes className="size-4" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Inventory</h1>
+            <p className="text-sm text-muted-foreground">
+              What you hold, where it is, and what has moved.
+            </p>
+          </div>
         </div>
-        <Select onValueChange={(v) => setLocationFilter(v === "all" || v === null ? "" : v)} value={locationFilter || "all"}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="All Locations" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Locations</SelectItem>
-            {locations?.map((l) => (
-              <SelectItem key={l.id} value={String(l.id)}>
-                {l.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
+        {/*
+          The movement verbs, as actions rather than places. They stay full
+          screens behind these buttons — each one is a multi-step scanning job,
+          not something to squeeze into a dialog.
+        */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" render={<Link href="/dashboard/manufacturing/register-package" />}>
+            <PackagePlus className="mr-2 size-4" /> Register package
+          </Button>
+          <Button variant="outline" size="sm" render={<Link href="/dashboard/manufacturing/pack" />}>
+            <PackageCheck className="mr-2 size-4" /> Pack items
+          </Button>
+          <Button variant="outline" size="sm" render={<Link href="/dashboard/manufacturing/stock-transfer" />}>
+            <Truck className="mr-2 size-4" /> Transfer stock
+          </Button>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Stock Positions</CardTitle>
-          <CardDescription>{positions?.length ?? 0} item(s) in stock</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex h-32 items-center justify-center text-muted-foreground">
-              Loading inventory...
-            </div>
-          ) : (
-            <DataTable
-              columns={columns}
-              data={positions ?? []}
-              filterPlaceholder="Search inventory..."
-              filterColumn="itemCode"
-              pageSize={15}
-              noBorder
-            />
-          )}
-        </CardContent>
-      </Card>
+      <Tabs value={tab} onValueChange={select} className="space-y-4">
+        <TabsList className="rounded-xl border border-border/80 bg-muted/50 p-1">
+          <TabsTrigger value="positions" className="gap-2">
+            <Boxes className="size-4" />
+            Stock positions
+          </TabsTrigger>
+          <TabsTrigger value="items" className="gap-2">
+            <Package className="size-4" />
+            Items
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="positions">
+          <StockPositionsPanel />
+        </TabsContent>
+        <TabsContent value="items">
+          <InventoryItemsPanel />
+        </TabsContent>
+      </Tabs>
     </div>
+  );
+}
+
+export default function InventoryPage() {
+  return (
+    <Suspense fallback={null}>
+      <InventoryWorkspace />
+    </Suspense>
   );
 }

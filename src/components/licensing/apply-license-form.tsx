@@ -43,6 +43,7 @@ export function ApplyLicenseForm({
     { type: string; done: boolean }[]
   >([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const attachMutation = useAttachDocument(newLicenseId ?? 0);
 
   const {
     register,
@@ -89,7 +90,6 @@ export function ApplyLicenseForm({
   ) => {
     if (!newLicenseId) return;
     try {
-      const attachMutation = useAttachDocument(newLicenseId);
       await attachMutation.mutateAsync({ documentType, file });
       setUploadResults((prev) =>
         prev.map((r) =>

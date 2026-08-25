@@ -28,8 +28,27 @@ export const licenseService = {
     return api.post<License>(`/api/licenses/${licenseId}/submit`).then((r) => r.data);
   },
 
+  cancel(licenseId: number): Promise<License> {
+    return api.post<License>(`/api/licenses/${licenseId}/cancel`).then((r) => r.data);
+  },
+
   documents(licenseId: number): Promise<LicenseDocument[]> {
-    return api.get<LicenseDocument[]>(`/api/licenses/${licenseId}/history`).then((r) => r.data);
+    return api.get<LicenseDocument[]>(`/api/licenses/${licenseId}/documents`).then((r) => r.data);
+  },
+
+  /**
+   * The bytes of one certificate.
+   *
+   * Fetched rather than linked: the route needs the bearer token, which an
+   * href cannot carry, and in development the API is a different origin from
+   * the app - a relative link resolves against Next, which has no such route.
+   */
+  downloadDocument(documentId: number): Promise<Blob> {
+    return api
+      .get<Blob>(`/api/licenses/documents/${documentId}`, {
+        responseType: "blob",
+      })
+      .then((r) => r.data);
   },
 
   regulatorDocuments(licenseId: number): Promise<LicenseDocument[]> {

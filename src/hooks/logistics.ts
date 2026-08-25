@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { vehicleService, transporterService, shipmentService, driverService, routeService } from "@/services/logistics.service";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/api";
 
 // ── Vehicles ──
 export function useVehicles() {
@@ -14,7 +15,7 @@ export function useCreateVehicle() {
   return useMutation({
     mutationFn: vehicleService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "vehicles"] }); toast.success("Vehicle registered"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -28,7 +29,7 @@ export function useCreateTransporter() {
   return useMutation({
     mutationFn: transporterService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "transporters"] }); toast.success("Transporter added"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -42,7 +43,7 @@ export function useCreateShipment() {
   return useMutation({
     mutationFn: shipmentService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "shipments"] }); toast.success("Shipment created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -51,7 +52,7 @@ export function useDispatchShipment() {
   return useMutation({
     mutationFn: shipmentService.depart,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "shipments"] }); toast.success("Shipment dispatched"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -60,7 +61,7 @@ export function useCancelShipment() {
   return useMutation({
     mutationFn: shipmentService.cancel,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "shipments"] }); toast.success("Shipment cancelled"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -73,7 +74,7 @@ export function useDeliverShipment() {
   return useMutation({
     mutationFn: shipmentService.deliver,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "shipments"] }); toast.success("Shipment delivered"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -87,7 +88,7 @@ export function useCreateDriver() {
   return useMutation({
     mutationFn: driverService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "drivers"] }); toast.success("Driver added"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -101,7 +102,7 @@ export function useCreateRoute() {
   return useMutation({
     mutationFn: routeService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "routes"] }); toast.success("Route created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -111,7 +112,7 @@ export function useUpdateVehicle() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<import("@/services/logistics.service").Vehicle> }) => vehicleService.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "vehicles"] }); toast.success("Vehicle updated"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -120,7 +121,7 @@ export function useUpdateDriver() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<import("@/services/logistics.service").Driver> }) => driverService.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "drivers"] }); toast.success("Driver updated"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -129,7 +130,7 @@ export function useUpdateTransporter() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<import("@/services/logistics.service").Transporter> }) => transporterService.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "transporters"] }); toast.success("Transporter updated"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -138,6 +139,6 @@ export function useUpdateRoute() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<import("@/services/logistics.service").Route> }) => routeService.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics", "routes"] }); toast.success("Route updated"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }

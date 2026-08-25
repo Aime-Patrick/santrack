@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Plus, Layers, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type TableFeatures } from "@/components/ui/data-table";
 import { MetricCard } from "@/components/dashboard/stat-card";
-import { useBoms } from "@/hooks/manufacturing";
+import { useBoms, useCreateBom } from "@/hooks/manufacturing";
+import { BomFormDialog } from "@/components/manufacturing/bom-form-dialog";
 import type { Bom } from "@/services/manufacturing.service";
 
 const columns: ColumnDef<TableFeatures, Bom>[] = [
@@ -78,6 +80,9 @@ const columns: ColumnDef<TableFeatures, Bom>[] = [
 
 export default function BomsPage() {
   const { data, isLoading } = useBoms();
+  const [creating, setCreating] = useState(false);
+  const create = useCreateBom();
+
   const boms = data ?? [];
   const total = boms.length;
   const activeCount = boms.filter((b) => b.active).length;
@@ -94,8 +99,19 @@ export default function BomsPage() {
             <p className="text-sm text-muted-foreground">Define material requirements for production.</p>
           </div>
         </div>
-        <Button><Plus className="mr-2 size-4" /> Create BOM</Button>
+        <Button onClick={() => setCreating(true)}>
+          <Plus className="mr-2 size-4" /> Create BOM
+        </Button>
       </div>
+
+      <BomFormDialog
+        open={creating}
+        onOpenChange={setCreating}
+        pending={create.isPending}
+        onSubmit={(draft) =>
+          create.mutate(draft, { onSuccess: () => setCreating(false) })
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <MetricCard title="Total BOMs" value={total} icon={<Layers className="size-4" />} iconBg="bg-primary" caption="All BOMs" />

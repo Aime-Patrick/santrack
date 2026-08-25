@@ -41,6 +41,9 @@ const PAGE_LABELS: Record<string, string> = {
   "stock-relocate": "Stock Relocate",
   trace: "Traceability",
   new: "Add New",
+  compliance: "Compliance",
+  facilities: "Sites",
+  "start-production": "Start Production",
 };
 
 function labelFromSegment(segment: string): string {

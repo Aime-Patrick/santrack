@@ -12,12 +12,23 @@ interface DesignModeContextValue {
   role: UserRole;
   /** Change the preview role */
   setRole: (role: UserRole) => void;
+  /**
+   * Preview the user as staff of a licensing authority.
+   *
+   * Some capabilities come from the organization's standing rather than the
+   * job title — sight of the industry register is the one that matters here —
+   * so a role alone cannot preview the supervisory screens.
+   */
+  standing: boolean;
+  setStanding: (standing: boolean) => void;
 }
 
 const DesignModeContext = createContext<DesignModeContextValue>({
   isDesignMode: false,
   role: "SYSTEM_ADMIN",
   setRole: () => {},
+  standing: false,
+  setStanding: () => {},
 });
 
 /**
@@ -34,10 +45,11 @@ export function useDesignMode() {
  */
 export function DesignModeProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<UserRole>("SYSTEM_ADMIN");
+  const [standing, setStanding] = useState(false);
 
   return (
     <DesignModeContext.Provider
-      value={{ isDesignMode: DESIGN_MODE, role, setRole }}
+      value={{ isDesignMode: DESIGN_MODE, role, setRole, standing, setStanding }}
     >
       {children}
     </DesignModeContext.Provider>

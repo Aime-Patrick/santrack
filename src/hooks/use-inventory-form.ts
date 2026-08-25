@@ -61,10 +61,13 @@ export function useInventoryForm() {
       productService.create({
         name: values.name,
         sku: values.code,
-        category: values.category,
-        brand: values.supplier || undefined,
+        // The supplier used to be written into `brand`, which the API now
+        // refuses — a brand is the mark a product is sold under, and who you
+        // buy from is neither that nor something the product carries. It rides
+        // in the specification text until stock has a supplier field of its own.
         specification: [
           values.description,
+          values.supplier ? `Supplier: ${values.supplier}` : "",
           values.unitOfMeasure ? `UoM: ${values.unitOfMeasure}` : "",
           values.unitCost ? `Cost: ${values.unitCost} RWF` : "",
           values.reorderLevel ? `Reorder: ${values.reorderLevel}` : "",

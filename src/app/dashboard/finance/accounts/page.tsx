@@ -1,113 +1,92 @@
 "use client";
 
-import { type ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Plus, BookOpen, CheckCircle, XCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { DataTable, type TableFeatures } from "@/components/ui/data-table";
-import { MetricCard } from "@/components/dashboard/stat-card";
-import { useAccounts } from "@/hooks/finance";
-import type { Account } from "@/services/finance.service";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Building2, ClipboardList, List, Wallet } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AccountsPanel } from "@/components/finance-panels/accounts-panel";
+import { JournalPanel } from "@/components/finance-panels/journal-panel";
+import { BudgetsPanel } from "@/components/finance-panels/budgets-panel";
+import { CostCentresPanel } from "@/components/finance-panels/cost-centres-panel";
 
-const typeColors: Record<string, string> = {
-  ASSET: "border-primary/30 bg-primary/10 text-primary",
-  LIABILITY: "border-danger/30 bg-danger/10 text-danger",
-  EQUITY: "border-success/30 bg-success/10 text-success",
-  REVENUE: "border-success/30 bg-success/10 text-success",
-  EXPENSE: "border-warning/30 bg-warning/10 text-warning-foreground",
-};
+/**
+ * One ledger, four views of it. Chart of accounts, journal entries, budgets and
+ * cost centres are not four places a bookkeeper goes — they are the structure,
+ * the postings and the plan for the same set of books, and a posting is
+ * routinely checked against all three.
+ *
+ * Retired routes redirect here with ?tab=, so saved links still land where
+ * they named.
+ */
+function AccountingWorkspace() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState(() => searchParams.get("tab") ?? "accounts");
 
-const columns: ColumnDef<TableFeatures, Account>[] = [
-  {
-    accessorKey: "code",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="h-8 px-2">
-        Code
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
-          <BookOpen className="size-4" />
-        </div>
-        <span className="font-mono text-sm">{row.getValue("code")}</span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "name",
-    header: "Name",
-    cell: ({ row }) => <span className="text-sm font-medium">{row.getValue("name")}</span>,
-  },
-  {
-    accessorKey: "type",
-    header: "Type",
-    cell: ({ row }) => {
-      const type = row.getValue("type") as string;
-      return <Badge variant="outline" className={typeColors[type] ?? "border-border bg-muted/60 text-muted-foreground"}>{type}</Badge>;
-    },
-  },
-  {
-    accessorKey: "parentCode",
-    header: "Parent",
-    cell: ({ row }) => {
-      const code = row.getValue("parentCode") as string | null;
-      return code ? <span className="font-mono text-sm text-faint">{code}</span> : "—";
-    },
-  },
-  {
-    accessorKey: "active",
-    header: "Status",
-    cell: ({ row }) => {
-      const active = row.getValue("active") as boolean;
-      return active ? <CheckCircle className="size-4 text-success" /> : <XCircle className="size-4 text-muted-foreground" />;
-    },
-  },
-];
+  useEffect(() => {
+    const wanted = searchParams.get("tab");
+    if (wanted && wanted !== tab) setTab(wanted);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
-export default function AccountsPage() {
-  const { data, isLoading } = useAccounts();
-  const accounts = data ?? [];
-  const total = accounts.length;
-  const assetCount = accounts.filter((a) => a.type === "ASSET").length;
-  const liabilityCount = accounts.filter((a) => a.type === "LIABILITY").length;
+  const select = (next: string) => {
+    setTab(next);
+    router.replace(`/dashboard/finance/accounts?tab=${next}`, { scroll: false });
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
-            <BookOpen className="size-4" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">Chart of Accounts</h1>
-            <p className="text-sm text-muted-foreground">Manage your chart of accounts and account structure.</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="flex size-9 items-center justify-center rounded-lg bg-success text-white">
+          <Wallet className="size-4" />
         </div>
-        <Button><Plus className="mr-2 size-4" /> Add Account</Button>
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Accounting</h1>
+          <p className="text-sm text-muted-foreground">The ledger: what the accounts are, what was posted, and what was planned.</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <MetricCard title="Total Accounts" value={total} icon={<BookOpen className="size-4" />} iconBg="bg-primary" caption="Chart of accounts" />
-        <MetricCard title="Assets" value={assetCount} icon={<BookOpen className="size-4" />} iconBg="bg-primary" caption="Asset accounts" />
-        <MetricCard title="Liabilities" value={liabilityCount} icon={<BookOpen className="size-4" />} iconBg="bg-danger" caption="Liability accounts" />
-      </div>
+      <Tabs value={tab} onValueChange={select} className="space-y-4">
+        <TabsList className="rounded-xl border border-border/80 bg-muted/50 p-1">
+          <TabsTrigger value="accounts" className="gap-2">
+            <List className="size-4" />
+            Accounts
+          </TabsTrigger>
+          <TabsTrigger value="journal" className="gap-2">
+            <ClipboardList className="size-4" />
+            Journal
+          </TabsTrigger>
+          <TabsTrigger value="budgets" className="gap-2">
+            <Wallet className="size-4" />
+            Budgets
+          </TabsTrigger>
+          <TabsTrigger value="cost-centres" className="gap-2">
+            <Building2 className="size-4" />
+            Cost centres
+          </TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Account List</CardTitle>
-          <CardDescription>{total} accounts</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex h-32 items-center justify-center text-muted-foreground">Loading accounts...</div>
-          ) : (
-            <DataTable columns={columns} data={accounts} filterPlaceholder="Search accounts..." filterColumn="name" pageSize={10} noBorder />
-          )}
-        </CardContent>
-      </Card>
+        <TabsContent value="accounts">
+          <AccountsPanel />
+        </TabsContent>
+        <TabsContent value="journal">
+          <JournalPanel />
+        </TabsContent>
+        <TabsContent value="budgets">
+          <BudgetsPanel />
+        </TabsContent>
+        <TabsContent value="cost-centres">
+          <CostCentresPanel />
+        </TabsContent>
+      </Tabs>
     </div>
+  );
+}
+
+export default function AccountingPage() {
+  return (
+    <Suspense fallback={null}>
+      <AccountingWorkspace />
+    </Suspense>
   );
 }

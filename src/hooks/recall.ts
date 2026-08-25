@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { recallService } from "@/services/recall.service";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/api";
 
 export function useRecalls() {
   return useQuery({ queryKey: ["recalls"], queryFn: recallService.list });
@@ -17,7 +18,7 @@ export function useInitiateRecall() {
   return useMutation({
     mutationFn: recallService.recall,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["recalls"] }); toast.success("Recall initiated"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
 
@@ -26,6 +27,6 @@ export function useLiftRecall() {
   return useMutation({
     mutationFn: ({ batchId, reason }: { batchId: number; reason?: string }) => recallService.lift(batchId, reason),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["recalls"] }); toast.success("Recall lifted"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }

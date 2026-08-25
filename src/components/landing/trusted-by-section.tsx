@@ -30,7 +30,7 @@ export function TrustedBySection() {
 
               {/* 1. CIMERWA — real image */}
               <div className="flex items-center justify-center px-4 lg:px-5">
-                <div className="relative h-10 sm:h-12 w-24 sm:w-28 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
+                <div className="relative h-10 sm:h-12 w-24 sm:w-28 transition-all duration-300">
                   <Image
                     src="/images/Cimerwa_logo.png"
                     alt="CIMERWA"
@@ -45,12 +45,12 @@ export function TrustedBySection() {
 
               {/* 2. RDB — real image */}
               <div className="flex items-center justify-center px-4 lg:px-5">
-                <div className="relative h-10 sm:h-12 w-28 sm:w-32 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
+                <div className="relative h-12 sm:h-14 w-32 sm:w-36 transition-all duration-300">
                   <Image
-                    src="/images/RDB-1.png"
+                    src="/images/rdb.jpg"
                     alt="Rwanda Development Board"
                     fill
-                    sizes="140px"
+                    sizes="160px"
                     className="object-contain"
                   />
                 </div>
@@ -58,15 +58,16 @@ export function TrustedBySection() {
 
               <div className="w-px h-8 bg-slate-200 shrink-0" />
 
-              {/* 3. NIRDA — text/SVG placeholder */}
+              {/* 3. NIRDA — real image */}
               <div className="flex items-center justify-center px-4 lg:px-5">
-                <div className="opacity-50 hover:opacity-70 transition-opacity duration-300 flex flex-col items-center">
-                  <span className="font-black text-[15px] sm:text-[17px] tracking-tight text-slate-700">
-                    ni<span className="text-slate-900">RDA</span>
-                  </span>
-                  <span className="text-[6.5px] sm:text-[7.5px] text-slate-400 tracking-tight leading-none text-center max-w-[70px]">
-                    National Industrial Research & Dev
-                  </span>
+                <div className="relative h-12 sm:h-18 w-15 sm:w-18 transition-all duration-300">
+                  <Image
+                    src="/images/nirda.png"
+                    alt="NIRDA"
+                    fill
+                    sizes="200px"
+                    className="object-contain"
+                  />
                 </div>
               </div>
 
@@ -74,7 +75,7 @@ export function TrustedBySection() {
 
               {/* 4. Bank of Kigali — real image */}
               <div className="flex items-center justify-center px-4 lg:px-5">
-                <div className="relative h-10 sm:h-12 w-28 sm:w-32 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
+                <div className="relative h-10 sm:h-12 w-28 sm:w-32 transition-all duration-300">
                   <Image
                     src="/images/BK_Logo.png"
                     alt="Bank of Kigali"
@@ -87,15 +88,16 @@ export function TrustedBySection() {
 
               <div className="w-px h-8 bg-slate-200 shrink-0" />
 
-              {/* 5. RwandAir — text/SVG placeholder */}
+              {/* 5. Rwanda — wb-large-default */}
               <div className="flex items-center justify-center px-4 lg:px-5">
-                <div className="opacity-50 hover:opacity-70 transition-opacity duration-300 flex flex-col items-center">
-                  <span className="font-extrabold text-[14px] sm:text-[16px] italic tracking-tight text-slate-700">
-                    RwandAir
-                  </span>
-                  <span className="text-[6.5px] sm:text-[7.5px] text-slate-400 italic leading-none">
-                    Fly the dream of Africa
-                  </span>
+                <div className="relative h-10 sm:h-12 w-28 sm:w-32 transition-all duration-300">
+                  <Image
+                    src="/images/wb-large-default.webp"
+                    alt="Rwanda"
+                    fill
+                    sizes="140px"
+                    className="object-contain"
+                  />
                 </div>
               </div>
 
@@ -103,7 +105,7 @@ export function TrustedBySection() {
 
               {/* 6. RCA — real image */}
               <div className="flex items-center justify-center px-4 lg:px-5">
-                <div className="relative h-10 sm:h-12 w-24 sm:w-28 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
+                <div className="relative h-10 sm:h-12 w-24 sm:w-28 transition-all duration-300">
                   <Image
                     src="/images/RCA_logo.png"
                     alt="Rwanda Cooperative Agency"
@@ -116,17 +118,26 @@ export function TrustedBySection() {
 
               <div className="w-px h-8 bg-slate-200 shrink-0" />
 
-              {/* 7. MINICOM — text/SVG placeholder */}
+              {/* 7. MINCOM — Coat of Arms + wb-large-default for Rwanda */}
               <div className="flex items-center justify-center px-4 lg:px-5">
-                <div className="opacity-50 hover:opacity-70 transition-opacity duration-300 flex flex-col items-center">
-                  <span className="font-black text-[13px] sm:text-[14px] tracking-widest text-slate-700">
-                    MINICOM
+                <div className="flex flex-col items-center gap-1 transition-opacity duration-300">
+                  <Image
+                    src="/images/Coat_of_arms_of_Rwanda.svg"
+                    alt="Coat of Arms of Rwanda"
+                    width={28}
+                    height={28}
+                    className="object-contain"
+                  />
+                  <span className="font-black text-[12px] sm:text-[13px] tracking-widest text-slate-700">
+                    MINCOM
                   </span>
-                  <span className="text-[6.5px] sm:text-[7.5px] text-slate-400 leading-none text-center max-w-[70px]">
-                    Ministry of Trade and Industry
+                  <span className="text-[6px] sm:text-[7px] text-slate-400 leading-none text-center max-w-[70px]">
+                    Ministry of Trade & Industry
                   </span>
                 </div>
               </div>
+
+
 
               <div className="w-px h-8 bg-slate-200 shrink-0" />
 

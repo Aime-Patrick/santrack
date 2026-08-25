@@ -1,16 +1,14 @@
 import { api } from "@/lib/api";
 
 export interface InventoryPosition {
-  itemId: number;
-  itemCode: string;
-  itemQrCode: string;
-  productName: string;
-  productSku: string;
-  batchCode: string | null;
-  locationId: number;
-  locationName: string;
-  quantity: number;
-  status: string;
+  productId: number | null;
+  productName: string | null;
+  productSku: string | null;
+  availableUnits: number;
+  blockedUnits: number;
+  inTransitUnits: number;
+  identities: number;
+  byStatus: Array<{ status: string; count: number }>;
 }
 
 export const inventoryService = {

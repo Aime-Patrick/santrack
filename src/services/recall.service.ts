@@ -16,7 +16,7 @@ export interface RecallBatch {
 }
 
 export const recallService = {
-  list: () => Promise.resolve([] as RecallBatch[]),
+  list: () => api.get<RecallBatch[]>("/api/recalls").then((r) => r.data),
   getImpact: (batchId: number) =>
     api.get<{ impactedLocations: RecallBatch["impactedLocations"]; totalUnits: number }>(`/api/recalls/batches/${batchId}/impact`).then((r) => r.data),
   recall: (data: { batchId: number; reason: string }) =>

@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { DataTable, type TableFeatures } from "@/components/ui/data-table";
 import { useMe } from "@/hooks/auth";
 import { useUsers } from "@/hooks/users";
+import { EditRoleDialog } from "@/components/dashboard/edit-role-dialog";
 import type { UserResponse } from "@/lib/api";
 
 const roleLabels: Record<string, string> = {
@@ -30,58 +31,6 @@ const roleLabels: Record<string, string> = {
   MANAGEMENT: "Management",
   AUDITOR: "Auditor",
 };
-
-const userColumns: ColumnDef<TableFeatures, UserResponse>[] = [
-  {
-    accessorKey: "fullName",
-    header: "Name",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-white">
-          <span className="text-xs font-medium">
-            {(row.getValue("fullName") as string)?.charAt(0)?.toUpperCase()}
-          </span>
-        </div>
-        <span className="font-medium">{row.getValue("fullName")}</span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Mail className="size-3.5" />
-        {row.getValue("email")}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "role",
-    header: "Role",
-    cell: ({ row }) => {
-      const role = row.getValue("role") as string;
-      return <Badge variant="outline">{roleLabels[role] ?? role}</Badge>;
-    },
-  },
-  {
-    id: "actions",
-    header: "",
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
-          <span className="sr-only">Open menu</span>
-          <MoreHorizontal className="h-4 w-4" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem>Edit Role</DropdownMenuItem>
-          <DropdownMenuItem>Reset Password</DropdownMenuItem>
-          <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  },
-];
 
 const maintenanceFeatures = [
   {
@@ -116,6 +65,70 @@ export default function SettingsPage() {
   const { data: me } = useMe();
   const { data: users, isLoading: usersLoading } = useUsers(me?.organization?.id);
   const org = me?.organization;
+  const [editUser, setEditUser] = useState<UserResponse | null>(null);
+  const [showEditRole, setShowEditRole] = useState(false);
+
+  const userColumns: ColumnDef<TableFeatures, UserResponse>[] = [
+    {
+      accessorKey: "fullName",
+      header: "Name",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+            <span className="text-xs font-medium">
+              {(row.getValue("fullName") as string)?.charAt(0)?.toUpperCase()}
+            </span>
+          </div>
+          <span className="font-medium">{row.getValue("fullName")}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Mail className="size-3.5" />
+          {row.getValue("email")}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "role",
+      header: "Role",
+      cell: ({ row }) => {
+        const role = row.getValue("role") as string;
+        return <Badge variant="outline">{roleLabels[role] ?? role}</Badge>;
+      },
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => {
+        const user = row.original;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => {
+                  setEditUser(user);
+                  setShowEditRole(true);
+                }}
+              >
+                Edit Role
+              </DropdownMenuItem>
+              <DropdownMenuItem>Reset Password</DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -243,6 +256,12 @@ export default function SettingsPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <EditRoleDialog
+        open={showEditRole}
+        onOpenChange={setShowEditRole}
+        user={editUser}
+      />
     </div>
   );
 }

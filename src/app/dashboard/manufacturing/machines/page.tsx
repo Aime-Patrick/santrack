@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Plus, Cog, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type TableFeatures } from "@/components/ui/data-table";
 import { MetricCard } from "@/components/dashboard/stat-card";
-import { useMachines } from "@/hooks/machines";
+import { useMachines, useCreateMachine } from "@/hooks/machines";
+import { ResourceFormDialog, str } from "@/components/ui/resource-form-dialog";
 import type { Machine } from "@/services/machine.service";
 
 const statusColors: Record<string, string> = {
@@ -78,6 +80,8 @@ const columns: ColumnDef<TableFeatures, Machine>[] = [
 
 export default function MachinesPage() {
   const { data, isLoading } = useMachines();
+  const [creating, setCreating] = useState(false);
+  const create = useCreateMachine();
   const machines = data ?? [];
   const total = machines.length;
   const activeCount = machines.filter((m) => m.status === "ACTIVE").length;
@@ -95,8 +99,55 @@ export default function MachinesPage() {
             <p className="text-sm text-muted-foreground">Register and monitor production equipment.</p>
           </div>
         </div>
-        <Button><Plus className="mr-2 size-4" /> Register Machine</Button>
+        <Button onClick={() => setCreating(true)}>
+          <Plus className="mr-2 size-4" /> Register Machine
+        </Button>
       </div>
+
+      <ResourceFormDialog
+        open={creating}
+        onOpenChange={setCreating}
+        title="Register a machine"
+        description="Production orders are run against a machine, so the timeline can say which line made a batch."
+        submitLabel="Register machine"
+        pending={create.isPending}
+        fields={[
+          {
+            name: "name",
+            label: "Name",
+            kind: "text",
+            required: true,
+            placeholder: "e.g. Blow moulder 2",
+          },
+          {
+            name: "code",
+            label: "Asset code",
+            kind: "text",
+            half: true,
+            mono: true,
+            uppercase: true,
+            placeholder: "MCH-002",
+            hint: "Left blank, one is generated.",
+          },
+          {
+            name: "type",
+            label: "Type",
+            kind: "text",
+            half: true,
+            placeholder: "Blow moulding",
+          },
+        ]}
+        onSubmit={(v) =>
+          create.mutate(
+            {
+              name: v.name.trim(),
+              code: str(v, "code"),
+              type: str(v, "type"),
+            },
+            { onSuccess: () => setCreating(false) },
+          )
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <MetricCard title="Total Machines" value={total} icon={<Cog className="size-4" />} iconBg="bg-primary" caption="Registered equipment" />
