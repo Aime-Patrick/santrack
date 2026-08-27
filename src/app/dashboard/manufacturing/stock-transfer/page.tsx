@@ -66,10 +66,17 @@ const incomingColumns: ColumnDef<TableFeatures, Transfer>[] = [
   },
   {
     id: "actions",
-    header: "",
+    header: "Actions",
     cell: ({ row }) => {
       const transfer = row.original;
-      if (transfer.status !== "PENDING") return null;
+      // API statuses: DISPATCHED / PARTIALLY_RECEIVED are open for receipt.
+      // PENDING is not a transfer status (legacy UI check hid Receive forever).
+      if (
+        transfer.status !== "DISPATCHED" &&
+        transfer.status !== "PARTIALLY_RECEIVED"
+      ) {
+        return null;
+      }
       return <ReceiveButton transferId={transfer.id} />;
     },
   },
