@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { DataTable, type TableFeatures } from "@/components/ui/data-table";
 import { QrScanInput } from "@/components/ui/qr-scanner";
@@ -121,7 +120,6 @@ export default function StockTransferPage() {
   const [destOrgId, setDestOrgId] = useState("");
   const [destLocId, setDestLocId] = useState("");
   const [destinationLocationName, setDestinationLocationName] = useState<string | null>(null);
-  const [choosingDestination, setChoosingDestination] = useState(false);
   const [scanLog, setScanLog] = useState<ScanOutcome[]>([]);
   const [notes, setNotes] = useState("");
 
@@ -183,7 +181,6 @@ export default function StockTransferPage() {
       setDestOrgId(String(result.organizationId ?? ""));
       setDestLocId(String(result.locationId ?? ""));
       setDestinationLocationName(result.describes);
-      setChoosingDestination(false);
       note({ code, tone: "destination", message: `Dispatching to ${result.describes}` });
       return;
     }
@@ -207,12 +204,6 @@ export default function StockTransferPage() {
 
     setChildCodes((prev) => [...prev, result.itemQrCode!]);
     note({ code, tone: "added", message: result.describes });
-  };
-
-  const clearDestination = () => {
-    setDestOrgId("");
-    setDestLocId("");
-    setDestinationLocationName(null);
   };
 
   const removeCode = (code: string) => {
@@ -302,8 +293,9 @@ export default function StockTransferPage() {
             <CardHeader>
               <CardTitle>Dispatch Items</CardTitle>
               <CardDescription>
-                Keep scanning. Goods go onto the list, and a destination bay
-                addresses the whole dispatch — nothing else needs choosing.
+                Scan goods into the list, then choose where they go — pick a
+                destination business below, or scan a receiving bay label to set
+                both business and bay at once.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -397,63 +389,52 @@ export default function StockTransferPage() {
                       destOrgId ? "text-primary" : "text-muted-foreground",
                     )}
                   />
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 space-y-2">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-faint">
                       To
                     </p>
-                    {destOrgId ? (
-                      <>
-                        <p className="text-sm font-medium text-foreground">
-                          {orgList.find((o) => String(o.id) === destOrgId)?.name ??
-                            `Organization ${destOrgId}`}
-                        </p>
-                        {destinationLocationName && (
-                          <p className="text-xs text-muted-foreground">
-                            {destinationLocationName}
-                          </p>
-                        )}
+                    <SearchableSelect
+                      value={destOrgId || undefined}
+                      onValueChange={(v) => {
+                        setDestOrgId(v ?? "");
+                        // Manual org pick is not a bay scan — drop any prior
+                        // location that belonged to a different destination.
+                        setDestLocId("");
+                        setDestinationLocationName(null);
+                      }}
+                      placeholder="Choose destination business…"
+                      searchPlaceholder="Search businesses by name, type…"
+                      allowClear
+                      emptyMessage="No trading partners available."
+                      items={orgList.map((org) => ({
+                        value: String(org.id),
+                        label: org.name,
+                        badge: org.type,
+                      }))}
+                    />
+                    {destinationLocationName ? (
+                      <p className="text-xs text-muted-foreground">
+                        Bay from scan:{" "}
+                        <span className="font-medium text-foreground">
+                          {destinationLocationName}
+                        </span>
+                        {" · "}
                         <button
                           type="button"
-                          onClick={clearDestination}
-                          className="mt-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                          onClick={() => {
+                            setDestLocId("");
+                            setDestinationLocationName(null);
+                          }}
+                          className="underline-offset-2 hover:underline"
                         >
-                          Change
+                          Clear bay
                         </button>
-                      </>
+                      </p>
                     ) : (
-                      <>
-                        <p className="text-sm text-muted-foreground">
-                          Scan the receiving bay&apos;s label
-                        </p>
-                        {/* The fallback for a partner whose bays are not
-                            labelled yet. Deliberately the smaller path. */}
-                        {choosingDestination ? (
-                          <div className="mt-2">
-                            <SearchableSelect
-                              value={destOrgId}
-                              onValueChange={(v) => {
-                                setDestOrgId(v);
-                                setChoosingDestination(false);
-                              }}
-                              placeholder="Choose a business…"
-                              searchPlaceholder="Search businesses by name, type…"
-                              items={orgList.map((org) => ({
-                                value: String(org.id),
-                                label: org.name,
-                                badge: org.type,
-                              }))}
-                            />
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setChoosingDestination(true)}
-                            className="mt-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                          >
-                            No label to scan? Pick the business instead
-                          </button>
-                        )}
-                      </>
+                      <p className="text-xs text-muted-foreground">
+                        Or scan the receiving bay&apos;s label in the box above
+                        to set business and bay together.
+                      </p>
                     )}
                   </div>
                 </div>
