@@ -138,7 +138,8 @@ export interface UpdateCategoryInput {
 export interface CreateProductInput {
   name: string;
   sku?: string;
-  categoryId?: number;
+  /** Required on create — every product is filed under a catalogue category. */
+  categoryId: number;
   brandId?: number;
   model?: string;
   specification?: string;
@@ -149,6 +150,9 @@ export interface CreateProductInput {
   /** Send with packUnit; null clears an existing pack size. */
   unitsPerPack?: number | null;
 }
+
+/** Update may omit category to leave the filing unchanged. */
+export type UpdateProductInput = Partial<CreateProductInput> & { name: string };
 
 export interface ProductListResponse {
   content: Product[];
@@ -261,7 +265,7 @@ export const productService = {
     return api.get<Product>(`/api/products/${id}`).then((r) => r.data);
   },
 
-  update(id: number, input: CreateProductInput): Promise<Product> {
+  update(id: number, input: UpdateProductInput): Promise<Product> {
     return api.put<Product>(`/api/products/${id}`, input).then((r) => r.data);
   },
 

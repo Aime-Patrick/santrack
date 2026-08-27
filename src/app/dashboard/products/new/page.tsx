@@ -35,7 +35,7 @@ import {
 const schema = z.object({
   name: z.string().min(1, "Product name is required"),
   sku: z.string().optional(),
-  categoryId: z.string().optional(),
+  categoryId: z.string().min(1, "Category is required"),
   brandId: z.string().optional(),
   model: z.string().optional(),
   specification: z.string().optional(),
@@ -95,7 +95,7 @@ export default function NewProductPage() {
       {
         name: values.name,
         sku: values.sku || undefined,
-        categoryId: values.categoryId ? Number(values.categoryId) : undefined,
+        categoryId: Number(values.categoryId),
         brandId: values.brandId ? Number(values.brandId) : undefined,
         model: values.model || undefined,
         specification: values.specification || undefined,
@@ -172,7 +172,7 @@ export default function NewProductPage() {
                   name="categoryId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                      <FormLabel>Category *</FormLabel>
                       <FormControl>
                         <Select
                           value={field.value}

@@ -5,6 +5,7 @@ import {
   productService,
   type CreateCategoryInput,
   type CreateProductInput,
+  type UpdateProductInput,
   type UpdateCategoryInput,
 } from "@/services/product.service";
 import { getApiErrorMessage } from "@/lib/api";
@@ -183,7 +184,7 @@ export function useCreateProduct() {
 export function useUpdateProduct() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, input }: { id: number; input: CreateProductInput }) =>
+    mutationFn: ({ id, input }: { id: number; input: UpdateProductInput }) =>
       productService.update(id, input),
     onSuccess: (_product, { id }) => {
       qc.invalidateQueries({ queryKey: ["products"] });

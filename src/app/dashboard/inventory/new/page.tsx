@@ -14,10 +14,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useInventoryForm } from "@/hooks/use-inventory-form";
+import { useProductCategories } from "@/hooks/products";
 
 export default function AddInventoryItemPage() {
   const { form, onSubmit, isSubmitting } = useInventoryForm();
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = form;
+  const { data: categories } = useProductCategories();
+  const {
+    register,
+    setValue,
+    watch,
+    formState: { errors },
+  } = form;
+
+  const activeCategories = (categories ?? []).filter((c) => c.active);
 
   return (
     <div className="space-y-6">
@@ -25,7 +34,6 @@ export default function AddInventoryItemPage() {
 
       <form onSubmit={onSubmit} className="space-y-6">
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left column — Item Info + Supplier */}
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
@@ -55,26 +63,41 @@ export default function AddInventoryItemPage() {
                     <Label>
                       Category <span className="text-destructive">*</span>
                     </Label>
-                    <Select onValueChange={(v) => v && setValue("category", v)} value={watch("category") || undefined}>
+                    <Select
+                      onValueChange={(v) => v && setValue("categoryId", v)}
+                      value={watch("categoryId") || undefined}
+                    >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder="Select category">
+                          {watch("categoryId")
+                            ? activeCategories.find(
+                                (c) => String(c.id) === watch("categoryId"),
+                              )?.name
+                            : undefined}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Raw Materials">Raw Materials</SelectItem>
-                        <SelectItem value="Finished Goods">Finished Goods</SelectItem>
-                        <SelectItem value="Packaging">Packaging</SelectItem>
-                        <SelectItem value="Spare Parts">Spare Parts</SelectItem>
+                        {activeCategories.map((cat) => (
+                          <SelectItem key={cat.id} value={String(cat.id)}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
-                    {errors.category && (
-                      <p className="text-xs text-destructive">{errors.category.message}</p>
+                    {errors.categoryId && (
+                      <p className="text-xs text-destructive">
+                        {errors.categoryId.message}
+                      </p>
                     )}
                   </div>
                   <div className="space-y-2">
                     <Label>
                       Unit of Measure <span className="text-destructive">*</span>
                     </Label>
-                    <Select onValueChange={(v) => v && setValue("unitOfMeasure", v)} value={watch("unitOfMeasure") || undefined}>
+                    <Select
+                      onValueChange={(v) => v && setValue("unitOfMeasure", v)}
+                      value={watch("unitOfMeasure") || undefined}
+                    >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select unit" />
                       </SelectTrigger>
@@ -87,12 +110,17 @@ export default function AddInventoryItemPage() {
                       </SelectContent>
                     </Select>
                     {errors.unitOfMeasure && (
-                      <p className="text-xs text-destructive">{errors.unitOfMeasure.message}</p>
+                      <p className="text-xs text-destructive">
+                        {errors.unitOfMeasure.message}
+                      </p>
                     )}
                   </div>
                   <div className="sm:col-span-2 space-y-2">
                     <Label>Description</Label>
-                    <Textarea placeholder="Enter item description..." {...register("description")} />
+                    <Textarea
+                      placeholder="Enter item description..."
+                      {...register("description")}
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -106,7 +134,10 @@ export default function AddInventoryItemPage() {
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
                     <Label>Supplier</Label>
-                    <Select onValueChange={(v) => v && setValue("supplier", v)} value={watch("supplier") || undefined}>
+                    <Select
+                      onValueChange={(v) => v && setValue("supplier", v)}
+                      value={watch("supplier") || undefined}
+                    >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select supplier" />
                       </SelectTrigger>
@@ -119,18 +150,23 @@ export default function AddInventoryItemPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Supplier Contact</Label>
-                    <Input placeholder="Enter supplier contact" {...register("supplierContact")} />
+                    <Input
+                      placeholder="Enter supplier contact"
+                      {...register("supplierContact")}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Supplier Phone</Label>
-                    <Input placeholder="Enter supplier phone" {...register("supplierPhone")} />
+                    <Input
+                      placeholder="Enter supplier phone"
+                      {...register("supplierPhone")}
+                    />
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Right column — Item Details */}
           <div>
             <Card>
               <CardHeader>
@@ -139,31 +175,52 @@ export default function AddInventoryItemPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>Reorder Level</Label>
-                  <Input type="number" placeholder="Enter reorder level" {...register("reorderLevel")} />
+                  <Input
+                    type="number"
+                    placeholder="Enter reorder level"
+                    {...register("reorderLevel")}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Minimum Stock</Label>
-                  <Input type="number" placeholder="Enter minimum stock" {...register("minimumStock")} />
+                  <Input
+                    type="number"
+                    placeholder="Enter minimum stock"
+                    {...register("minimumStock")}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Maximum Stock</Label>
-                  <Input type="number" placeholder="Enter maximum stock" {...register("maximumStock")} />
+                  <Input
+                    type="number"
+                    placeholder="Enter maximum stock"
+                    {...register("maximumStock")}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Unit Cost (RWF)</Label>
-                  <Input type="number" placeholder="Enter unit cost" {...register("unitCost")} />
+                  <Input
+                    type="number"
+                    placeholder="Enter unit cost"
+                    {...register("unitCost")}
+                  />
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center justify-end gap-3 border-t border-border pt-6">
           <Link href="/dashboard/items">
-            <Button type="button" variant="outline">Cancel</Button>
+            <Button type="button" variant="outline">
+              Cancel
+            </Button>
           </Link>
-          <Button type="submit" disabled={isSubmitting} className="bg-[#067eda] hover:bg-[#0569c0] text-white">
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-[#067eda] hover:bg-[#0569c0] text-white"
+          >
             {isSubmitting ? "Saving..." : "Save Item"}
           </Button>
         </div>

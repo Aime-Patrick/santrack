@@ -41,11 +41,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { useProducts, useCreateProduct } from "@/hooks/products";
+import { useProducts, useCreateProduct, useProductCategories } from "@/hooks/products";
 import { useBatches, useCreateBatch } from "@/hooks/batches";
 import { useLocations, useCreateLocation } from "@/hooks/locations";
 import { useRegisterUnits } from "@/hooks/items";
 import { type PackageType } from "@/services/item.service";
+import { CategoryDialog } from "@/components/products/category-dialogs";
 import { cn } from "@/lib/utils";
 
 type CountMethod = "boxes" | "total" | "scan";
@@ -61,6 +62,7 @@ export default function OpeningStockPage() {
   const { data: productsData } = useProducts(0, 200);
   const { data: batches } = useBatches();
   const { data: locations } = useLocations();
+  const { data: categories } = useProductCategories();
 
   const registerUnits = useRegisterUnits();
   const createBatch = useCreateBatch();
@@ -73,6 +75,8 @@ export default function OpeningStockPage() {
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [newProductName, setNewProductName] = useState("");
   const [newProductSku, setNewProductSku] = useState("");
+  const [newProductCategoryId, setNewProductCategoryId] = useState("");
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [locationDialogOpen, setLocationDialogOpen] = useState(false);
   const [newLocationName, setNewLocationName] = useState("");
 
@@ -325,14 +329,20 @@ export default function OpeningStockPage() {
       toast.error("Type the product name");
       return;
     }
+    if (!newProductCategoryId) {
+      toast.error("Choose a category for this product");
+      return;
+    }
     try {
       const product = await createProduct.mutateAsync({
         name,
         sku: newProductSku.trim() || undefined,
+        categoryId: Number(newProductCategoryId),
       });
       setProductDialogOpen(false);
       setNewProductName("");
       setNewProductSku("");
+      setNewProductCategoryId("");
       if (product?.id) applyNewProduct(product.id);
     } catch {
       // toast from hook
@@ -1338,7 +1348,7 @@ export default function OpeningStockPage() {
             <DialogHeader>
               <DialogTitle>New product</DialogTitle>
               <DialogDescription>
-                Just the name for now. You can add barcodes and packaging later.
+                Every product belongs to a category. You can add barcodes and packaging later.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-2">
@@ -1352,6 +1362,45 @@ export default function OpeningStockPage() {
                   onChange={(e) => setNewProductName(e.target.value)}
                   className="h-11"
                 />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label>Category</Label>
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="h-auto p-0 text-xs"
+                    onClick={() => setCategoryDialogOpen(true)}
+                  >
+                    New category
+                  </Button>
+                </div>
+                <Select
+                  value={newProductCategoryId}
+                  onValueChange={setNewProductCategoryId}
+                >
+                  <SelectTrigger className="h-11 w-full">
+                    <SelectValue placeholder="Select a category">
+                      {newProductCategoryId
+                        ? categories?.find((c) => String(c.id) === newProductCategoryId)?.name
+                        : undefined}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(categories ?? [])
+                      .filter((c) => c.active)
+                      .map((cat) => (
+                        <SelectItem key={cat.id} value={String(cat.id)}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                {(categories ?? []).filter((c) => c.active).length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No categories yet — create one with “New category”.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="quick-product-sku">Code / SKU (optional)</Label>
@@ -1372,7 +1421,14 @@ export default function OpeningStockPage() {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={createProduct.isPending || !newProductName.trim()}>
+              <Button
+                type="submit"
+                disabled={
+                  createProduct.isPending ||
+                  !newProductName.trim() ||
+                  !newProductCategoryId
+                }
+              >
                 {createProduct.isPending ? (
                   <>
                     <RefreshCw className="mr-2 size-4 animate-spin" /> Saving...
@@ -1385,6 +1441,14 @@ export default function OpeningStockPage() {
           </form>
         </DialogPopup>
       </Dialog>
+
+      <CategoryDialog
+        open={categoryDialogOpen}
+        onOpenChange={setCategoryDialogOpen}
+        onCreated={(category) => {
+          setNewProductCategoryId(String(category.id));
+        }}
+      />
 
       <Dialog open={locationDialogOpen} onOpenChange={setLocationDialogOpen}>
         <DialogPopup className="sm:max-w-md">

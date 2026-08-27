@@ -9,14 +9,10 @@ import { toast } from "sonner";
 import { productService } from "@/services/product.service";
 import { getApiErrorMessage } from "@/lib/api";
 
-// ---------------------------------------------------------------------------
-// Schema — maps to CreateProductDto (name, sku, category, brand, specification)
-// ---------------------------------------------------------------------------
-
 const inventorySchema = z.object({
   name: z.string().min(1, "Item name is required"),
   code: z.string().min(1, "Item code is required"),
-  category: z.string().min(1, "Category is required"),
+  categoryId: z.string().min(1, "Category is required"),
   unitOfMeasure: z.string().min(1, "Unit of measure is required"),
   description: z.string().optional(),
   reorderLevel: z.number().min(0, "Must be 0 or more").optional(),
@@ -30,10 +26,6 @@ const inventorySchema = z.object({
 
 export type InventoryFormValues = z.infer<typeof inventorySchema>;
 
-// ---------------------------------------------------------------------------
-// Hook
-// ---------------------------------------------------------------------------
-
 export function useInventoryForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -43,7 +35,7 @@ export function useInventoryForm() {
     defaultValues: {
       name: "",
       code: "",
-      category: "",
+      categoryId: "",
       unitOfMeasure: "",
       description: "",
       reorderLevel: undefined,
@@ -61,6 +53,7 @@ export function useInventoryForm() {
       productService.create({
         name: values.name,
         sku: values.code,
+        categoryId: Number(values.categoryId),
         // The supplier used to be written into `brand`, which the API now
         // refuses — a brand is the mark a product is sold under, and who you
         // buy from is neither that nor something the product carries. It rides
