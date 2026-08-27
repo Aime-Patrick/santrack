@@ -41,6 +41,9 @@ const schema = z.object({
   specification: z.string().optional(),
   gtin: z.string().optional(),
   barcodeSymbology: z.string().optional(),
+  baseUnit: z.string().optional(),
+  packUnit: z.string().optional(),
+  unitsPerPack: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -59,7 +62,10 @@ export default function NewProductPage() {
       model: "",
       specification: "",
       gtin: "",
-      barcodeSymbology: "QR",
+      barcodeSymbology: "",
+      baseUnit: "",
+      packUnit: "",
+      unitsPerPack: "",
     },
   });
 
@@ -78,12 +84,26 @@ export default function NewProductPage() {
     chosenSpec?.use === "RETAIL" || chosenSpec?.use === "PUBLICATION";
 
   const onSubmit = (values: FormValues) => {
+    const packUnit = values.packUnit?.trim() || undefined;
+    const unitsPerPackRaw = values.unitsPerPack?.trim();
+    const unitsPerPack =
+      unitsPerPackRaw !== undefined && unitsPerPackRaw !== ""
+        ? Number(unitsPerPackRaw)
+        : undefined;
+
     createProduct.mutate(
       {
-        ...values,
+        name: values.name,
+        sku: values.sku || undefined,
         categoryId: values.categoryId ? Number(values.categoryId) : undefined,
         brandId: values.brandId ? Number(values.brandId) : undefined,
-        barcodeSymbology: values.barcodeSymbology as Symbology | undefined,
+        model: values.model || undefined,
+        specification: values.specification || undefined,
+        gtin: values.gtin || undefined,
+        barcodeSymbology: (values.barcodeSymbology || undefined) as Symbology | undefined,
+        baseUnit: values.baseUnit?.trim() || undefined,
+        packUnit,
+        unitsPerPack,
       },
       {
         onSuccess: (product) => {
@@ -252,6 +272,57 @@ export default function NewProductPage() {
                 />
               </div>
 
+              <div className="grid gap-6 md:grid-cols-3">
+                <FormField
+                  control={form.control}
+                  name="baseUnit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Base unit</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. BOTTLE" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Optional. What one product unit is called when selling.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="packUnit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pack unit</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. CARTON" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Optional. Send with units per pack, or leave both blank.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="unitsPerPack"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Units per pack</FormLabel>
+                      <FormControl>
+                        <Input type="number" min={2} step={1} placeholder="e.g. 24" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Whole number ≥ 2 when a pack unit is set.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               {/* Which code this product's label prints by default. A book
                   takes an ISBN, a bottle of shampoo an EAN-13, a machine part
                   a Code 128 — a property of the trade, so it belongs on the
@@ -264,13 +335,12 @@ export default function NewProductPage() {
                   <FormItem>
                     <FormLabel>Default code type</FormLabel>
                     <FormDescription className="mb-4">
-                      What this product&apos;s label prints unless someone
-                      chooses otherwise. Leave it as QR for anything not sold
-                      through a till.
+                      What this product&apos;s catalogue label prints (EAN, Code 128, etc.).
+                      Leave blank if unsure — QR is for industry unique identity codes, not the default here.
                     </FormDescription>
                     <FormControl>
                       <SymbologyPanelPicker
-                        value={field.value as Symbology | undefined}
+                        value={(field.value || undefined) as Symbology | undefined}
                         onChange={field.onChange}
                       />
                     </FormControl>

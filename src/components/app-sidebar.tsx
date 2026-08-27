@@ -86,6 +86,26 @@ interface NavEntry {
   children?: SubNavEntry[];
 }
 
+/** Exact path or a nested route under it (e.g. /products/categories). */
+function pathMatchesHref(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(href + "/");
+}
+
+/**
+ * Among sibling links, the longest matching href wins so
+ * /inventory/opening-stock highlights Opening Stock, not Inventory.
+ */
+function activeChildHref(
+  pathname: string,
+  children: { href: string }[],
+): string | null {
+  const matches = children.filter((c) => pathMatchesHref(pathname, c.href));
+  if (matches.length === 0) return null;
+  return matches.reduce((best, c) =>
+    c.href.length > best.href.length ? c : best,
+  ).href;
+}
+
 export function AppSidebar() {
   const pathname = usePathname();
   const t = useTranslations("sidebar");
@@ -210,6 +230,7 @@ export function AppSidebar() {
       children: [
         { title: "Sales", href: "/dashboard/sales", icon: ShoppingCart, requires: ["SELL"] },
         { title: "Customers", href: "/dashboard/sales/customers", icon: Users, requires: ["MANAGE_CLIENTS"] },
+        { title: "Purchases", href: "/dashboard/purchasing", icon: Package, requires: ["MANAGE_CLIENTS"] },
       ],
     },
     {
@@ -332,8 +353,10 @@ export function AppSidebar() {
       requires: ["APPLY_LIFECYCLE"],
     },
     {
-      // Reading the recall register is open; issuing one is not, and the page
-      // itself gates the action.
+      // Reading the recall register needs VIEW_OPERATIONS. Issuing and
+      // lifting need MANAGE_RECALL — gated on Trace actions and the detail
+      // page, not by hiding this link (warehouse staff still need to see
+      // which lots are recalled).
       title: "Recalls",
       href: "/dashboard/recall",
       icon: AlertTriangle,
@@ -400,10 +423,18 @@ export function AppSidebar() {
               {visiblePlatform.map((item) => {
                 const Icon = item.icon;
                 const hasChildren = item.children && item.children.length > 0;
-                const isSubOpen = !!openSubmenus[item.key];
-                const isChildActive = item.children?.some((c) => pathname === c.href || pathname.startsWith(c.href + "/"));
+                const isChildActive = item.children?.some((c) =>
+                  pathMatchesHref(pathname, c.href),
+                );
+                // Keep the section open while a nested child page is active
+                // (e.g. Categories under Products) so the highlight stays visible.
+                const isSubOpen = !!openSubmenus[item.key] || !!isChildActive;
+                // Exact only: /dashboard must not light up for every /dashboard/... page.
                 const isDirectActive = item.href ? pathname === item.href : false;
-                const isActive = isDirectActive || isChildActive;
+                const isActive = isDirectActive || !!isChildActive;
+                const activeChild = item.children
+                  ? activeChildHref(pathname, item.children)
+                  : null;
 
                 if (!hasChildren && item.href) {
                   return (
@@ -450,7 +481,7 @@ export function AppSidebar() {
                     {isSubOpen && !isCollapsed && item.children && (
                       <SidebarMenuSub className="ml-5 mt-1 border-l-2 border-white/25 pl-2 space-y-0.5">
                         {item.children.map((child) => {
-                          const isCurrent = pathname === child.href;
+                          const isCurrent = child.href === activeChild;
                           const ChildIcon = child.icon;
                           return (
                             <SidebarMenuSubItem key={child.href}>

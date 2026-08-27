@@ -38,6 +38,27 @@ export default function ConsumerVerifyPage() {
   // Handle scanned result with strict deduplication
   const handleScannedResult = (decodedText: string) => {
     let token = decodedText.trim();
+
+    // Category share QRs encode a full /c/{token} URL — send them there,
+    // not into item verification.
+    if (token.includes("/c/")) {
+      const parts = token.split("/c/");
+      const categoryToken = parts[parts.length - 1].split("?")[0].split("#")[0];
+      if (!categoryToken) return;
+      const now = Date.now();
+      if (
+        (lastScanRef.current.code === categoryToken &&
+          now - lastScanRef.current.time < 1500) ||
+        now - lastScanRef.current.time < 400
+      ) {
+        return;
+      }
+      lastScanRef.current = { code: categoryToken, time: now };
+      stopCamera();
+      router.push(`/c/${encodeURIComponent(categoryToken)}`);
+      return;
+    }
+
     if (token.includes("/verify/")) {
       const parts = token.split("/verify/");
       token = parts[parts.length - 1].split("?")[0].split("#")[0];

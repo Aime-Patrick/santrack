@@ -18,6 +18,14 @@ export function useProductCategories() {
   });
 }
 
+export function useCategoryDetail(id: number | null) {
+  return useQuery({
+    queryKey: ["product-categories", id],
+    queryFn: () => productService.getCategory(id!),
+    enabled: id != null && id > 0,
+  });
+}
+
 /**
  * Category writes.
  *
@@ -64,6 +72,27 @@ export function useWithdrawCategory() {
     },
     onError: (error) =>
       toast.error(getApiErrorMessage(error, "Could not withdraw that category")),
+  });
+}
+
+export function useCategoryShareLink(categoryId: number | null) {
+  return useQuery({
+    queryKey: ["category-share-link", categoryId],
+    queryFn: () => productService.getCategoryShareLink(categoryId!),
+    enabled: categoryId != null,
+  });
+}
+
+export function useRotateCategoryShareLink() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => productService.rotateCategoryShareLink(id),
+    onSuccess: (share) => {
+      qc.invalidateQueries({ queryKey: ["category-share-link", share.categoryId] });
+      toast.success("Share link regenerated — old QR codes no longer work");
+    },
+    onError: (error) =>
+      toast.error(getApiErrorMessage(error, "Could not regenerate share link")),
   });
 }
 
@@ -156,8 +185,9 @@ export function useUpdateProduct() {
   return useMutation({
     mutationFn: ({ id, input }: { id: number; input: CreateProductInput }) =>
       productService.update(id, input),
-    onSuccess: () => {
+    onSuccess: (_product, { id }) => {
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["product", id] });
       toast.success("Product updated");
     },
     onError: (err: unknown) => {

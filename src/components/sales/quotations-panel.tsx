@@ -1,15 +1,56 @@
 "use client";
 
+import { useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, FileText, Send, CheckCircle, XCircle, Clock, MoreHorizontal } from "lucide-react";
+import {
+  ArrowUpDown,
+  FileText,
+  Send,
+  CheckCircle,
+  XCircle,
+  Clock,
+  MoreHorizontal,
+  Plus,
+  Trash2,
+  ShoppingCart,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogPopup,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { DataTable, type TableFeatures } from "@/components/ui/data-table";
 import { MetricCard } from "@/components/dashboard/stat-card";
-import { useQuotations, useSendQuotation, useAcceptQuotation, useRejectQuotation, useExpireQuotation } from "@/hooks/commerce";
-import type { Quotation } from "@/services/commerce.service";
+import {
+  useQuotations,
+  useCreateQuotation,
+  useSendQuotation,
+  useAcceptQuotation,
+  useRejectQuotation,
+  useExpireQuotation,
+  useCreateSalesOrderFromQuotation,
+  useCustomers,
+} from "@/hooks/commerce";
+import { useProducts } from "@/hooks/products";
+import { sellableUnits } from "@/lib/sales-unit";
+import type { CommerceLineInput, Customer, Quotation } from "@/services/commerce.service";
+import type { Product } from "@/services/product.service";
 
 const statusColors: Record<string, string> = {
   DRAFT: "border-border bg-muted/60 text-muted-foreground",
@@ -21,12 +62,19 @@ const statusColors: Record<string, string> = {
 
 export function QuotationsPanel() {
   const { data, isLoading } = useQuotations();
+  const { data: customerData } = useCustomers();
+  const createQuotation = useCreateQuotation();
   const sendQuotation = useSendQuotation();
   const acceptQuotation = useAcceptQuotation();
   const rejectQuotation = useRejectQuotation();
   const expireQuotation = useExpireQuotation();
+  const createFromQuote = useCreateSalesOrderFromQuotation();
+
+  const [createOpen, setCreateOpen] = useState(false);
+
   const quotations = data?.content ?? [];
   const total = data?.total ?? 0;
+  const customers = customerData?.content ?? [];
   const draftCount = quotations.filter((q) => q.status === "DRAFT").length;
   const sentCount = quotations.filter((q) => q.status === "SENT").length;
   const acceptedCount = quotations.filter((q) => q.status === "ACCEPTED").length;
@@ -125,6 +173,14 @@ export function QuotationsPanel() {
                   </DropdownMenuItem>
                 </>
               )}
+              {quote.status === "ACCEPTED" && (
+                <DropdownMenuItem
+                  onClick={() => createFromQuote.mutate(quote)}
+                  disabled={createFromQuote.isPending}
+                >
+                  <ShoppingCart className="mr-2 size-4" /> Convert to order
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -134,9 +190,14 @@ export function QuotationsPanel() {
 
   return (
     <div className="space-y-6">
-      <p className="max-w-prose text-sm text-muted-foreground">
-        Create and manage price quotations for customers.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-prose text-sm text-muted-foreground">
+          Create and manage price quotations for customers.
+        </p>
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-2 size-4" /> New quotation
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <MetricCard title="Total Quotes" value={total} icon={<FileText className="size-4" />} iconBg="bg-primary" caption="All quotations" />
@@ -158,6 +219,272 @@ export function QuotationsPanel() {
           )}
         </CardContent>
       </Card>
+
+      <NewQuotationDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        customers={customers}
+        onSubmit={(data) =>
+          createQuotation.mutate(data, { onSuccess: () => setCreateOpen(false) })
+        }
+        pending={createQuotation.isPending}
+      />
+    </div>
+  );
+}
+
+type DraftLine = {
+  productId: string;
+  requestedQuantity: string;
+  salesUnit: string;
+  unitPrice: string;
+};
+
+function NewQuotationDialog({
+  open,
+  onOpenChange,
+  customers,
+  onSubmit,
+  pending,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  customers: Customer[];
+  onSubmit: (data: {
+    customerId: number;
+    lines: CommerceLineInput[];
+    taxPercent?: string;
+    notes?: string;
+  }) => void;
+  pending: boolean;
+}) {
+  const { data: products } = useProducts(0, 200);
+  const [customerId, setCustomerId] = useState("");
+  const [taxPercent, setTaxPercent] = useState("");
+  const [lines, setLines] = useState<DraftLine[]>([
+    { productId: "", requestedQuantity: "", salesUnit: "", unitPrice: "" },
+  ]);
+
+  const chosen = customers.find((c) => String(c.id) === customerId);
+  const catalogue = products?.content ?? [];
+
+  const updateLine = (index: number, patch: Partial<DraftLine>) =>
+    setLines((prev) => prev.map((line, i) => (i === index ? { ...line, ...patch } : line)));
+
+  const selectProduct = (index: number, productId: string) => {
+    const product = catalogue.find((p) => String(p.id) === productId);
+    const units = product ? sellableUnits(product) : [];
+    updateLine(index, { productId, salesUnit: units[0] ?? "" });
+  };
+
+  const validLines = lines.filter((line) => {
+    if (line.productId === "" || Number(line.requestedQuantity) <= 0 || line.unitPrice === "") {
+      return false;
+    }
+    const product = catalogue.find((p) => String(p.id) === line.productId);
+    const units = product ? sellableUnits(product) : [];
+    if (units.length > 0 && !line.salesUnit) return false;
+    return true;
+  });
+
+  const reset = () => {
+    setCustomerId("");
+    setTaxPercent("");
+    setLines([{ productId: "", requestedQuantity: "", salesUnit: "", unitPrice: "" }]);
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) reset();
+        onOpenChange(next);
+      }}
+    >
+      <DialogPopup className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>New quotation</DialogTitle>
+          <DialogDescription>
+            Quote in the customer&apos;s sales unit. Nothing is reserved until an order is confirmed.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Customer</Label>
+              <Select value={customerId} onValueChange={(v) => setCustomerId(v ?? "")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Who is this for">
+                    {chosen ? () => chosen.name : undefined}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id} value={String(customer.id)}>
+                      {customer.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="quote-tax">Tax %</Label>
+              <Input
+                id="quote-tax"
+                type="number"
+                min={0}
+                value={taxPercent}
+                onChange={(e) => setTaxPercent(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Lines</Label>
+            <div className="space-y-2">
+              {lines.map((line, index) => {
+                const product = catalogue.find((p) => String(p.id) === line.productId);
+                const units = product ? sellableUnits(product) : [];
+                return (
+                  <QuoteLineRow
+                    key={index}
+                    line={line}
+                    products={catalogue}
+                    units={units}
+                    canRemove={lines.length > 1}
+                    onProductChange={(id) => selectProduct(index, id)}
+                    onChange={(patch) => updateLine(index, patch)}
+                    onRemove={() => setLines((prev) => prev.filter((_, i) => i !== index))}
+                  />
+                );
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setLines((prev) => [
+                  ...prev,
+                  { productId: "", requestedQuantity: "", salesUnit: "", unitPrice: "" },
+                ])
+              }
+            >
+              <Plus className="mr-2 size-4" /> Add line
+            </Button>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            disabled={!customerId || validLines.length === 0 || pending}
+            onClick={() =>
+              onSubmit({
+                customerId: Number(customerId),
+                lines: validLines.map((line) => ({
+                  productId: Number(line.productId),
+                  requestedQuantity: line.requestedQuantity,
+                  unitPrice: line.unitPrice,
+                  salesUnit: line.salesUnit || undefined,
+                })),
+                taxPercent: taxPercent || undefined,
+              })
+            }
+          >
+            {pending ? "Creating..." : "Create quotation"}
+          </Button>
+        </DialogFooter>
+      </DialogPopup>
+    </Dialog>
+  );
+}
+
+function QuoteLineRow({
+  line,
+  products,
+  units,
+  canRemove,
+  onProductChange,
+  onChange,
+  onRemove,
+}: {
+  line: DraftLine;
+  products: Product[];
+  units: string[];
+  canRemove: boolean;
+  onProductChange: (productId: string) => void;
+  onChange: (patch: Partial<DraftLine>) => void;
+  onRemove: () => void;
+}) {
+  const grid =
+    units.length > 0
+      ? "grid-cols-[1fr_90px_110px_110px_auto]"
+      : "grid-cols-[1fr_90px_110px_auto]";
+
+  return (
+    <div className={`grid ${grid} gap-2`}>
+      <Select value={line.productId} onValueChange={(v) => onProductChange(v ?? "")}>
+        <SelectTrigger>
+          <SelectValue placeholder="Product">
+            {line.productId
+              ? () => products.find((p) => String(p.id) === line.productId)?.name ?? line.productId
+              : undefined}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {products.map((product) => (
+            <SelectItem key={product.id} value={String(product.id)}>
+              {product.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Input
+        type="number"
+        min={1}
+        value={line.requestedQuantity}
+        onChange={(e) => onChange({ requestedQuantity: e.target.value })}
+        placeholder="Qty"
+        aria-label="Requested quantity"
+      />
+      {units.length > 0 ? (
+        <Select value={line.salesUnit} onValueChange={(v) => onChange({ salesUnit: v ?? "" })}>
+          <SelectTrigger>
+            <SelectValue placeholder="Unit">
+              {line.salesUnit ? () => line.salesUnit : undefined}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {units.map((unit) => (
+              <SelectItem key={unit} value={unit}>
+                {unit}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : null}
+      <Input
+        type="number"
+        min={0}
+        value={line.unitPrice}
+        onChange={(e) => onChange({ unitPrice: e.target.value })}
+        placeholder="Unit price"
+        aria-label="Unit price"
+      />
+      <Button
+        variant="ghost"
+        size="sm"
+        className="size-9 p-0"
+        disabled={!canRemove}
+        onClick={onRemove}
+        aria-label="Remove line"
+      >
+        <Trash2 className="size-4" />
+      </Button>
     </div>
   );
 }

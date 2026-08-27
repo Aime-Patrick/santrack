@@ -28,6 +28,12 @@ export interface Product {
    * the pack, the carton and the pallet, so printing takes an override.
    */
   barcodeSymbology: Symbology | null;
+  /** Product unit the catalogue is counted in (e.g. BOTTLE, KG). */
+  baseUnit: string | null;
+  /** Optional pack name (e.g. CARTON). Set with unitsPerPack or not at all. */
+  packUnit: string | null;
+  /** How many base units one pack holds. Whole number ≥ 2 when packUnit is set. */
+  unitsPerPack: number | null;
 }
 
 export interface ProductCategory {
@@ -40,6 +46,64 @@ export interface ProductCategory {
   active: boolean;
   /** How many products are filed under it — what makes withdrawing a decision. */
   productCount: number;
+  /** Present when create also minted this org's share link. */
+  share?: CategoryShareLink;
+}
+
+/** Org-scoped public share link for a category. */
+export interface CategoryShareLink {
+  token: string;
+  url: string;
+  categoryId: number;
+  organizationId: number;
+  createdAt: string;
+  rotatedAt: string | null;
+}
+
+export interface PublicCategoryShare {
+  known: boolean;
+  category?: {
+    code: string;
+    name: string;
+    active: boolean;
+  };
+  organization?: {
+    name: string;
+  };
+  products?: Array<{
+    name: string;
+    sku: string;
+    brand: string | null;
+    gtin: string | null;
+  }>;
+}
+
+export interface CategoryDetail {
+  id: number;
+  code: string;
+  name: string;
+  parentId: number | null;
+  parent: { id: number; code: string; name: string } | null;
+  active: boolean;
+  children: Array<{ id: number; code: string; name: string; active: boolean }>;
+  share: CategoryShareLink;
+  summary: {
+    productCount: number;
+    batchCount: number;
+    unitCount: number;
+    unitsByStatus: Record<string, number>;
+    batchesByStatus: Record<string, number>;
+  };
+  products: Array<{
+    id: number;
+    name: string;
+    sku: string;
+    brand: string | null;
+    gtin: string | null;
+    batchCount: number;
+    unitCount: number;
+    unitsByStatus: Record<string, number>;
+  }>;
 }
 
 /**
@@ -80,6 +144,10 @@ export interface CreateProductInput {
   specification?: string;
   gtin?: string;
   barcodeSymbology?: Symbology;
+  baseUnit?: string;
+  packUnit?: string;
+  /** Send with packUnit; null clears an existing pack size. */
+  unitsPerPack?: number | null;
 }
 
 export interface ProductListResponse {
@@ -124,6 +192,12 @@ export const productService = {
       .then((r) => r.data);
   },
 
+  getCategory(id: number): Promise<CategoryDetail> {
+    return api
+      .get<CategoryDetail>(`/api/product-categories/${id}`)
+      .then((r) => r.data);
+  },
+
   updateCategory(
     id: number,
     input: UpdateCategoryInput,
@@ -137,6 +211,39 @@ export const productService = {
   withdrawCategory(id: number): Promise<ProductCategory> {
     return api
       .delete<ProductCategory>(`/api/product-categories/${id}`)
+      .then((r) => r.data);
+  },
+
+  getCategoryShareLink(id: number): Promise<CategoryShareLink> {
+    return api
+      .get<CategoryShareLink>(`/api/product-categories/${id}/share-link`)
+      .then((r) => r.data);
+  },
+
+  rotateCategoryShareLink(id: number): Promise<CategoryShareLink> {
+    return api
+      .post<CategoryShareLink>(`/api/product-categories/${id}/share-link/rotate`)
+      .then((r) => r.data);
+  },
+
+  /** Downloads the share QR (PNG by default). Caller owns the blob URL. */
+  async downloadCategoryShareQr(
+    id: number,
+    format: "png" | "svg" = "png",
+  ): Promise<Blob> {
+    const response = await api.get(
+      `/api/product-categories/${id}/share-link/qr`,
+      {
+        params: { format },
+        responseType: "blob",
+      },
+    );
+    return response.data as Blob;
+  },
+
+  resolvePublicCategory(token: string): Promise<PublicCategoryShare> {
+    return api
+      .get<PublicCategoryShare>(`/api/public/categories/${encodeURIComponent(token)}`)
       .then((r) => r.data);
   },
 

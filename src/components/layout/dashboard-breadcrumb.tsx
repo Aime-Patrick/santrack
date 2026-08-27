@@ -29,6 +29,7 @@ const PAGE_LABELS: Record<string, string> = {
   audit: "Audit Logs",
   licenses: "Licenses",
   regulator: "Regulator",
+  recall: "Recalls",
   manufacturing: "Manufacturing",
   inventory: "Inventory",
   batches: "Batches",
@@ -40,14 +41,42 @@ const PAGE_LABELS: Record<string, string> = {
   "stock-transfer": "Stock Transfer",
   "stock-relocate": "Stock Relocate",
   trace: "Traceability",
+  resources: "Resources",
+  quality: "Quality Control",
+  production: "Production",
+  logistics: "Logistics",
+  finance: "Finance",
+  categories: "Categories",
+  brands: "Brands",
   new: "Add New",
   compliance: "Compliance",
   facilities: "Sites",
   "start-production": "Start Production",
 };
 
+/**
+ * Sidebar sections that are menus, not pages. Building hrefs from the path
+ * alone would link "Manufacturing" to /dashboard/manufacturing, which 404s.
+ * Send those crumbs to the section's real landing page instead.
+ */
+const SECTION_LANDINGS: Record<string, string> = {
+  manufacturing: "/dashboard/manufacturing/production",
+  logistics: "/dashboard/logistics/shipments",
+  finance: "/dashboard/finance/accounts",
+};
+
 function labelFromSegment(segment: string): string {
   return PAGE_LABELS[segment] ?? segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ");
+}
+
+function hrefForSegments(segments: string[], endIndex: number): string {
+  const built = "/dashboard/" + segments.slice(0, endIndex + 1).join("/");
+  const last = segments[endIndex];
+  // Only rewrite when this crumb is the bare section (no deeper path yet).
+  if (endIndex === 0 && last && SECTION_LANDINGS[last]) {
+    return SECTION_LANDINGS[last];
+  }
+  return built;
 }
 
 export function DashboardBreadcrumb() {
@@ -68,11 +97,10 @@ export function DashboardBreadcrumb() {
   } else {
     // Add intermediate segments as links, last one as current page
     segments.forEach((seg, i) => {
-      const href = "/dashboard/" + segments.slice(0, i + 1).join("/");
       const isLast = i === segments.length - 1;
       items.push({
         label: labelFromSegment(seg),
-        href: isLast ? undefined : href,
+        href: isLast ? undefined : hrefForSegments(segments, i),
       });
     });
   }

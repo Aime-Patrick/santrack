@@ -45,6 +45,8 @@ import {
   SellDialog,
 } from "@/components/trace/action-dialogs";
 import { useTraceTimeline, useRefreshTrace } from "@/hooks/trace";
+import { useResolveCode } from "@/hooks/scan";
+import { getApiErrorMessage } from "@/lib/api";
 import {
   useLifecycleAction,
   useOpenPackage,
@@ -75,6 +77,10 @@ const EVENT_COLORS: Record<string, string> = {
   EXPIRED: "border-danger/30 bg-danger/10 text-danger",
   DAMAGED: "border-danger/30 bg-danger/10 text-danger",
   DESTROYED: "border-danger/30 bg-danger/10 text-danger",
+  // Nothing changed about the product — somebody just asked what it was.
+  // Neutral on purpose: a scan is not good news or bad news, and colouring it
+  // either way would misread a shopper checking a label.
+  VERIFIED: "border-primary/30 bg-primary/10 text-primary",
 };
 
 const STATUS_TONES: Record<string, string> = {
@@ -121,7 +127,14 @@ export default function ItemConsolePage() {
   const [activeCode, setActiveCode] = useState(
     searchParams.get("code") ?? searchParams.get("qr") ?? "",
   );
+  const [scanNote, setScanNote] = useState<{
+    title: string;
+    detail: string;
+    href?: string;
+    hrefLabel?: string;
+  } | null>(null);
   const [dialog, setDialog] = useState<ItemAction | null>(null);
+  const resolveCode = useResolveCode();
 
   const { data: trace, isLoading, error } = useTraceTimeline(activeCode);
   const refresh = useRefreshTrace(activeCode);
@@ -159,6 +172,45 @@ export default function ItemConsolePage() {
 
   const pendingAction: ItemAction | null = openSeal.isPending ? "OPEN" : null;
 
+  const handleScan = async (code: string) => {
+    setDialog(null);
+    setScanNote(null);
+    try {
+      const resolved = await resolveCode.mutateAsync(code);
+      if (resolved.kind === "ITEM" && resolved.itemQrCode) {
+        setActiveCode(resolved.itemQrCode);
+        return;
+      }
+      if (resolved.kind === "PRODUCT" && resolved.productId) {
+        setActiveCode("");
+        setScanNote({
+          title: "That is a product SKU, not a unit identity",
+          detail:
+            `${resolved.describes}. Trace needs the pool QR (UUID) or serial like ST-… on one bottle or carton. Product catalogue codes do not open an item timeline.`,
+          href: `/dashboard/products/${resolved.productId}?tab=labels`,
+          hrefLabel: "Open product label pools",
+        });
+        return;
+      }
+      if (resolved.kind === "BATCH" && resolved.batchId) {
+        setActiveCode("");
+        setScanNote({
+          title: "That is a batch code",
+          detail: `${resolved.describes}. Scan a unit from that batch to open its timeline.`,
+        });
+        return;
+      }
+      setActiveCode("");
+      setScanNote({
+        title: "Not an item identity",
+        detail: resolved.describes,
+      });
+    } catch {
+      // Fall back to timeline lookup (e.g. offline path / older codes).
+      setActiveCode(code);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -168,8 +220,8 @@ export default function ItemConsolePage() {
         <div>
           <h1 className="text-xl font-bold tracking-tight">Trace &amp; Act</h1>
           <p className="text-sm text-muted-foreground">
-            Scan any code to see everything about that product or package — and
-            do everything to it, without leaving this page.
+            Scan a unit or package identity — not the product SKU from the
+            catalogue.
           </p>
         </div>
       </div>
@@ -178,35 +230,52 @@ export default function ItemConsolePage() {
         <CardContent>
           <QrScanInput
             onScan={(code) => {
-              setActiveCode(code);
-              setDialog(null);
+              void handleScan(code);
             }}
             scanning="a unit, box or pallet"
-            placeholder="e.g. ST-LPT-000001"
+            placeholder="e.g. ST-SKUB-000001 or pool QR"
           />
         </CardContent>
       </Card>
 
-      {isLoading && activeCode && (
+      {scanNote ? (
+        <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm text-foreground">
+          <p className="font-medium">{scanNote.title}</p>
+          <p className="mt-1 text-muted-foreground">{scanNote.detail}</p>
+          {scanNote.href ? (
+            <Link
+              href={scanNote.href}
+              className="mt-2 inline-block text-sm font-medium text-primary underline"
+            >
+              {scanNote.hrefLabel ?? "Open"}
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
+
+      {(isLoading || resolveCode.isPending) && (activeCode || resolveCode.isPending) ? (
         <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
-          Looking up {activeCode}…
+          Looking up…
         </div>
-      )}
+      ) : null}
 
-      {error && activeCode && !isLoading && (
+      {error && activeCode && !isLoading && !resolveCode.isPending ? (
         <div className="rounded-lg border border-danger/30 bg-danger/5 p-4 text-sm text-danger">
           <p className="font-medium">Could not load this identity</p>
           <p className="mt-1 text-muted-foreground">
-            {error instanceof Error ? error.message : "Unknown error"}
+            {getApiErrorMessage(
+              error,
+              error instanceof Error ? error.message : "Unknown error",
+            )}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             Scanned: <span className="font-mono">{activeCode}</span>
           </p>
         </div>
-      )}
+      ) : null}
 
-      {!activeCode && (
+      {!activeCode && !scanNote && !resolveCode.isPending ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="flex size-14 items-center justify-center rounded-full bg-primary/10">
             <ScanLine className="size-6 text-primary" />
@@ -215,11 +284,11 @@ export default function ItemConsolePage() {
             Scan something to begin
           </p>
           <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            A unit, a box or a pallet. Whatever it is, its whole history and
-            everything you can do to it will be here.
+            Use a pool identity QR or serial (ST-…). A product SKU only names
+            the catalogue item, not one bottle or carton.
           </p>
         </div>
-      )}
+      ) : null}
 
       {trace && item && (
         <>
@@ -276,6 +345,13 @@ export default function ItemConsolePage() {
                       icon={Boxes}
                       label="Quantity"
                       value={String(item.quantity)}
+                    />
+                  )}
+                  {trace.verificationCount > 0 && (
+                    <Fact
+                      icon={ScanLine}
+                      label="Consumer scans"
+                      value={String(trace.verificationCount)}
                     />
                   )}
                 </div>

@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authService } from "@/services/auth.service";
-import type { RegisterInput, LoginInput, CreateOrganizationInput, UserResponse, UserRole } from "@/lib/api";
+import type {
+  RegisterInput,
+  LoginInput,
+  CreateOrganizationInput,
+  ChangePasswordInput,
+  UserResponse,
+  UserRole,
+} from "@/lib/api";
 import { clearAuthToken, getAuthToken, setAuthToken } from "@/lib/auth";
 import {
   PREVIEW_ROLE_CAPABILITIES,
@@ -23,6 +30,7 @@ function mockUser(role: UserRole, standing = false): UserResponse {
     fullName: "Design Admin",
     role,
     organization: null,
+    mustChangePassword: false,
     capabilities: [
       ...PREVIEW_ROLE_CAPABILITIES[role],
       ...(standing
@@ -61,6 +69,19 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: (input: LoginInput) => authService.login(input),
+    onSuccess: (data) => {
+      setAuthToken(data.token);
+      queryClient.setQueryData(authKeys.me, data.user);
+    },
+  });
+}
+
+/** Replaces the caller's password and clears mustChangePassword. */
+export function useChangePassword() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: ChangePasswordInput) => authService.changePassword(input),
     onSuccess: (data) => {
       setAuthToken(data.token);
       queryClient.setQueryData(authKeys.me, data.user);

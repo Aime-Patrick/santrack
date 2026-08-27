@@ -1,36 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { type ColumnDef } from "@tanstack/react-table";
 import {
-  Plus, MoreHorizontal, Shield, Building2, Mail, UserCog,
-  Wrench, Settings as SettingsIcon, AlertTriangle, CheckCircle,
-  Clock, Cog,
+  Building2, UserCog, Wrench, Settings as SettingsIcon, AlertTriangle, Cog,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { DataTable, type TableFeatures } from "@/components/ui/data-table";
 import { useMe } from "@/hooks/auth";
-import { useUsers } from "@/hooks/users";
-import { EditRoleDialog } from "@/components/dashboard/edit-role-dialog";
-import type { UserResponse } from "@/lib/api";
-
-const roleLabels: Record<string, string> = {
-  SYSTEM_ADMIN: "System Admin",
-  ORG_ADMIN: "Org Admin",
-  PRODUCTION_MANAGER: "Production Manager",
-  PRODUCTION_OFFICER: "Production Officer",
-  WAREHOUSE_MANAGER: "Warehouse Manager",
-  WAREHOUSE_OFFICER: "Warehouse Officer",
-  QUALITY_OFFICER: "Quality Officer",
-  LOGISTICS_OFFICER: "Logistics Officer",
-  SALES_OFFICER: "Sales Officer",
-  MANAGEMENT: "Management",
-  AUDITOR: "Auditor",
-};
+import { TeamMembersPanel } from "@/components/dashboard/team-members-panel";
+import { ROLE_LABELS } from "@/lib/user-roles";
 
 const maintenanceFeatures = [
   {
@@ -63,76 +41,10 @@ const maintenanceStatus = {
 
 export default function SettingsPage() {
   const { data: me } = useMe();
-  const { data: users, isLoading: usersLoading } = useUsers(me?.organization?.id);
   const org = me?.organization;
-  const [editUser, setEditUser] = useState<UserResponse | null>(null);
-  const [showEditRole, setShowEditRole] = useState(false);
-
-  const userColumns: ColumnDef<TableFeatures, UserResponse>[] = [
-    {
-      accessorKey: "fullName",
-      header: "Name",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-white">
-            <span className="text-xs font-medium">
-              {(row.getValue("fullName") as string)?.charAt(0)?.toUpperCase()}
-            </span>
-          </div>
-          <span className="font-medium">{row.getValue("fullName")}</span>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "email",
-      header: "Email",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Mail className="size-3.5" />
-          {row.getValue("email")}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "role",
-      header: "Role",
-      cell: ({ row }) => {
-        const role = row.getValue("role") as string;
-        return <Badge variant="outline">{roleLabels[role] ?? role}</Badge>;
-      },
-    },
-    {
-      id: "actions",
-      header: "",
-      cell: ({ row }) => {
-        const user = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0" />}>
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => {
-                  setEditUser(user);
-                  setShowEditRole(true);
-                }}
-              >
-                Edit Role
-              </DropdownMenuItem>
-              <DropdownMenuItem>Reset Password</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
-    },
-  ];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
           <SettingsIcon className="size-4" />
@@ -161,7 +73,6 @@ export default function SettingsPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Organization Tab */}
         <TabsContent value="organization" className="mt-4">
           <Card>
             <CardHeader>
@@ -181,7 +92,9 @@ export default function SettingsPage() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">Your Role</p>
-                    <Badge variant="outline">{roleLabels[me?.role ?? ""] ?? me?.role}</Badge>
+                    <Badge variant="outline">
+                      {ROLE_LABELS[me?.role ?? "ORG_ADMIN"] ?? me?.role}
+                    </Badge>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">User ID</p>
@@ -195,43 +108,18 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        {/* Users Tab */}
         <TabsContent value="users" className="mt-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Team Members</CardTitle>
-                <CardDescription>{users?.length ?? 0} users in your organization</CardDescription>
-              </div>
-              <Button size="sm">
-                <Plus className="mr-1.5 size-4" />
-                Add User
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {usersLoading ? (
-                <div className="flex h-32 items-center justify-center text-muted-foreground">Loading users...</div>
-              ) : (
-                <DataTable
-                  columns={userColumns}
-                  data={users ?? []}
-                  filterPlaceholder="Search users..."
-                  filterColumn="fullName"
-                  pageSize={10}
-                  noBorder
-                />
-              )}
-            </CardContent>
-          </Card>
+          <TeamMembersPanel />
         </TabsContent>
 
-        {/* Maintenance Tab */}
         <TabsContent value="maintenance" className="mt-4">
           <div className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Maintenance & Equipment</CardTitle>
-                <CardDescription>Manage machine lifecycle, maintenance schedules, and warranties</CardDescription>
+                <CardDescription>
+                  Manage machine lifecycle, maintenance schedules, and warranties
+                </CardDescription>
               </CardHeader>
             </Card>
 
@@ -240,7 +128,9 @@ export default function SettingsPage() {
                 <Card key={f.title}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <div className={`flex size-10 items-center justify-center rounded-lg ${f.iconBg} text-white`}>
+                      <div
+                        className={`flex size-10 items-center justify-center rounded-lg ${f.iconBg} text-white`}
+                      >
                         {f.icon}
                       </div>
                       <Badge variant="outline" className={maintenanceStatus[f.status].color}>
@@ -256,12 +146,6 @@ export default function SettingsPage() {
           </div>
         </TabsContent>
       </Tabs>
-
-      <EditRoleDialog
-        open={showEditRole}
-        onOpenChange={setShowEditRole}
-        user={editUser}
-      />
     </div>
   );
 }

@@ -15,7 +15,12 @@ export function OrgGuard({ children }: { children: React.ReactNode }) {
   const { data: me } = useMe({ enabled: !DESIGN_MODE });
 
   useEffect(() => {
-    if (!DESIGN_MODE && me && me.role !== "SYSTEM_ADMIN" && !me.organization) {
+    if (DESIGN_MODE || !me) return;
+    if (me.mustChangePassword) {
+      router.replace("/change-password");
+      return;
+    }
+    if (me.role !== "SYSTEM_ADMIN" && !me.organization) {
       router.replace("/onboarding");
     }
   }, [me, router]);

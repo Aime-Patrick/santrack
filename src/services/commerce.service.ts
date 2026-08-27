@@ -89,6 +89,9 @@ export interface QuotationLine {
   productId: number;
   productName: string;
   description: string;
+  salesUnit: string | null;
+  requestedQuantity: number;
+  /** Alias of requestedQuantity — kept for older display paths. */
   quantity: number;
   unitPrice: number;
   lineTotal: number | null;
@@ -117,6 +120,8 @@ export interface SalesOrder {
   transferId: number | null;
   /** Set when they left the chain instead. Exactly one of the two once fulfilled. */
   saleId: number | null;
+  /** Set when warehouse rounding was accepted before confirm (DR-09). */
+  roundingAcceptedAt: string | null;
   createdAt: string;
   lines: SalesOrderLine[];
 }
@@ -126,10 +131,47 @@ export interface SalesOrderLine {
   productId: number;
   productName: string;
   description: string;
+  salesUnit: string | null;
+  requestedQuantity: number;
+  fulfilmentQuantity: number | null;
+  /** Alias of requestedQuantity — kept for older display paths. */
   quantity: number;
   unitPrice: number;
   lineTotal: number | null;
 }
+
+export interface FulfilmentPlanLine {
+  lineId: number;
+  productId: number;
+  productName: string;
+  salesUnit: string | null;
+  baseUnit: string | null;
+  packUnit: string | null;
+  unitsPerPack: number | null;
+  requestedQuantity: number;
+  requestedProductUnits: number;
+  plannedFulfilmentQuantity: number | null;
+  plannedIdentityCount: number | null;
+  availableProductUnits: number;
+  roundedUp: boolean;
+  shortfall: boolean;
+}
+
+export interface FulfilmentPlan {
+  orderId: number;
+  orderNumber: string;
+  roundingAcceptedAt: string | null;
+  lines: FulfilmentPlanLine[];
+  needsRoundingAccept: boolean;
+}
+
+export type CommerceLineInput = {
+  productId: number;
+  requestedQuantity: string;
+  unitPrice: string;
+  salesUnit?: string;
+  description?: string;
+};
 
 export const salesOrderService = {
   list: (page = 0, size = 20) => api.get<PaginatedResponse<SalesOrder>>("/api/commerce/orders", { params: { page, size } }).then((r) => r.data),
@@ -139,11 +181,21 @@ export const salesOrderService = {
    * the API keeps exact, and it validates them with @IsNumberString. Passing
    * real numbers is rejected.
    */
-  create: (data: { customerId: number; quotationId?: number; lines: { productId: number; quantity: string; unitPrice: string; description?: string }[]; taxPercent?: string; notes?: string }) =>
-    api.post<SalesOrder>("/api/commerce/orders", data).then((r) => r.data),
+  create: (data: {
+    customerId: number;
+    quotationId?: number;
+    lines: CommerceLineInput[];
+    taxPercent?: string;
+    notes?: string;
+  }) => api.post<SalesOrder>("/api/commerce/orders", data).then((r) => r.data),
   confirm: (id: number) => api.post<SalesOrder>(`/api/commerce/orders/${id}/confirm`).then((r) => r.data),
+  acceptRounding: (id: number) =>
+    api.post<SalesOrder>(`/api/commerce/orders/${id}/accept-rounding`).then((r) => r.data),
+  release: (id: number) => api.post<SalesOrder>(`/api/commerce/orders/${id}/release`).then((r) => r.data),
   fulfil: (id: number) => api.post<SalesOrder>(`/api/commerce/orders/${id}/fulfil`).then((r) => r.data),
   cancel: (id: number) => api.post<SalesOrder>(`/api/commerce/orders/${id}/cancel`).then((r) => r.data),
+  fulfilmentPlan: (id: number) =>
+    api.get<FulfilmentPlan>(`/api/commerce/orders/${id}/fulfilment-plan`).then((r) => r.data),
 };
 
 export const customerService = {
@@ -194,8 +246,13 @@ export const returnService = {
 export const quotationService = {
   list: (page = 0, size = 20) => api.get<PaginatedResponse<Quotation>>("/api/commerce/quotations", { params: { page, size } }).then((r) => r.data),
   get: (id: number) => api.get<Quotation>(`/api/commerce/quotations/${id}`).then((r) => r.data),
-  create: (data: { customerId: number; lines: { productId: number; quantity: number; unitPrice: number; description?: string }[]; taxPercent?: number; notes?: string; validDays?: number }) =>
-    api.post<Quotation>("/api/commerce/quotations", data).then((r) => r.data),
+  create: (data: {
+    customerId: number;
+    lines: CommerceLineInput[];
+    taxPercent?: string;
+    notes?: string;
+    validUntilOn?: string;
+  }) => api.post<Quotation>("/api/commerce/quotations", data).then((r) => r.data),
   send: (id: number) => api.post<Quotation>(`/api/commerce/quotations/${id}/send`).then((r) => r.data),
   accept: (id: number) => api.post<Quotation>(`/api/commerce/quotations/${id}/accept`).then((r) => r.data),
   reject: (id: number, data: { reason: string }) =>

@@ -134,6 +134,14 @@ export function useQualityInspections(page = 0, size = 20) {
   return useQuery({ queryKey: ["quality-inspections", page, size], queryFn: () => qualityInspectionService.list(page, size) });
 }
 
+export function useInspectionEligibility(batchId: number | null) {
+  return useQuery({
+    queryKey: ["quality-inspectability", batchId],
+    queryFn: () => qualityInspectionService.inspectability(batchId!),
+    enabled: batchId != null && batchId > 0,
+  });
+}
+
 export function useCreateInspection() {
   const qc = useQueryClient();
   return useMutation({

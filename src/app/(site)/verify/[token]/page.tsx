@@ -124,10 +124,10 @@ function VerifyCertificate({
         </div>
         <div>
           <Badge variant="outline" className="border-rose-300 bg-rose-50 text-rose-700 text-[11px] font-bold">
-            UNREGISTERED CODE
+            WARNING
           </Badge>
-          <h2 className="mt-2 text-xl font-bold text-slate-900">
-            Product Not Recognized
+          <h2 className="mt-2 text-xl font-bold text-slate-900 uppercase tracking-wide">
+            Product could not be verified
           </h2>
           <p className="mt-1 text-xs text-slate-500 max-w-xs mx-auto">
             {result.verdict || "This code has no matching record in the national traceability registry."}
@@ -137,7 +137,9 @@ function VerifyCertificate({
         <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-3.5 text-xs text-rose-800 flex items-start gap-2 text-left">
           <AlertOctagon className="size-4 shrink-0 text-rose-600 mt-0.5" />
           <span>
-            <strong>Warning:</strong> Do not consume or purchase unverified products. Report suspicious items to Rwanda Standards Board (RSB).
+            <strong>WARNING: PRODUCT COULD NOT BE VERIFIED.</strong> Do not
+            consume or purchase unverified products. Report suspicious items to
+            Rwanda Standards Board (RSB).
           </span>
         </div>
 
@@ -227,11 +229,11 @@ function VerifyCertificate({
                 : isExpired
                   ? "PRODUCT EXPIRED"
                   : isSold
-                    ? "GENUINE · SOLD TO CONSUMER"
+                    ? "PRODUCT VERIFIED · SOLD"
                     : isInTransit
-                      ? "GENUINE · IN TRANSIT"
+                      ? "PRODUCT VERIFIED · IN TRANSIT"
                       : isGood
-                        ? "AUTHENTIC & IN STOCK"
+                        ? "PRODUCT VERIFIED"
                         : "HELD UNDER INSPECTION"}
             </span>
             <p className="mt-0.5 text-xs text-slate-600 leading-relaxed">
@@ -240,11 +242,11 @@ function VerifyCertificate({
                 : isExpired
                   ? `Warning: This product reached its expiration date on ${formatDate(result.expiresOn)}.`
                   : isSold
-                    ? "This product is verified authentic and has been legitimately purchased by a consumer."
+                    ? "This product is verified authentic and has been purchased by a consumer."
                     : isInTransit
-                      ? "This product is verified authentic and is currently in transit between certified facilities."
+                      ? "This product is verified authentic and is in transit between certified facilities."
                       : isGood
-                        ? "This product is verified authentic and authorized for retail purchase."
+                        ? "This product is verified authentic. See product details below."
                         : (result.verdict || "Product status is under inspection.")}
             </p>
           </div>
@@ -274,15 +276,19 @@ function VerifyCertificate({
             )}
             <InfoRow
               icon={CheckCircle2}
-              label="Custody Status"
+              label="Verification status"
               value={
-                isSold
-                  ? "Sold to Consumer"
-                  : isInTransit
-                    ? "In Transit"
-                    : result.itemStatus === "ACTIVE"
-                      ? "In Stock / Retail"
-                      : result.itemStatus || "Active"
+                isRecalled
+                  ? "Recalled"
+                  : isExpired
+                    ? "Expired"
+                    : isSold
+                      ? "Verified · Sold"
+                      : isInTransit
+                        ? "Verified · In transit"
+                        : isGood
+                          ? "Verified"
+                          : result.itemStatus || "Under inspection"
               }
               suffix={
                 <Badge
@@ -291,9 +297,18 @@ function VerifyCertificate({
                     "text-[10px] font-semibold py-0 h-4 border-slate-200",
                     isSold && "bg-emerald-50 text-emerald-700 border-emerald-200",
                     isInTransit && "bg-blue-50 text-blue-700 border-blue-200",
+                    isGood && !isSold && !isInTransit && "bg-emerald-50 text-emerald-700 border-emerald-200",
                   )}
                 >
-                  {isSold ? "SOLD" : (result.itemStatus ?? "IN STOCK")}
+                  {isRecalled
+                    ? "RECALLED"
+                    : isExpired
+                      ? "EXPIRED"
+                      : isSold
+                        ? "SOLD"
+                        : isGood
+                          ? "VERIFIED"
+                          : (result.itemStatus ?? "CHECK")}
                 </Badge>
               }
             />
@@ -307,14 +322,14 @@ function VerifyCertificate({
             {result.facilityName && (
               <InfoRow
                 icon={Building2}
-                label="Facility"
+                label="Production location"
                 value={result.facilityName}
               />
             )}
             {result.batchCode && (
               <InfoRow
                 icon={Package}
-                label="Batch / Lot"
+                label="Batch"
                 value={result.batchCode}
                 suffix={
                   result.batchStatus ? (
@@ -328,14 +343,14 @@ function VerifyCertificate({
             {result.manufacturedOn && (
               <InfoRow
                 icon={Calendar}
-                label="Produced"
+                label="Production date"
                 value={formatDate(result.manufacturedOn)}
               />
             )}
             {result.expiresOn && (
               <InfoRow
                 icon={Clock}
-                label="Expires"
+                label="Expiry date"
                 value={formatDate(result.expiresOn)}
                 highlight={isExpired}
               />

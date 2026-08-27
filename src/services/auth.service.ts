@@ -2,6 +2,7 @@ import {
   api,
   type AuthResponse,
   type CapabilityCatalogue,
+  type ChangePasswordInput,
   type CreateOrganizationInput,
   type LoginInput,
   type OrganizationResponse,
@@ -16,6 +17,12 @@ export const authService = {
 
   login(input: LoginInput): Promise<AuthResponse> {
     return api.post<AuthResponse>("/api/auth/login", input).then((r) => r.data);
+  },
+
+  changePassword(input: ChangePasswordInput): Promise<AuthResponse> {
+    return api
+      .post<AuthResponse>("/api/auth/change-password", input)
+      .then((r) => r.data);
   },
 
   me(): Promise<UserResponse> {

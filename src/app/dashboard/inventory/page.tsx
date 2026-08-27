@@ -65,13 +65,28 @@ function InventoryWorkspace() {
           not something to squeeze into a dialog.
         */}
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" render={<Link href="/dashboard/manufacturing/register-package" />}>
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link href="/dashboard/manufacturing/register-package" />}
+          >
             <PackagePlus className="mr-2 size-4" /> Register package
           </Button>
-          <Button variant="outline" size="sm" render={<Link href="/dashboard/manufacturing/pack" />}>
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link href="/dashboard/manufacturing/pack" />}
+          >
             <PackageCheck className="mr-2 size-4" /> Pack items
           </Button>
-          <Button variant="outline" size="sm" render={<Link href="/dashboard/manufacturing/stock-transfer" />}>
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link href="/dashboard/manufacturing/stock-transfer" />}
+          >
             <Truck className="mr-2 size-4" /> Transfer stock
           </Button>
         </div>
@@ -85,7 +100,7 @@ function InventoryWorkspace() {
           </TabsTrigger>
           <TabsTrigger value="items" className="gap-2">
             <Package className="size-4" />
-            Items
+            Stock codes
           </TabsTrigger>
         </TabsList>
 

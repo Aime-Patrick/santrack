@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,8 +41,12 @@ export function SearchableSelect({
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
   const [highlightedIndex, setHighlightedIndex] = React.useState(0);
+  const [mounted, setMounted] = React.useState(false);
+  const [popupStyle, setPopupStyle] = React.useState<React.CSSProperties>({});
 
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const popupRef = React.useRef<HTMLDivElement>(null);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   const listRef = React.useRef<HTMLDivElement>(null);
 
@@ -62,30 +67,69 @@ export function SearchableSelect({
     );
   }, [items, search]);
 
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Reset highlight index on search change
   React.useEffect(() => {
     setHighlightedIndex(0);
   }, [search]);
 
-  // Focus search input when opened
-  React.useEffect(() => {
-    if (open) {
-      setSearch("");
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 50);
-    }
-  }, [open]);
+  const updatePopupPosition = React.useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
 
-  // Click outside listener
+    const rect = trigger.getBoundingClientRect();
+    const gap = 6;
+    const maxHeight = 288; // max-h-72
+    const spaceBelow = window.innerHeight - rect.bottom - gap;
+    const spaceAbove = rect.top - gap;
+    const openUpward = spaceBelow < Math.min(maxHeight, 160) && spaceAbove > spaceBelow;
+
+    setPopupStyle({
+      position: "fixed",
+      left: rect.left,
+      width: Math.max(rect.width, 240),
+      zIndex: 70,
+      ...(openUpward
+        ? { bottom: window.innerHeight - rect.top + gap, maxHeight: Math.min(maxHeight, spaceAbove) }
+        : { top: rect.bottom + gap, maxHeight: Math.min(maxHeight, Math.max(spaceBelow, 120)) }),
+    });
+  }, []);
+
+  // Position popup when opened; keep it aligned on scroll/resize
+  React.useEffect(() => {
+    if (!open) return;
+
+    setSearch("");
+    updatePopupPosition();
+    const focusTimer = window.setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 50);
+
+    window.addEventListener("resize", updatePopupPosition);
+    // Capture scroll from nested overflow containers too
+    window.addEventListener("scroll", updatePopupPosition, true);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener("resize", updatePopupPosition);
+      window.removeEventListener("scroll", updatePopupPosition, true);
+    };
+  }, [open, updatePopupPosition]);
+
+  // Click outside listener (trigger + portaled popup)
   React.useEffect(() => {
     const handlePointerDown = (e: MouseEvent) => {
+      const target = e.target as Node;
       if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
+        containerRef.current?.contains(target) ||
+        popupRef.current?.contains(target)
       ) {
-        setOpen(false);
+        return;
       }
+      setOpen(false);
     };
 
     if (open) {
@@ -151,6 +195,97 @@ export function SearchableSelect({
     onValueChange("");
   };
 
+  const popup = open && mounted && (
+    <div
+      ref={popupRef}
+      style={popupStyle}
+      className="overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-xl ring-1 ring-black/5 animate-in fade-in-0 zoom-in-95 duration-100"
+      onKeyDown={handleKeyDown}
+    >
+      {/* Search Header */}
+      <div className="flex items-center border-b border-border/80 px-3 py-2 bg-muted/20">
+        <Search className="mr-2 size-3.5 shrink-0 text-muted-foreground" />
+        <input
+          ref={searchInputRef}
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={searchPlaceholder}
+          className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            className="text-muted-foreground hover:text-foreground p-0.5"
+          >
+            <X className="size-3" />
+          </button>
+        )}
+      </div>
+
+      {/* Results List */}
+      <div
+        ref={listRef}
+        className="overflow-y-auto p-1 text-xs space-y-0.5 scroll-py-1"
+        style={{ maxHeight: "calc(100% - 2.5rem)" }}
+      >
+        {filteredItems.length === 0 ? (
+          <div className="py-6 text-center text-xs text-muted-foreground">
+            {emptyMessage}
+          </div>
+        ) : (
+          filteredItems.map((item, index) => {
+            const isSelected = item.value === value;
+            const isHighlighted = index === highlightedIndex;
+
+            return (
+              <div
+                key={item.value}
+                role="option"
+                aria-selected={isSelected}
+                onClick={() => handleSelect(item.value)}
+                onMouseEnter={() => setHighlightedIndex(index)}
+                className={cn(
+                  "flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 cursor-pointer transition-colors text-left select-none",
+                  isHighlighted && "bg-muted text-foreground",
+                  isSelected && "bg-primary/10 text-primary font-semibold",
+                )}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  {item.icon && (
+                    <span className="shrink-0 text-muted-foreground">
+                      {item.icon}
+                    </span>
+                  )}
+                  <div className="truncate">
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate">{item.label}</span>
+                      {item.badge && (
+                        <span className="rounded border bg-muted/60 px-1 py-0.2 text-[9px] font-mono text-muted-foreground">
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
+                    {item.sublabel && (
+                      <span className="text-[10px] text-muted-foreground block truncate">
+                        {item.sublabel}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {isSelected && (
+                  <Check className="size-3.5 shrink-0 text-primary stroke-[2.5]" />
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div
       ref={containerRef}
@@ -159,6 +294,7 @@ export function SearchableSelect({
     >
       {/* ── Trigger Button ── */}
       <button
+        ref={triggerRef}
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
@@ -214,91 +350,7 @@ export function SearchableSelect({
         </div>
       </button>
 
-      {/* ── Searchable Popup ── */}
-      {open && (
-        <div className="absolute z-50 mt-1.5 max-h-72 w-full min-w-[240px] overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-xl ring-1 ring-black/5 animate-in fade-in-0 zoom-in-95 duration-100">
-          {/* Search Header */}
-          <div className="flex items-center border-b border-border/80 px-3 py-2 bg-muted/20">
-            <Search className="mr-2 size-3.5 shrink-0 text-muted-foreground" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={searchPlaceholder}
-              className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                className="text-muted-foreground hover:text-foreground p-0.5"
-              >
-                <X className="size-3" />
-              </button>
-            )}
-          </div>
-
-          {/* Results List */}
-          <div
-            ref={listRef}
-            className="max-h-56 overflow-y-auto p-1 text-xs space-y-0.5 scroll-py-1"
-          >
-            {filteredItems.length === 0 ? (
-              <div className="py-6 text-center text-xs text-muted-foreground">
-                {emptyMessage}
-              </div>
-            ) : (
-              filteredItems.map((item, index) => {
-                const isSelected = item.value === value;
-                const isHighlighted = index === highlightedIndex;
-
-                return (
-                  <div
-                    key={item.value}
-                    role="option"
-                    aria-selected={isSelected}
-                    onClick={() => handleSelect(item.value)}
-                    onMouseEnter={() => setHighlightedIndex(index)}
-                    className={cn(
-                      "flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 cursor-pointer transition-colors text-left select-none",
-                      isHighlighted && "bg-muted text-foreground",
-                      isSelected && "bg-primary/10 text-primary font-semibold",
-                    )}
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      {item.icon && (
-                        <span className="shrink-0 text-muted-foreground">
-                          {item.icon}
-                        </span>
-                      )}
-                      <div className="truncate">
-                        <div className="flex items-center gap-1.5">
-                          <span className="truncate">{item.label}</span>
-                          {item.badge && (
-                            <span className="rounded border bg-muted/60 px-1 py-0.2 text-[9px] font-mono text-muted-foreground">
-                              {item.badge}
-                            </span>
-                          )}
-                        </div>
-                        {item.sublabel && (
-                          <span className="text-[10px] text-muted-foreground block truncate">
-                            {item.sublabel}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {isSelected && (
-                      <Check className="size-3.5 shrink-0 text-primary stroke-[2.5]" />
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      )}
+      {mounted && createPortal(popup, document.body)}
     </div>
   );
 }

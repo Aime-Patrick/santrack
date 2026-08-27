@@ -492,14 +492,18 @@ function StaffDialog({
   const submit = () => {
     if (!regulator) return;
     createUser.mutate(
-      { email: email.trim(), password, fullName: fullName.trim(), organizationId: regulator.id, role: role as UserRole },
+      {
+        email: email.trim(),
+        password,
+        fullName: fullName.trim() || undefined,
+        organizationId: regulator.id,
+        role: role as UserRole,
+        generatePassword: false,
+      },
       {
         onSuccess: () => {
-          // The roster carries a staff count, so it goes stale the moment
-          // someone is added. Refresh it too, or the table keeps saying nobody
-          // works at a regulator that now has an inspector.
           qc.invalidateQueries({ queryKey: organizationKeys.regulators });
-          toast.success(`${fullName.trim()} added to ${regulator.name}`);
+          toast.success(`${fullName.trim() || email.trim()} added to ${regulator.name}`);
           reset();
         },
         onError: (error: unknown) => {
@@ -556,7 +560,7 @@ function StaffDialog({
           <div className="space-y-3 border-t border-border pt-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="staff-name">Full name</Label>
+                <Label htmlFor="staff-name">Full name (optional)</Label>
                 <Input id="staff-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
               </div>
               <div className="space-y-2">
@@ -600,7 +604,6 @@ function StaffDialog({
               </Button>
               <Button
                 disabled={
-                  fullName.trim().length === 0 ||
                   email.trim().length === 0 ||
                   password.length < 8 ||
                   createUser.isPending

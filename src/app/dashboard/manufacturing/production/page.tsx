@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { type ColumnDef } from "@tanstack/react-table";
 import {
@@ -249,8 +249,8 @@ export default function ProductionOrdersPage() {
 
               {order.status === "IN_PROGRESS" && (
                 <>
-                  <DropdownMenuItem onClick={() => setConfirmingProduction(order)} className="py-2.5 px-3 text-sm font-semibold text-success focus:text-success bg-success/5 focus:bg-success/10">
-                    <PackageCheck className="mr-2.5 size-4 text-success shrink-0" /> Confirm Output → Enter Stock
+                  <DropdownMenuItem onClick={() => setCompleting(order)} className="py-2.5 px-3 text-sm font-semibold text-success focus:text-success bg-success/5 focus:bg-success/10">
+                    <CheckCircle className="mr-2.5 size-4 text-success shrink-0" /> Complete Batch
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setAssigningPool(order)} className="py-2.5 px-3 text-sm font-medium">
                     <QrCode className="mr-2.5 size-4 text-primary shrink-0" /> Link / Change Code Pool
@@ -275,7 +275,7 @@ export default function ProductionOrdersPage() {
 
               {order.status === "COMPLETED" && (
                 <>
-                  <DropdownMenuItem onClick={() => setConfirmingProduction(order)} className="py-2.5 px-3 text-sm font-medium text-success">
+                  <DropdownMenuItem onClick={() => setConfirmingProduction(order)} className="py-2.5 px-3 text-sm font-semibold text-success focus:text-success bg-success/5 focus:bg-success/10">
                     <PackageCheck className="mr-2.5 size-4 text-success shrink-0" /> Confirm Output → Enter Stock
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setAmending(order)} className="py-2.5 px-3 text-sm font-medium">
@@ -454,6 +454,26 @@ function AssignPoolDialog({
   );
 
   const selectedPool = pools.find((p) => String(p.id) === poolId);
+  const poolCodes = selectedPool?.requestedCount ?? 0;
+  const planned = order?.plannedQuantity ?? 0;
+  const suggestedClaim =
+    poolCodes > 0 && planned > 0
+      ? Math.min(poolCodes, planned)
+      : poolCodes || planned || 0;
+
+  useEffect(() => {
+    if (!poolId || !selectedPool) {
+      setCount("");
+      return;
+    }
+    // Prefill from the smaller of planned target and pool size; still editable.
+    setCount(suggestedClaim > 0 ? String(suggestedClaim) : "");
+  }, [poolId, selectedPool?.id, suggestedClaim]);
+
+  const claimNum = count === "" ? suggestedClaim : Number(count);
+  const overPool = count !== "" && Number(count) > poolCodes;
+  const underPlan =
+    planned > 0 && (count === "" ? suggestedClaim : Number(count)) < planned;
 
   const submit = async () => {
     if (!order || !poolId) return;
@@ -475,7 +495,8 @@ function AssignPoolDialog({
         <DialogHeader>
           <DialogTitle>Assign Code Pool to Order</DialogTitle>
           <DialogDescription>
-            Claim prepared labels from a pool for {order?.orderNumber} ({order?.productName}).
+            Claim prepared labels from a pool for {order?.orderNumber} (
+            {order?.productName}). Planned target: {planned || "—"}.
           </DialogDescription>
         </DialogHeader>
 
@@ -485,10 +506,10 @@ function AssignPoolDialog({
               <Loader2 className="mr-2 size-4 animate-spin" /> Loading pools…
             </div>
           ) : pools.length === 0 ? (
-            <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 text-xs text-warning-foreground space-y-2">
+            <div className="space-y-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-xs text-warning-foreground">
               <p className="font-semibold">No ready code pools available</p>
               <p>
-                There are no code pools for this product yet. Prepare codes first from the product page.
+                Prepare codes first from the product page, then claim them here.
               </p>
               {order && (
                 <Link
@@ -502,7 +523,9 @@ function AssignPoolDialog({
           ) : (
             <>
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Select Code Run / Pool *</Label>
+                <Label className="text-xs font-medium">
+                  Select Code Run / Pool *
+                </Label>
                 <SearchableSelect
                   value={poolId}
                   onValueChange={setPoolId}
@@ -516,26 +539,38 @@ function AssignPoolDialog({
                 />
               </div>
 
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground leading-relaxed">
-                <p>
-                  <strong className="font-semibold text-foreground">Why link a pool?</strong> Attaches pre-minted unique QR serialization codes to Batch #{order?.orderNumber}. When you confirm finished output, these codes become active, sellable units in your warehouse stock.
-                </p>
-              </div>
-
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Codes to Claim (Optional)</Label>
+                <Label className="text-xs font-medium">
+                  Codes to claim (editable)
+                </Label>
                 <Input
                   type="number"
                   min={1}
-                  max={selectedPool?.requestedCount}
-                  placeholder={`All available codes in pool (e.g. ${selectedPool?.requestedCount ?? order?.plannedQuantity})`}
+                  max={poolCodes || undefined}
+                  placeholder={
+                    suggestedClaim > 0
+                      ? `Suggested ${suggestedClaim}`
+                      : "All available in pool"
+                  }
                   value={count}
                   onChange={(e) => setCount(e.target.value)}
                   className="h-10 font-mono"
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  Leave blank to claim all codes available in this pool.
+                  Prefills with min(planned {planned || "—"}, pool{" "}
+                  {poolCodes || "—"}). Clear the field to claim the whole pool.
                 </p>
+                {overPool ? (
+                  <p className="text-[11px] text-danger">
+                    Pool only has {poolCodes} codes.
+                  </p>
+                ) : null}
+                {underPlan && !overPool && poolId ? (
+                  <p className="text-[11px] text-amber-700">
+                    Claiming {claimNum || 0} codes but the order plans {planned}.
+                    Generate another pool or lower the planned quantity.
+                  </p>
+                ) : null}
               </div>
             </>
           )}
@@ -546,7 +581,7 @@ function AssignPoolDialog({
             Cancel
           </Button>
           <Button
-            disabled={!poolId || assignMutation.isPending}
+            disabled={!poolId || assignMutation.isPending || overPool}
             onClick={submit}
           >
             {assignMutation.isPending && (
@@ -705,7 +740,8 @@ function ConfirmProductionDialog({
         <DialogHeader>
           <DialogTitle>Confirm Production Output</DialogTitle>
           <DialogDescription>
-            Moves assigned codes into <strong className="text-success">MANUFACTURED</strong> status. This is the single event that creates inventory in stock.
+            Only after the lot is <strong>Approved</strong> in quality control.
+            Moves assigned codes into stock as manufactured units.
           </DialogDescription>
         </DialogHeader>
 
@@ -795,34 +831,83 @@ function NewOrderDialog({
 
   const [productId, setProductId] = useState("");
   const [quantity, setQuantity] = useState("");
+  const [qtyTouched, setQtyTouched] = useState(false);
   const [bomId, setBomId] = useState("");
   const [machineId, setMachineId] = useState("");
   const [notes, setNotes] = useState("");
+
+  const productIdNum = productId ? Number(productId) : undefined;
+  const { data: poolsData } = useIdentityPools(productIdNum);
+
+  const readyPoolCodes = useMemo(() => {
+    const pools = (poolsData?.content ?? []).filter((p) => p.status === "READY");
+    return pools.reduce((sum, p) => sum + (p.requestedCount || 0), 0);
+  }, [poolsData]);
+
+  const readyPoolCount = useMemo(
+    () => (poolsData?.content ?? []).filter((p) => p.status === "READY").length,
+    [poolsData],
+  );
+
+  // When the product changes, suggest target = sum of ready pool codes.
+  useEffect(() => {
+    if (!productId) return;
+    if (qtyTouched) return;
+    if (readyPoolCodes > 0) {
+      setQuantity(String(readyPoolCodes));
+    } else {
+      setQuantity("");
+    }
+  }, [productId, readyPoolCodes, qtyTouched]);
 
   const matchingBoms = (boms ?? []).filter(
     (bom) => !productId || String(bom.productId) === productId,
   );
 
-  const valid = productId !== "" && Number(quantity) > 0;
+  const planned = Number(quantity);
+  const overCodes = planned > 0 && readyPoolCodes > 0 && planned > readyPoolCodes;
+  const noCodes = productId !== "" && readyPoolCodes === 0;
+  const valid = productId !== "" && planned > 0;
+
+  const resetAndClose = (next: boolean) => {
+    if (!next) {
+      setProductId("");
+      setQuantity("");
+      setQtyTouched(false);
+      setBomId("");
+      setMachineId("");
+      setNotes("");
+    }
+    onOpenChange(next);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={resetAndClose}>
       <DialogPopup>
         <DialogHeader>
           <DialogTitle>Log Production Batch</DialogTitle>
           <DialogDescription>
-            Record a production run and allocate batch tracking details for inventory.
+            Target quantity pre-fills from ready code pools for the product — you
+            can still edit it.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Product *</Label>
-            <Select value={productId} onValueChange={(v) => setProductId(v ?? "")}>
-              <SelectTrigger className="w-full h-10">
+            <Select
+              value={productId}
+              onValueChange={(v) => {
+                setProductId(v ?? "");
+                setQtyTouched(false);
+                setBomId("");
+              }}
+            >
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="Select product being made">
                   {productId
-                    ? products?.content.find((x) => String(x.id) === productId)?.name
+                    ? products?.content.find((x) => String(x.id) === productId)
+                        ?.name
                     : undefined}
                 </SelectValue>
               </SelectTrigger>
@@ -838,21 +923,62 @@ function NewOrderDialog({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="planned-quantity" className="text-xs font-medium">Target Quantity *</Label>
+              <Label htmlFor="planned-quantity" className="text-xs font-medium">
+                Target quantity *
+              </Label>
               <Input
                 id="planned-quantity"
                 type="number"
                 min={1}
                 value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="e.g. 5000 units"
+                onChange={(e) => {
+                  setQtyTouched(true);
+                  setQuantity(e.target.value);
+                }}
+                placeholder={
+                  readyPoolCodes > 0
+                    ? `Suggested ${readyPoolCodes}`
+                    : "e.g. 5000"
+                }
                 className="h-10"
               />
+              {productId && readyPoolCodes > 0 ? (
+                <p className="text-[11px] text-muted-foreground">
+                  Suggested from {readyPoolCount} ready pool
+                  {readyPoolCount === 1 ? "" : "s"}:{" "}
+                  <strong>{readyPoolCodes.toLocaleString()}</strong> codes.
+                  Editable anytime.
+                </p>
+              ) : null}
+              {noCodes ? (
+                <p className="text-[11px] text-amber-700">
+                  No ready pools for this product yet.{" "}
+                  <Link
+                    href={`/dashboard/products/${productId}?tab=identities`}
+                    className="font-semibold underline"
+                  >
+                    Generate codes
+                  </Link>{" "}
+                  first, or enter a target and assign a pool later.
+                </p>
+              ) : null}
+              {overCodes ? (
+                <p className="text-[11px] text-amber-700">
+                  Target ({planned}) is higher than ready codes ({readyPoolCodes}
+                  ). Generate more labels before you confirm output, or lower the
+                  target.
+                </p>
+              ) : null}
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Machine / Line (Optional)</Label>
-              <Select value={machineId} onValueChange={(v) => setMachineId(v ?? "")}>
-                <SelectTrigger className="w-full h-10">
+              <Label className="text-xs font-medium">
+                Machine / Line (Optional)
+              </Label>
+              <Select
+                value={machineId}
+                onValueChange={(v) => setMachineId(v ?? "")}
+              >
+                <SelectTrigger className="h-10 w-full">
                   <SelectValue placeholder="Any machine">
                     {machineId
                       ? machines?.find((x) => String(x.id) === machineId)?.name
@@ -871,9 +997,11 @@ function NewOrderDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Bill of Materials (Optional)</Label>
+            <Label className="text-xs font-medium">
+              Bill of Materials (Optional)
+            </Label>
             <Select value={bomId} onValueChange={(v) => setBomId(v ?? "")}>
-              <SelectTrigger className="w-full h-10">
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="No BOM — standard formulation">
                   {bomId
                     ? matchingBoms.find((x) => String(x.id) === bomId)?.name
@@ -891,13 +1019,21 @@ function NewOrderDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="order-notes" className="text-xs font-medium">Notes (Optional)</Label>
-            <Input id="order-notes" value={notes} onChange={(e) => setNotes(e.target.value)} className="h-10" placeholder="e.g. Morning batch run" />
+            <Label htmlFor="order-notes" className="text-xs font-medium">
+              Notes (Optional)
+            </Label>
+            <Input
+              id="order-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="h-10"
+              placeholder="e.g. Morning batch run"
+            />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => resetAndClose(false)}>
             Cancel
           </Button>
           <Button
@@ -938,7 +1074,13 @@ function CompleteDialog({
   const [quantity, setQuantity] = useState("");
   const [expiresOn, setExpiresOn] = useState("");
 
-  const value = quantity === "" ? String(order?.plannedQuantity ?? "") : quantity;
+  // Prefer what was already confirmed into stock over the planned target, so
+  // completing after Confirm Output does not silently inflate 45 back to 50.
+  const defaultProduced =
+    (order?.producedQuantity ?? 0) > 0
+      ? order!.producedQuantity
+      : (order?.plannedQuantity ?? 0);
+  const value = quantity === "" ? String(defaultProduced || "") : quantity;
 
   return (
     <Dialog
@@ -955,7 +1097,9 @@ function CompleteDialog({
         <DialogHeader>
           <DialogTitle>Complete {order?.orderNumber}</DialogTitle>
           <DialogDescription>
-            Records completed units and moves lot to PENDING_QC for inspection before packaging and dispatch.
+            Closes the production run and moves the lot to PENDING_QC. If you
+            already confirmed output into stock, keep the produced quantity as
+            that confirmed figure — do not reset it to the planned target.
           </DialogDescription>
         </DialogHeader>
 
@@ -969,7 +1113,12 @@ function CompleteDialog({
               value={value}
               onChange={(e) => setQuantity(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">Planned: {order?.plannedQuantity}</p>
+            <p className="text-xs text-muted-foreground">
+              Planned: {order?.plannedQuantity}
+              {(order?.producedQuantity ?? 0) > 0
+                ? ` · Already in stock: ${order?.producedQuantity}`
+                : ""}
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="expires-on">Expires on</Label>

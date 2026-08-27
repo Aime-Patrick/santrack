@@ -25,10 +25,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MetricCard } from "@/components/dashboard/stat-card";
-import { useQualityInspections, useCreateInspection } from "@/hooks/manufacturing";
+import {
+  useQualityInspections,
+  useCreateInspection,
+  useInspectionEligibility,
+} from "@/hooks/manufacturing";
 import { useBatches } from "@/hooks/batches";
 import type { QualityInspection } from "@/services/manufacturing.service";
 import type { Batch } from "@/services/batch.service";
+import Link from "next/link";
 
 /**
  * Quality control — the gate between a finished run and product identity.
@@ -70,13 +75,14 @@ const resultColors: Record<string, string> = {
 };
 
 const batchStatusColors: Record<string, string> = {
-  PENDING_QC: "border-warning/30 bg-warning/10 text-warning",
-  APPROVED: "border-success/30 bg-success/10 text-success",
-  ACTIVE: "border-success/30 bg-success/10 text-success",
-  REJECTED: "border-danger/30 bg-danger/10 text-danger",
-  REWORK: "border-warning/30 bg-warning/10 text-warning",
-  QUARANTINED: "border-warning/30 bg-warning/10 text-warning",
-  RECALLED: "border-danger/30 bg-danger/10 text-danger",
+  PENDING_QC: "border-transparent bg-amber-500 text-white",
+  APPROVED: "border-transparent bg-emerald-600 text-white",
+  ACTIVE: "border-transparent bg-emerald-600 text-white",
+  REJECTED: "border-transparent bg-red-600 text-white",
+  REWORK: "border-transparent bg-orange-500 text-white",
+  QUARANTINED: "border-transparent bg-orange-500 text-white",
+  RECALLED: "border-transparent bg-red-700 text-white",
+  CLOSED: "border-transparent bg-slate-500 text-white",
 };
 
 const columns: ColumnDef<TableFeatures, QualityInspection>[] = [
@@ -284,7 +290,10 @@ function VerdictDialog({
   const [notes, setNotes] = useState("");
 
   const chosen = batches.find((b) => String(b.id) === batchId);
-  const verdict = VERDICTS.find((v) => v.value === result);
+  const selectedId = batchId ? Number(batchId) : null;
+  const { data: eligibility, isFetching: checking } =
+    useInspectionEligibility(selectedId);
+  const blocked = eligibility != null && !eligibility.allowed;
 
   // A recalled or closed lot is past inspecting; the API refuses those, so do
   // not offer them.
@@ -308,8 +317,8 @@ function VerdictDialog({
         <DialogHeader>
           <DialogTitle>Record a quality verdict</DialogTitle>
           <DialogDescription>
-            The verdict moves the lot. Once any of it has been dispatched or sold, a new verdict is
-            refused — that is a recall, not a re-inspection.
+            Choose the lot and the result. After goods are shipped or sold, use a
+            recall instead of changing this verdict.
           </DialogDescription>
         </DialogHeader>
 
@@ -317,38 +326,71 @@ function VerdictDialog({
           <div className="space-y-2">
             <Label>Lot</Label>
             <Select value={batchId} onValueChange={(v) => setBatchId(v ?? "")}>
-              <SelectTrigger>
-                {/* The trigger otherwise shows the raw value, which is the batch id. */}
-                <SelectValue placeholder="Which lot was inspected">
+              <SelectTrigger className="h-11 w-full">
+                <SelectValue placeholder="Select a lot">
                   {chosen ? () => `${chosen.batchCode} — ${chosen.productName}` : undefined}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {inspectable.map((batch) => (
                   <SelectItem key={batch.id} value={String(batch.id)}>
-                    {batch.batchCode} — {batch.productName} ({batch.status})
+                    <span className="flex w-full items-center justify-between gap-3">
+                      <span>
+                        {batch.batchCode} — {batch.productName}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={
+                          batchStatusColors[batch.status] ??
+                          "border-transparent bg-slate-500 text-white"
+                        }
+                      >
+                        {batch.status === "PENDING_QC" ? "Pending QC" : batch.status}
+                      </Badge>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {chosen ? (
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground">Currently</span>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Status</span>
                 <Badge
                   variant="outline"
-                  className={batchStatusColors[chosen.status] ?? "border-border bg-muted/60 text-muted-foreground"}
+                  className={
+                    batchStatusColors[chosen.status] ??
+                    "border-transparent bg-slate-500 text-white"
+                  }
                 >
-                  {chosen.status}
+                  {chosen.status === "PENDING_QC" ? "Pending QC" : chosen.status}
                 </Badge>
+              </div>
+            ) : null}
+            {checking ? (
+              <p className="text-xs text-muted-foreground">Checking this lot…</p>
+            ) : null}
+            {blocked && eligibility?.reason ? (
+              <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-foreground">
+                <p>{eligibility.reason}</p>
+                <Link
+                  href="/dashboard/recall"
+                  className="mt-1 inline-block text-sm font-medium text-primary underline"
+                >
+                  Go to Recalls
+                </Link>
               </div>
             ) : null}
           </div>
 
           <div className="space-y-2">
             <Label>Verdict</Label>
-            <Select value={result} onValueChange={(v) => setResult(v ?? "")}>
-              <SelectTrigger>
-                <SelectValue placeholder="What did the inspection find" />
+            <Select
+              value={result}
+              onValueChange={(v) => setResult(v ?? "")}
+              disabled={blocked}
+            >
+              <SelectTrigger className="h-11 w-full">
+                <SelectValue placeholder="Select a verdict" />
               </SelectTrigger>
               <SelectContent>
                 {VERDICTS.map((v) => (
@@ -358,18 +400,17 @@ function VerdictDialog({
                 ))}
               </SelectContent>
             </Select>
-            {verdict ? (
-              <p className="text-xs text-muted-foreground">{verdict.effect}</p>
-            ) : null}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="verdict-notes">Notes</Label>
             <Input
               id="verdict-notes"
+              className="h-11"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="What was checked, and what was found"
+              placeholder="Optional notes"
+              disabled={blocked}
             />
           </div>
         </div>
@@ -379,7 +420,7 @@ function VerdictDialog({
             Cancel
           </Button>
           <Button
-            disabled={!batchId || !result || pending}
+            disabled={!batchId || !result || pending || blocked || checking}
             onClick={() =>
               onSubmit({
                 batchId: Number(batchId),

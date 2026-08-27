@@ -28,7 +28,7 @@ import { SymbologyPicker } from "@/components/barcode/symbology-picker";
 import { useBarcodePreview } from "@/hooks/barcodes";
 import { useLocations } from "@/hooks/locations";
 import { useOrganizations } from "@/hooks/organizations";
-import { barcodeService, type Symbology } from "@/services/barcode.service";
+import { barcodeService, type Symbology, type SymbologyUse } from "@/services/barcode.service";
 import type { Item, LifecycleAction } from "@/services/item.service";
 import type { ItemAction } from "@/services/trace.service";
 
@@ -128,16 +128,26 @@ export function PrintLabelDialog({
   open,
   onOpenChange,
   item,
+  only,
+  exclude,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   item: Item;
+  only?: SymbologyUse[];
+  exclude?: Symbology[];
 }) {
   const [symbology, setSymbology] = useState<Symbology>("QR");
   const [format, setFormat] = useState<"png" | "svg">("png");
 
+  const internalLinear =
+    symbology === "CODE_128" ||
+    symbology === "CODE_39" ||
+    symbology === "CODE_93";
+  const value = internalLinear ? item.code : item.qrCode;
+
   const { url, rendering, problem } = useBarcodePreview(
-    open ? { symbology, value: item.qrCode, scale: 4, format: "png" } : null,
+    open ? { symbology, value, scale: 4, format: "png" } : null,
   );
 
   const download = async () => {
@@ -146,7 +156,7 @@ export function PrintLabelDialog({
         ? url
         : await barcodeService.render({
             symbology,
-            value: item.qrCode,
+            value,
             scale: 6,
             format,
           });
@@ -165,7 +175,7 @@ export function PrintLabelDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={`Print label — ${item.code}`}
-      description="The code always carries this item's permanent identity. Choose the type the scanner at the other end reads."
+      description="Choose the code type your scanner reads. Matrix codes use the identity token; Code 128 / 39 / 93 print the serial."
       confirmLabel={`Download ${format.toUpperCase()}`}
       disabled={!url && !rendering}
       onConfirm={download}
@@ -173,7 +183,12 @@ export function PrintLabelDialog({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label className="text-xs">Code type</Label>
-          <SymbologyPicker value={symbology} onChange={setSymbology} />
+          <SymbologyPicker
+            value={symbology}
+            onChange={setSymbology}
+            only={only}
+            exclude={exclude}
+          />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Format</Label>

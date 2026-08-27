@@ -65,6 +65,8 @@ interface SymbologyPickerProps {
   onChange: (symbology: Symbology) => void;
   /** Narrows the list — a book label has no business offering an SSCC. */
   only?: SymbologyUse[];
+  /** Hide types that cannot encode this kind of value (e.g. Codabar on ST- serials). */
+  exclude?: Symbology[];
   disabled?: boolean;
   className?: string;
 }
@@ -81,6 +83,7 @@ export function SymbologyPicker({
   value,
   onChange,
   only,
+  exclude,
   disabled,
   className,
 }: SymbologyPickerProps) {
@@ -89,9 +92,17 @@ export function SymbologyPicker({
   const groups = GROUPS.filter((g) => !only || only.includes(g.use)).map(
     (group) => ({
       ...group,
-      entries: (data?.symbologies ?? []).filter((s) => s.use === group.use),
+      entries: (data?.symbologies ?? []).filter(
+        (s) =>
+          s.use === group.use &&
+          !(exclude && exclude.includes(s.symbology)),
+      ),
     }),
   ).filter((group) => group.entries.length > 0);
+
+  const selectedLabel = (data?.symbologies ?? []).find(
+    (s) => s.symbology === value,
+  )?.label;
 
   return (
     <Select
@@ -102,7 +113,9 @@ export function SymbologyPicker({
       <SelectTrigger className={cn("w-full", className)}>
         <SelectValue
           placeholder={isLoading ? "Loading code types…" : "Choose a code type…"}
-        />
+        >
+          {selectedLabel}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent className="max-h-[420px]">
         {groups.map((group) => {

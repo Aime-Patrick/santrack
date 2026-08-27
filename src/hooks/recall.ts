@@ -9,8 +9,20 @@ export function useRecalls() {
   return useQuery({ queryKey: ["recalls"], queryFn: recallService.list });
 }
 
+export function useRecall(batchId: number) {
+  return useQuery({
+    queryKey: ["recalls", batchId],
+    queryFn: () => recallService.get(batchId),
+    enabled: Number.isFinite(batchId) && batchId > 0,
+  });
+}
+
 export function useRecallImpact(batchId: number) {
-  return useQuery({ queryKey: ["recalls", "impact", batchId], queryFn: () => recallService.getImpact(batchId), enabled: !!batchId });
+  return useQuery({
+    queryKey: ["recalls", "impact", batchId],
+    queryFn: () => recallService.getImpact(batchId),
+    enabled: !!batchId,
+  });
 }
 
 export function useInitiateRecall() {

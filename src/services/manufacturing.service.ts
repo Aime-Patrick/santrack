@@ -135,6 +135,12 @@ export const qualityInspectionService = {
     api.get<PaginatedResponse<QualityInspection>>("/api/quality-inspections", { params: { page, size } }).then((r) => r.data),
   create: (data: { productionOrderId?: number; batchId?: number; result: string; notes?: string }) =>
     api.post<QualityInspection>("/api/quality-inspections", data).then((r) => r.data),
+  inspectability: (batchId: number) =>
+    api
+      .get<{ allowed: boolean; reason: string | null }>("/api/quality-inspections/inspectability", {
+        params: { batchId },
+      })
+      .then((r) => r.data),
 };
 
 export const bomService = {

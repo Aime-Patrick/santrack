@@ -1,4 +1,4 @@
-import { api, type UserResponse, type CreateUserInput, type UpdateUserInput, type ResetPasswordInput } from "@/lib/api";
+import { api, type UserResponse, type CreateUserInput, type CreateUserResponse, type UpdateUserInput, type ResetPasswordInput } from "@/lib/api";
 
 export const userService = {
   list(organizationId?: number): Promise<UserResponse[]> {
@@ -10,8 +10,8 @@ export const userService = {
     return api.get<UserResponse>(`/api/users/${userId}`).then((r) => r.data);
   },
 
-  create(input: CreateUserInput): Promise<UserResponse> {
-    return api.post<UserResponse>("/api/users", input).then((r) => r.data);
+  create(input: CreateUserInput): Promise<CreateUserResponse> {
+    return api.post<CreateUserResponse>("/api/users", input).then((r) => r.data);
   },
 
   update(userId: number, input: UpdateUserInput): Promise<UserResponse> {

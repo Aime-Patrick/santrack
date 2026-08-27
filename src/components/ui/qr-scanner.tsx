@@ -81,6 +81,13 @@ export function QrScanInput({
     [onScan],
   );
 
+  // Auto-dismiss capture flash so it does not linger over the cart.
+  useEffect(() => {
+    if (!lastScanned) return;
+    const t = setTimeout(() => setLastScanned(null), 2500);
+    return () => clearTimeout(t);
+  }, [lastScanned]);
+
   // ── Hardware gun scanner detection ────────────────────────────────
   useEffect(() => {
     const GUN_GAP_MS = 45; // Max gap between characters from a hardware scanner
@@ -314,12 +321,12 @@ export function QrScanInput({
 
       {/* ── Last Scanned Notification Banner ── */}
       {lastScanned && (
-        <div className="flex items-center justify-between gap-2 rounded-xl border border-emerald-500/30 bg-emerald-50/80 px-3.5 py-2.5 text-xs text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-500/30 dark:text-emerald-300 shadow-2xs animate-in fade-in-50 duration-200">
+        <div className="flex items-center justify-between gap-2 rounded-xl border border-success/40 bg-success px-3.5 py-2.5 text-xs text-success-foreground shadow-2xs animate-in fade-in-50 duration-200">
           <div className="flex items-center gap-2 truncate">
-            <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+            <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-white/20">
               <Check className="size-3 stroke-[3]" />
             </div>
-            <span className="font-medium">Scanned successfully:</span>
+            <span className="font-medium">Code captured:</span>
             <span className="font-mono font-bold tracking-wide truncate">
               {lastScanned}
             </span>
@@ -327,7 +334,8 @@ export function QrScanInput({
           <button
             type="button"
             onClick={() => setLastScanned(null)}
-            className="text-emerald-600/70 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200 ml-2"
+            className="ml-2 text-success-foreground/80 hover:text-success-foreground"
+            aria-label="Dismiss"
           >
             <X className="size-3.5" />
           </button>

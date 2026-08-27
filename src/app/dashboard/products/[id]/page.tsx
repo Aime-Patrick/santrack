@@ -58,7 +58,7 @@ import {
   SymbologyPicker,
   SymbologyNote,
 } from "@/components/barcode/symbology-picker";
-import { useProduct } from "@/hooks/products";
+import { useProduct, useUpdateProduct } from "@/hooks/products";
 import { useBatches, useCreateBatch } from "@/hooks/batches";
 import { useFacilities } from "@/hooks/facilities";
 import { useIdentityPools } from "@/hooks/identity-pools";
@@ -205,7 +205,17 @@ export default function ProductDetailPage() {
           value={product.barcodeSymbology || "QR"}
           icon={<Barcode className="size-4" />}
           iconBg="bg-warning text-foreground"
-          caption={product.gtin ? `Encoded with GTIN ${product.gtin}` : "Internal SKU encoded"}
+          caption={
+            product.barcodeSymbology === "EAN_13" ||
+            product.barcodeSymbology === "EAN_8" ||
+            product.barcodeSymbology === "UPC_A" ||
+            product.barcodeSymbology === "UPC_E" ||
+            product.barcodeSymbology === "ITF_14"
+              ? product.gtin
+                ? `Retail barcode uses GTIN ${product.gtin}`
+                : "Add a GTIN for retail barcodes"
+              : `Catalogue code encodes SKU ${product.sku}`
+          }
         />
       </div>
 
@@ -232,51 +242,7 @@ export default function ProductDetailPage() {
 
         {/* ── Tab 1: Details ── */}
         <TabsContent value="details">
-          <Card className="rounded-xl border border-border/80 shadow-xs">
-            <CardHeader>
-              <CardTitle className="text-base">Product Specification</CardTitle>
-              <CardDescription>
-                Catalog properties, regulatory identifiers, and classification for {product.name}.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <DetailRow label="Product Name" value={product.name} />
-                <DetailRow label="SKU" value={product.sku} mono />
-                <DetailRow label="GTIN / Barcode Value" value={product.gtin || "—"} mono />
-                <DetailRow label="Brand" value={product.brand || "—"} />
-                <DetailRow label="Category" value={product.categoryName || product.category || "—"} />
-                <DetailRow label="Default Symbology" value={product.barcodeSymbology || "QR"} />
-                <DetailRow label="Unit of Measure" value={(product as any).unit || "Unit"} />
-                <DetailRow
-                  label="Registered On"
-                  value={(product as any).createdAt ? new Date((product as any).createdAt).toLocaleDateString() : "—"}
-                />
-              </div>
-
-              {product.specification && (
-                <div className="space-y-1.5 rounded-xl border border-border/80 bg-[#f8fafc] p-4">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Technical Specifications
-                  </span>
-                  <p className="text-sm whitespace-pre-wrap text-foreground">
-                    {product.specification}
-                  </p>
-                </div>
-              )}
-
-              {(product as any).description && (
-                <div className="space-y-1.5 rounded-xl border border-border/80 bg-[#f8fafc] p-4">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Description
-                  </span>
-                  <p className="text-sm whitespace-pre-wrap text-foreground">
-                    {(product as any).description}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ProductDetailsCard product={product} />
         </TabsContent>
 
         {/* ── Tab 2: Identities ── */}
@@ -291,7 +257,7 @@ export default function ProductDetailPage() {
 
         {/* ── Tab 4: Labels ── */}
         <TabsContent value="labels">
-          <LabelsTab product={product} />
+          <LabelsTab product={product} onOpenPools={() => setActiveTab("identities")} />
         </TabsContent>
       </Tabs>
     </div>
@@ -316,6 +282,154 @@ function DetailRow({
         {value}
       </p>
     </div>
+  );
+}
+
+function ProductDetailsCard({
+  product,
+}: {
+  product: {
+    id: number;
+    name: string;
+    sku: string;
+    gtin: string | null;
+    brand: string | null;
+    category: string | null;
+    categoryName: string | null;
+    barcodeSymbology: string | null;
+    baseUnit: string | null;
+    packUnit: string | null;
+    unitsPerPack: number | null;
+    specification: string | null;
+  };
+}) {
+  const updateProduct = useUpdateProduct();
+  const [editOpen, setEditOpen] = useState(false);
+  const [baseUnit, setBaseUnit] = useState(product.baseUnit ?? "");
+  const [packUnit, setPackUnit] = useState(product.packUnit ?? "");
+  const [unitsPerPack, setUnitsPerPack] = useState(
+    product.unitsPerPack != null ? String(product.unitsPerPack) : "",
+  );
+
+  useEffect(() => {
+    if (!editOpen) {
+      setBaseUnit(product.baseUnit ?? "");
+      setPackUnit(product.packUnit ?? "");
+      setUnitsPerPack(product.unitsPerPack != null ? String(product.unitsPerPack) : "");
+    }
+  }, [product, editOpen]);
+
+  return (
+    <>
+      <Card className="rounded-xl border border-border/80 shadow-xs">
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+          <div>
+            <CardTitle className="text-base">Product Specification</CardTitle>
+            <CardDescription>
+              Catalog properties, regulatory identifiers, and classification for {product.name}.
+            </CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            Edit packaging
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <DetailRow label="Product Name" value={product.name} />
+            <DetailRow label="SKU" value={product.sku} mono />
+            <DetailRow label="GTIN / Barcode Value" value={product.gtin || "—"} mono />
+            <DetailRow label="Brand" value={product.brand || "—"} />
+            <DetailRow label="Category" value={product.categoryName || product.category || "—"} />
+            <DetailRow label="Default Symbology" value={product.barcodeSymbology || "QR"} />
+            <DetailRow label="Base unit" value={product.baseUnit || "—"} />
+            <DetailRow label="Pack unit" value={product.packUnit || "—"} />
+            <DetailRow
+              label="Units per pack"
+              value={product.unitsPerPack != null ? String(product.unitsPerPack) : "—"}
+            />
+          </div>
+
+          {product.specification && (
+            <div className="space-y-1.5 rounded-xl border border-border/80 bg-[#f8fafc] p-4">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Technical Specifications
+              </span>
+              <p className="text-sm whitespace-pre-wrap text-foreground">
+                {product.specification}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogPopup>
+          <DialogTitle>Edit packaging units</DialogTitle>
+          <DialogDescription>
+            Base and pack units drive which sales units appear on quotations and orders.
+          </DialogDescription>
+          <div className="space-y-3 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-base-unit">Base unit</Label>
+              <Input
+                id="edit-base-unit"
+                value={baseUnit}
+                onChange={(e) => setBaseUnit(e.target.value)}
+                placeholder="e.g. BOTTLE"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-pack-unit">Pack unit</Label>
+              <Input
+                id="edit-pack-unit"
+                value={packUnit}
+                onChange={(e) => setPackUnit(e.target.value)}
+                placeholder="e.g. CARTON"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-units-per-pack">Units per pack</Label>
+              <Input
+                id="edit-units-per-pack"
+                type="number"
+                min={2}
+                step={1}
+                value={unitsPerPack}
+                onChange={(e) => setUnitsPerPack(e.target.value)}
+                placeholder="e.g. 24"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={updateProduct.isPending}
+              onClick={() => {
+                updateProduct.mutate(
+                  {
+                    id: product.id,
+                    input: {
+                      name: product.name,
+                      baseUnit: baseUnit.trim(),
+                      packUnit: packUnit.trim(),
+                      unitsPerPack:
+                        unitsPerPack.trim() !== ""
+                          ? Number(unitsPerPack.trim())
+                          : null,
+                    },
+                  },
+                  { onSuccess: () => setEditOpen(false) },
+                );
+              }}
+            >
+              {updateProduct.isPending ? "Saving…" : "Save"}
+            </Button>
+          </div>
+        </DialogPopup>
+      </Dialog>
+    </>
   );
 }
 
@@ -616,6 +730,7 @@ function NewBatchDialog({
 
 function LabelsTab({
   product,
+  onOpenPools,
 }: {
   product: {
     id: number;
@@ -624,6 +739,7 @@ function LabelsTab({
     gtin?: string | null;
     barcodeSymbology?: Symbology | null;
   };
+  onOpenPools: () => void;
 }) {
   const [symbology, setSymbology] = useState<Symbology>(
     product.barcodeSymbology || "QR",
@@ -643,14 +759,16 @@ function LabelsTab({
     !product.gtin && (spec?.use === "RETAIL" || spec?.use === "PUBLICATION");
 
   const { data: validity } = useBarcodeCheck(symbology, value);
+  const invalidForSymbology = !!validity && !validity.valid && !missingGtin;
+
   const { url, rendering, problem } = useBarcodePreview(
-    value.trim() && !missingGtin
+    value.trim() && !missingGtin && !invalidForSymbology
       ? { symbology, value, scale, format: "png" }
       : null,
   );
 
   const download = async () => {
-    if (!value.trim()) return;
+    if (!value.trim() || invalidForSymbology || missingGtin) return;
     const href =
       format === "png" && url
         ? url
@@ -666,14 +784,54 @@ function LabelsTab({
     if (href !== url) URL.revokeObjectURL(href);
   };
 
+  const encodesWhat =
+    spec?.use === "RETAIL" || spec?.use === "PUBLICATION"
+      ? "product GTIN (same for every bottle)"
+      : "product SKU (same for every bottle)";
+
   return (
     <div className="space-y-6">
+      <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 text-sm">
+        <p className="font-semibold text-foreground">
+          This is the catalogue barcode — not your stock identities
+        </p>
+        <p className="mt-1 text-muted-foreground">
+          Every pack of {product.name} can carry this same code ({encodesWhat}).
+          Trace and New Sale need the <strong>unique</strong> serial on each
+          unit (ST-… / pool QR). Having 44 in stock means 44 different identity
+          codes — download those from Code runs or open Stock codes.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            nativeButton={false}
+            render={
+              <Link
+                href={`/dashboard/inventory?tab=items&productId=${product.id}`}
+              />
+            }
+          >
+            <Boxes className="mr-1.5 size-3.5" />
+            View stock codes in inventory
+          </Button>
+          <Button size="sm" variant="outline" onClick={onOpenPools}>
+            <QrCode className="mr-1.5 size-3.5" />
+            Code runs (pool QR ZIP)
+          </Button>
+        </div>
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* ── Left: Configuration ── */}
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold">Barcode &amp; Label Format</CardTitle>
+              <CardTitle className="text-base font-semibold">
+                Product catalogue label
+              </CardTitle>
+              <CardDescription>
+                Shelf / retail mark for the product type — not one bottle&apos;s
+                identity.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
@@ -688,7 +846,7 @@ function LabelsTab({
                     value={String(scale)}
                     onValueChange={(v) => v && setScale(Number(v))}
                   >
-                    <SelectTrigger className="w-full h-10">
+                    <SelectTrigger className="h-10 w-full">
                       <SelectValue placeholder="Select resolution">
                         {scale === 2
                           ? "Small (72 dpi)"
@@ -716,9 +874,11 @@ function LabelsTab({
                     value={format}
                     onValueChange={(v) => v && setFormat(v as "png" | "svg")}
                   >
-                    <SelectTrigger className="w-full h-10">
+                    <SelectTrigger className="h-10 w-full">
                       <SelectValue placeholder="Select format">
-                        {format === "png" ? "PNG (Raster Image)" : "SVG (Vector Print)"}
+                        {format === "png"
+                          ? "PNG (Raster Image)"
+                          : "SVG (Vector Print)"}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
@@ -729,15 +889,23 @@ function LabelsTab({
                 </div>
               </div>
 
-              <div className="rounded-lg border bg-muted/20 p-3 space-y-1 text-xs">
-                <span className="font-semibold text-foreground">Encoding Value:</span>
-                <p className="font-mono text-muted-foreground break-all">{value || "—"}</p>
+              <div className="space-y-1 rounded-lg border bg-muted/20 p-3 text-xs">
+                <span className="font-semibold text-foreground">
+                  Encodes:
+                </span>
+                <p className="break-all font-mono text-muted-foreground">
+                  {value || "—"}
+                </p>
+                <p className="text-muted-foreground">
+                  {spec?.use === "RETAIL" || spec?.use === "PUBLICATION"
+                    ? "Retail symbologies need a matching GTIN length (e.g. EAN-13 for 13 digits, not EAN-8)."
+                    : "QR / Code 128 here encode the product SKU — identical on every pack."}
+                </p>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* ── Right: Preview ── */}
         <Card className="lg:sticky lg:top-4 lg:self-start">
           <CardHeader>
             <CardTitle className="text-base">Label Preview</CardTitle>
@@ -750,15 +918,22 @@ function LabelsTab({
               <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-xs text-warning-foreground">
                 <AlertCircle className="mt-0.5 size-4 shrink-0 text-warning" />
                 <span>
-                  {spec?.label} encodes a GTIN/EAN, but {product.sku} has no GTIN registered. Edit the product to add a GTIN, or choose a 2D code like QR / DataMatrix.
+                  {spec?.label} encodes a GTIN, but this product has none. Add a
+                  GTIN, or use QR / Code 128 (SKU).
                 </span>
               </div>
             )}
 
-            {validity && !validity.valid && !missingGtin && (
+            {invalidForSymbology && (
               <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/5 p-3 text-xs text-danger">
                 <AlertCircle className="mt-0.5 size-4 shrink-0 text-danger" />
-                <span>{validity.problem}</span>
+                <span>
+                  {validity?.valid === false
+                    ? validity.problem
+                    : "This value cannot be encoded with the selected symbology."}{" "}
+                  For GTIN {product.gtin}, try <strong>EAN-13</strong> or{" "}
+                  <strong>ITF-14</strong> — not EAN-8.
+                </span>
               </div>
             )}
 
@@ -775,15 +950,15 @@ function LabelsTab({
                   className="max-h-[220px] max-w-full object-contain"
                 />
               ) : problem ? (
-                <div className="text-center text-xs text-danger space-y-1">
+                <div className="space-y-1 text-center text-xs text-danger">
                   <AlertCircle className="mx-auto size-5 text-danger" />
                   <p>Could not render barcode</p>
                   <p className="text-muted-foreground">{problem}</p>
                 </div>
               ) : (
                 <div className="text-center text-xs text-muted-foreground">
-                  <QrCode className="mx-auto size-6 text-muted-foreground mb-1" />
-                  <p>Label preview unavailable</p>
+                  <QrCode className="mx-auto mb-1 size-6 text-muted-foreground" />
+                  <p>Pick a valid symbology to preview</p>
                 </div>
               )}
             </div>
@@ -791,10 +966,10 @@ function LabelsTab({
             <Button
               className="w-full"
               onClick={download}
-              disabled={!url || rendering || missingGtin}
+              disabled={!url || rendering || missingGtin || invalidForSymbology}
             >
               <Download className="mr-2 size-4" />
-              Download {format.toUpperCase()} Label
+              Download {format.toUpperCase()} catalogue label
             </Button>
           </CardContent>
         </Card>

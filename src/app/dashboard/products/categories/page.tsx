@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,9 +15,15 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   useProductCategories,
-  useCreateCategory,
-  useUpdateCategory,
   useWithdrawCategory,
   useBrands,
   useCreateBrand,
@@ -36,7 +43,13 @@ import {
   Archive,
   CornerDownRight,
   Bookmark,
+  QrCode,
+  MoreHorizontal,
+  ExternalLink,
 } from "lucide-react";
+import { CategoryDialog } from "@/components/products/category-dialogs";
+import { CategoryShareDialog } from "@/components/products/category-share-dialog";
+import type { CategoryShareLink } from "@/services/product.service";
 
 /**
  * The product taxonomy: what the platform counts as a kind of goods.
@@ -52,6 +65,8 @@ export default function ProductCategoriesPage() {
 
   const [editing, setEditing] = useState<ProductCategory | null>(null);
   const [creating, setCreating] = useState(false);
+  const [sharing, setSharing] = useState<ProductCategory | null>(null);
+  const [createdShare, setCreatedShare] = useState<CategoryShareLink | null>(null);
 
   const withdrawMutation = useWithdrawCategory();
 
@@ -64,9 +79,12 @@ export default function ProductCategoriesPage() {
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <Tags className="size-4 shrink-0 text-primary" />
-          <span className="font-mono text-sm font-medium text-foreground">
+          <Link
+            href={`/dashboard/products/categories/${row.original.id}`}
+            className="font-mono text-sm font-medium text-foreground hover:text-primary"
+          >
             {row.getValue("code")}
-          </span>
+          </Link>
         </div>
       ),
     },
@@ -78,9 +96,12 @@ export default function ProductCategoriesPage() {
         const parent = parentId ? byId.get(parentId) : null;
         return (
           <div>
-            <span className="text-sm text-foreground">
+            <Link
+              href={`/dashboard/products/categories/${row.original.id}`}
+              className="text-sm text-foreground hover:text-primary"
+            >
               {row.getValue("name")}
-            </span>
+            </Link>
             {parent && (
               <p className="flex items-center gap-1 text-xs text-muted-foreground">
                 <CornerDownRight className="size-3" />
@@ -124,31 +145,58 @@ export default function ProductCategoriesPage() {
       header: "",
       cell: ({ row }) => {
         const category = row.original;
-        if (!mayEdit) return null;
         return (
-          <div className="flex items-center justify-end gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 px-2 text-xs"
-              onClick={() => setEditing(category)}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="ghost" className="h-8 w-8 p-0" />}
             >
-              <Pencil className="size-3" />
-              <span className="ml-1">Edit</span>
-            </Button>
-            {category.active && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs text-danger hover:bg-danger/10 hover:text-danger"
-                onClick={() => withdrawMutation.mutate(category.id)}
-                disabled={withdrawMutation.isPending}
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel className="text-xs">
+                Category Actions
+              </DropdownMenuLabel>
+              <DropdownMenuItem
+                render={
+                  <Link
+                    href={`/dashboard/products/categories/${category.id}`}
+                  />
+                }
               >
-                <Archive className="size-3" />
-                <span className="ml-1">Withdraw</span>
-              </Button>
-            )}
-          </div>
+                <ExternalLink className="mr-2 size-4 text-primary" />
+                View details
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setCreatedShare(null);
+                  setSharing(category);
+                }}
+              >
+                <QrCode className="mr-2 size-4 text-primary" />
+                Share / QR code
+              </DropdownMenuItem>
+              {mayEdit ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setEditing(category)}>
+                    <Pencil className="mr-2 size-4" />
+                    Edit
+                  </DropdownMenuItem>
+                  {category.active && (
+                    <DropdownMenuItem
+                      className="text-danger focus:text-danger"
+                      onClick={() => withdrawMutation.mutate(category.id)}
+                      disabled={withdrawMutation.isPending}
+                    >
+                      <Archive className="mr-2 size-4" />
+                      Withdraw
+                    </DropdownMenuItem>
+                  )}
+                </>
+              ) : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
         );
       },
     },
@@ -228,107 +276,30 @@ export default function ProductCategoriesPage() {
       <CategoryDialog
         open={creating}
         onOpenChange={setCreating}
+        onCreated={(category) => {
+          if (category.share) {
+            setCreatedShare(category.share);
+            setSharing(category);
+          }
+        }}
       />
       <CategoryDialog
         open={editing !== null}
         onOpenChange={(open) => !open && setEditing(null)}
         category={editing ?? undefined}
       />
+      <CategoryShareDialog
+        category={sharing}
+        open={sharing !== null}
+        initialShareUrl={createdShare?.url}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSharing(null);
+            setCreatedShare(null);
+          }
+        }}
+      />
     </div>
-  );
-}
-
-/** Create when given no category, edit when given one. */
-function CategoryDialog({
-  open,
-  onOpenChange,
-  category,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  category?: ProductCategory;
-}) {
-  const editing = category !== undefined;
-  const createMutation = useCreateCategory();
-  const updateMutation = useUpdateCategory();
-
-  const [name, setName] = useState("");
-  /** Reset the fields whenever the dialog is pointed at a different category. */
-  const [seeded, setSeeded] = useState<number | null>(null);
-  const key = category?.id ?? 0;
-  if (open && seeded !== key) {
-    setSeeded(key);
-    setName(category?.name ?? "");
-  }
-
-  const pending = createMutation.isPending || updateMutation.isPending;
-  // Shown, not sent — the server derives the real code.
-  const derivedCode = deriveCode(name);
-  const valid = name.trim().length >= 2 && (editing || derivedCode.length >= 2);
-
-  const submit = async () => {
-    if (editing) {
-      await updateMutation.mutateAsync({
-        id: category.id,
-        name: name.trim(),
-      });
-    } else {
-      await createMutation.mutateAsync({
-        name: name.trim(),
-      });
-    }
-    onOpenChange(false);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogPopup className="max-w-md">
-        <DialogTitle>{editing ? "Edit Category" : "New Category"}</DialogTitle>
-        <DialogDescription>
-          {editing
-            ? `Filed as ${category.code}, which is fixed — products and rules refer to it.`
-            : "A kind of goods products can be filed under."}
-        </DialogDescription>
-
-        <div className="mt-4 space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium uppercase text-muted-foreground">
-              Name
-            </label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Dairy products"
-              autoFocus
-            />
-            {!editing && (
-              <p className="text-xs text-faint">
-                Filed as{" "}
-                <span className="font-mono text-muted-foreground">
-                  {derivedCode || "—"}
-                </span>
-                , the name rules and integrations refer to. Fixed once created.
-              </p>
-            )}
-          </div>
-
-          <div className="flex justify-end gap-2 border-t border-border pt-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              disabled={pending}
-            >
-              Cancel
-            </Button>
-            <Button size="sm" onClick={submit} disabled={!valid || pending}>
-              {pending && <LoaderCircle className="mr-1 size-3 animate-spin" />}
-              {editing ? "Save changes" : "Create category"}
-            </Button>
-          </div>
-        </div>
-      </DialogPopup>
-    </Dialog>
   );
 }
 

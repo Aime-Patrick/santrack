@@ -11,16 +11,14 @@ import { getApiErrorMessage } from "@/lib/api";
 import type { OrganizationType } from "@/lib/api";
 
 // ---------------------------------------------------------------------------
-// Schema — matches CreateOrganizationDto (name + type)
-// The extra UI fields (registration number, TIN, location, etc.) are local
-// only for now; the backend only accepts name and type.
+// Schema — name, type, TIN (+ optional registration number)
 // ---------------------------------------------------------------------------
 
 const industrySchema = z.object({
   name: z.string().min(2, "Industry name is required"),
   type: z.string().min(1, "Category is required"),
   registrationNumber: z.string().optional(),
-  tinNumber: z.string().optional(),
+  tinNumber: z.string().trim().min(5, "Enter a valid TIN"),
   province: z.string().optional(),
   district: z.string().optional(),
   sector: z.string().optional(),
@@ -73,6 +71,8 @@ export function useIndustryForm() {
       organizationService.create({
         name: values.name,
         type: TYPE_MAP[values.type] ?? "MANUFACTURER",
+        tin: values.tinNumber.trim(),
+        registrationNumber: values.registrationNumber?.trim() || undefined,
       }),
     onSuccess: () => {
       toast.success("Industry created successfully");

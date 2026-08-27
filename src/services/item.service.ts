@@ -105,7 +105,13 @@ export const itemService = {
 
   /** List items held by the current organization. */
   list(
-    params: { kind?: ItemKind; topLevel?: boolean; page?: number; size?: number } = {}
+    params: {
+      kind?: ItemKind;
+      topLevel?: boolean;
+      page?: number;
+      size?: number;
+      productId?: number;
+    } = {},
   ): Promise<ItemListResponse> {
     return api
       .get<ItemListResponse>("/api/items", { params })

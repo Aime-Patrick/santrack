@@ -37,6 +37,10 @@ export default function LoginPage() {
       { email: values.email, password: values.password },
       {
         onSuccess: (data) => {
+          if (data.user.mustChangePassword) {
+            router.replace("/change-password");
+            return;
+          }
           if (data.user.role === "SYSTEM_ADMIN" || data.user.organization) {
             router.replace("/dashboard");
           } else {

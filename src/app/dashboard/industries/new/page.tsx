@@ -68,8 +68,13 @@ export default function AddIndustryPage() {
                     <Input placeholder="Enter registration number" {...register("registrationNumber")} />
                   </div>
                   <div className="space-y-2">
-                    <Label>TIN Number</Label>
+                    <Label>
+                      TIN Number <span className="text-destructive">*</span>
+                    </Label>
                     <Input placeholder="Enter TIN number" {...register("tinNumber")} />
+                    {errors.tinNumber && (
+                      <p className="text-xs text-destructive">{errors.tinNumber.message}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label>Location</Label>

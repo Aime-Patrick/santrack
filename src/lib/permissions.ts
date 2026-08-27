@@ -90,6 +90,7 @@ export const ROUTE_CAPABILITIES: { prefix: string; requires: Capability[] }[] = 
   { prefix: "/dashboard/sales/orders", requires: ["MANAGE_CLIENTS"] },
   { prefix: "/dashboard/sales/invoices", requires: ["MANAGE_CLIENTS"] },
   { prefix: "/dashboard/sales/returns", requires: ["MANAGE_CLIENTS"] },
+  { prefix: "/dashboard/purchasing", requires: ["MANAGE_CLIENTS"] },
 
   // Back office.
   { prefix: "/dashboard/finance", requires: ["MANAGE_FINANCE"] },

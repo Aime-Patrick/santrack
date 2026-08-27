@@ -147,6 +147,12 @@ export interface TraceTimeline {
     licenseNumber: string | null;
   } | null;
   actions: AvailableAction[];
+  /**
+   * Times the public verification endpoint has been asked about this code.
+   * Counts scans from before it was a known identity, so it can exceed the
+   * VERIFIED entries on the timeline rather than matching them.
+   */
+  verificationCount: number;
   eventCount: number;
   events: TraceEvent[];
 }

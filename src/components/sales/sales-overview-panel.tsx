@@ -119,7 +119,8 @@ export function SalesOverviewPanel() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-prose text-sm text-muted-foreground">
-          Record sales by scanning item QR codes. Business sales trigger dispatch; consumer sales end the chain.
+          Record a sale now (scan at the till, or sell by piece / carton / box to
+          another business). For quotes and invoices, use the Orders tab.
         </p>
         <Button render={<Link href="/dashboard/sales/new" />}>
           <Plus className="mr-2 size-4" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ClipboardList,
@@ -15,6 +15,8 @@ import { QuotationsPanel } from "@/components/sales/quotations-panel";
 import { SalesOrdersPanel } from "@/components/sales/sales-orders-panel";
 import { InvoicesPanel } from "@/components/sales/invoices-panel";
 import { ReturnsPanel } from "@/components/sales/returns-panel";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import type { OrganizationType } from "@/lib/api";
 
 /**
  * The commercial pipeline, on one screen.
@@ -36,18 +38,61 @@ const TABS = [
   { value: "returns", label: "Returns", icon: RotateCcw },
 ] as const;
 
+type SalesTab = (typeof TABS)[number]["value"];
+
+function defaultTabForOrg(type: OrganizationType | undefined | null): SalesTab {
+  switch (type) {
+    case "MANUFACTURER":
+      return "quotations";
+    case "DISTRIBUTOR":
+      return "orders";
+    case "RETAILER":
+    case "SHOP":
+      return "sales";
+    default:
+      return "sales";
+  }
+}
+
+function subtitleForOrg(type: OrganizationType | undefined | null): string {
+  switch (type) {
+    case "MANUFACTURER":
+      return "Start from quotations — convert accepted quotes into orders when the buyer is ready.";
+    case "DISTRIBUTOR":
+      return "Orders are the centre of the pipeline — reserve stock, then invoice and dispatch.";
+    case "RETAILER":
+    case "SHOP":
+      return "Record till and counter sales, then follow invoices and returns from the same place.";
+    default:
+      return "A deal from quote to payment, and back again if it returns.";
+  }
+}
+
 function SalesWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState(() => searchParams.get("tab") ?? "sales");
+  const { data: me } = useCurrentUser();
+  const orgType = me?.organization?.type;
 
-  // The retired /sales/orders, /sales/invoices and friends redirect here with
-  // ?tab=, so a saved link still opens the stage it named.
+  const defaultTab = useMemo(() => defaultTabForOrg(orgType), [orgType]);
+  const [tab, setTab] = useState<string>(() => searchParams.get("tab") ?? defaultTab);
+  const [initialized, setInitialized] = useState(() => !!searchParams.get("tab"));
+
+  // When there is no ?tab=, wait for org type (if needed) then land on the
+  // default for this organization — without fighting an explicit deep link.
   useEffect(() => {
     const wanted = searchParams.get("tab");
-    if (wanted && wanted !== tab) setTab(wanted);
+    if (wanted) {
+      if (wanted !== tab) setTab(wanted);
+      setInitialized(true);
+      return;
+    }
+    if (!initialized && me !== undefined) {
+      setTab(defaultTab);
+      setInitialized(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, me, defaultTab]);
 
   /**
    * The tab is mirrored into the URL so a stage stays linkable and survives a
@@ -68,9 +113,7 @@ function SalesWorkspace() {
         </div>
         <div>
           <h1 className="text-xl font-bold tracking-tight">Sales &amp; Orders</h1>
-          <p className="text-sm text-muted-foreground">
-            A deal from quote to payment, and back again if it returns.
-          </p>
+          <p className="text-sm text-muted-foreground">{subtitleForOrg(orgType)}</p>
         </div>
       </div>
 

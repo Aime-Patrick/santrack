@@ -61,8 +61,12 @@ interface DataTableProps<TData extends RowData> {
   filterPlaceholder?: string;
   filterColumn?: string;
   pageSize?: number;
+  /** Choices for the rows-per-page control. Empty = hide the control. */
+  pageSizeOptions?: number[];
   showFilter?: boolean;
   showPagination?: boolean;
+  /** Hide the “N of M selected” line when selection isn’t used. */
+  showSelectionCount?: boolean;
   /** Skip the border wrapper (use when rendered inside a Card, avoiding a double border) */
   noBorder?: boolean;
   /** Extra className on the <table> element */
@@ -79,8 +83,10 @@ export function DataTable<TData extends RowData>({
   filterPlaceholder = "Filter...",
   filterColumn,
   pageSize = 10,
+  pageSizeOptions = [10, 15, 25, 50],
   showFilter = true,
   showPagination = true,
+  showSelectionCount = true,
   noBorder = false,
   tableClassName,
   headerClassName,
@@ -89,6 +95,16 @@ export function DataTable<TData extends RowData>({
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] =
     React.useState<ColumnFiltersState>([]);
+  const [pagination, setPagination] = React.useState({
+    pageIndex: 0,
+    pageSize,
+  });
+
+  React.useEffect(() => {
+    setPagination((prev) =>
+      prev.pageSize === pageSize ? prev : { pageIndex: 0, pageSize },
+    );
+  }, [pageSize]);
 
   const table = useTable<TableFeatures, TData>({
     features: tableFeatures_,
@@ -96,10 +112,11 @@ export function DataTable<TData extends RowData>({
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
-    initialState: { pagination: { pageIndex: 0, pageSize } },
+    onPaginationChange: setPagination,
     state: {
       sorting,
       columnFilters,
+      pagination,
     },
   });
 
@@ -168,14 +185,42 @@ export function DataTable<TData extends RowData>({
 
       {showPagination && (
         <div className="flex flex-col gap-3 border-t border-border/60 px-1 pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm text-muted-foreground">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
+          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+            {showSelectionCount ? (
+              <span>
+                {table.getFilteredSelectedRowModel().rows.length} of{" "}
+                {table.getFilteredRowModel().rows.length} row(s) selected.
+              </span>
+            ) : (
+              <span>
+                {table.getFilteredRowModel().rows.length} row
+                {table.getFilteredRowModel().rows.length === 1 ? "" : "s"}
+              </span>
+            )}
+            {pageSizeOptions.length > 0 ? (
+              <label className="inline-flex items-center gap-2">
+                <span className="whitespace-nowrap">Rows per page</span>
+                <select
+                  className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                  value={pagination.pageSize}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    setPagination({ pageIndex: 0, pageSize: next });
+                  }}
+                >
+                  {pageSizeOptions.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
             <span className="text-sm text-muted-foreground">
-              Page {(table.state.pagination as { pageIndex: number }).pageIndex + 1} of{" "}
-              {table.getPageCount()}
+              Page {pagination.pageIndex + 1} of{" "}
+              {Math.max(table.getPageCount(), 1)}
             </span>
             <div className="flex items-center gap-1.5">
               <Button

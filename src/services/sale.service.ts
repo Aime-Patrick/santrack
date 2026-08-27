@@ -39,7 +39,14 @@ export interface SellInput {
   consumerRef?: string;
   sellerLocationId?: number;
   deliveryLocationId?: number;
-  itemQrCodes: string[];
+  /** Scan path — omit when using quantityLines only. */
+  itemQrCodes?: string[];
+  /** Wholesale path: product + qty + piece/carton/box. */
+  quantityLines?: {
+    productId: number;
+    requestedQuantity: string;
+    salesUnit?: string;
+  }[];
   totalAmount?: string;
   notes?: string;
 }

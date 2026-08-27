@@ -16,7 +16,13 @@ import { getApiErrorMessage } from "@/lib/api";
 // Queries
 // ---------------------------------------------------------------------------
 
-export function useItems(params: { kind?: ItemKind; topLevel?: boolean; page?: number; size?: number } = {}) {
+export function useItems(params: {
+  kind?: ItemKind;
+  topLevel?: boolean;
+  page?: number;
+  size?: number;
+  productId?: number;
+} = {}) {
   return useQuery({
     queryKey: ["items", params],
     queryFn: () => itemService.list(params),

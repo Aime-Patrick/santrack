@@ -32,6 +32,7 @@ export function InvoicesPanel() {
   const createInvoice = useCreateInvoice();
   const { data: orderData } = useSalesOrders(0, 100);
   const [open, setOpen] = useState(false);
+  const [payInvoiceTarget, setPayInvoiceTarget] = useState<Invoice | null>(null);
   const invoices = data?.content ?? [];
   const total = data?.total ?? 0;
   const issuedCount = invoices.filter((i) => i.status === "ISSUED").length;
@@ -120,7 +121,7 @@ export function InvoicesPanel() {
                 </DropdownMenuItem>
               )}
               {invoice.status === "ISSUED" && (
-                <DropdownMenuItem onClick={() => payInvoice.mutate({ id: invoice.id, data: { amount: String((invoice.totalAmount ?? 0) - invoice.amountPaid), method: "CASH" } })}>
+                <DropdownMenuItem onClick={() => setPayInvoiceTarget(invoice)}>
                   <CreditCard className="mr-2 size-4" /> Record Payment
                 </DropdownMenuItem>
               )}
@@ -134,7 +135,7 @@ export function InvoicesPanel() {
         );
       },
     },
-  ], [issueInvoice, voidInvoice, payInvoice]);
+  ], [issueInvoice, voidInvoice]);
 
   return (
     <div className="space-y-6">
@@ -172,6 +173,20 @@ export function InvoicesPanel() {
         orders={(orderData?.content ?? []).filter((o) => o.status === "CONFIRMED")}
         onSubmit={(payload) => createInvoice.mutate(payload, { onSuccess: () => setOpen(false) })}
         pending={createInvoice.isPending}
+      />
+
+      <PayInvoiceDialog
+        invoice={payInvoiceTarget}
+        onOpenChange={(next) => {
+          if (!next) setPayInvoiceTarget(null);
+        }}
+        onSubmit={(data) =>
+          payInvoice.mutate(
+            { id: payInvoiceTarget!.id, data },
+            { onSuccess: () => setPayInvoiceTarget(null) },
+          )
+        }
+        pending={payInvoice.isPending}
       />
     </div>
   );
@@ -295,6 +310,125 @@ function NewInvoiceDialog({
             }
           >
             {pending ? "Creating..." : "Create invoice"}
+          </Button>
+        </DialogFooter>
+      </DialogPopup>
+    </Dialog>
+  );
+}
+
+const PAYMENT_METHODS = [
+  { value: "CASH", label: "Cash" },
+  { value: "MOBILE_MONEY", label: "Mobile money" },
+  { value: "BANK_TRANSFER", label: "Bank transfer" },
+  { value: "CARD", label: "Card" },
+] as const;
+
+function PayInvoiceDialog({
+  invoice,
+  onOpenChange,
+  onSubmit,
+  pending,
+}: {
+  invoice: Invoice | null;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (data: { amount: string; method: string; reference?: string }) => void;
+  pending: boolean;
+}) {
+  const open = invoice != null;
+  const balance =
+    invoice == null
+      ? 0
+      : Math.max(0, (invoice.totalAmount ?? 0) - invoice.amountPaid);
+
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState<string>("CASH");
+  const [reference, setReference] = useState("");
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (next && invoice) {
+          setAmount(String(Math.max(0, (invoice.totalAmount ?? 0) - invoice.amountPaid)));
+          setMethod("CASH");
+          setReference("");
+        }
+        if (!next) {
+          setAmount("");
+          setMethod("CASH");
+          setReference("");
+        }
+        onOpenChange(next);
+      }}
+    >
+      <DialogPopup>
+        <DialogHeader>
+          <DialogTitle>Record payment</DialogTitle>
+          <DialogDescription>
+            {invoice
+              ? `Payment against ${invoice.invoiceNumber} — balance RWF ${balance.toLocaleString()}.`
+              : "Record a payment against this invoice."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>Method</Label>
+            <Select value={method} onValueChange={(v) => setMethod(v ?? "CASH")}>
+              <SelectTrigger>
+                <SelectValue>
+                  {() => PAYMENT_METHODS.find((m) => m.value === method)?.label ?? method}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {PAYMENT_METHODS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="pay-amount">Amount</Label>
+            <Input
+              id="pay-amount"
+              type="number"
+              min={0}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="pay-reference">Reference (optional)</Label>
+            <Input
+              id="pay-reference"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
+              placeholder="Txn id, slip number…"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            disabled={!amount || Number(amount) <= 0 || pending}
+            onClick={() =>
+              onSubmit({
+                amount,
+                method,
+                reference: reference.trim() || undefined,
+              })
+            }
+          >
+            {pending ? "Recording..." : "Record payment"}
           </Button>
         </DialogFooter>
       </DialogPopup>

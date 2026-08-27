@@ -70,7 +70,12 @@ export const organizationService = {
   /** Corrects a registry entry. Platform operators only. */
   amend(
     organizationId: number,
-    input: { name?: string; type?: OrganizationType },
+    input: {
+      name?: string;
+      type?: OrganizationType;
+      tin?: string;
+      registrationNumber?: string;
+    },
   ): Promise<OrganizationResponse> {
     return api
       .put<OrganizationResponse>(`/api/organizations/${organizationId}`, input)

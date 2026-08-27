@@ -28,12 +28,17 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useLogout } from "@/hooks/auth";
 import { useNotifications } from "@/components/providers/notification-provider";
+import {
+  GlobalSearch,
+  useGlobalSearchHotkey,
+} from "@/components/layout/global-search";
 import { cn } from "@/lib/utils";
 
 export function DashboardHeader() {
   const { data: me } = useCurrentUser();
   const logout = useLogout();
   const { notifications, unreadCount, markAllRead, connected } = useNotifications();
+  const { open: searchOpen, setOpen: setSearchOpen } = useGlobalSearchHotkey();
 
   const displayNotifications = notifications.slice(0, 5);
 
@@ -69,14 +74,16 @@ export function DashboardHeader() {
           <span className="hidden sm:inline">Scan Code</span>
         </Link>
 
-        {/* Search Icon */}
+        {/* Global search — Cmd/Ctrl+K */}
         <button
           type="button"
+          onClick={() => setSearchOpen(true)}
           className="flex size-9 items-center justify-center rounded-lg border border-border/70 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
-          title="Search"
+          title="Search (Ctrl+K)"
         >
           <Search className="size-4.5" />
         </button>
+        <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
 
         {/* Notification Bell Dropdown */}
         <DropdownMenu>

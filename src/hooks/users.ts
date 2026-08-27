@@ -8,10 +8,11 @@ export const userKeys = {
   detail: (id: number) => [...userKeys.all, id] as const,
 };
 
-export function useUsers(organizationId?: number) {
+export function useUsers(organizationId?: number, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: userKeys.list(organizationId),
     queryFn: () => userService.list(organizationId),
+    enabled: options?.enabled ?? true,
   });
 }
 

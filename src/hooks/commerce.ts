@@ -33,6 +33,20 @@ export function useCreateCustomer() {
   });
 }
 
+export function useUpdateCustomer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Parameters<typeof customerService.update>[1] }) =>
+      customerService.update(id, data),
+    onSuccess: (_row, { id }) => {
+      qc.invalidateQueries({ queryKey: ["commerce", "customers"] });
+      qc.invalidateQueries({ queryKey: ["commerce", "customers", id] });
+      toast.success("Customer updated");
+    },
+    onError: (e) => toast.error(commerceError(e, "Could not update the customer")),
+  });
+}
+
 // ── Invoices ──
 export function useInvoices(page = 0, size = 20) {
   return useQuery({ queryKey: ["commerce", "invoices", page, size], queryFn: () => invoiceService.list(page, size) });
@@ -106,7 +120,7 @@ export function useCreateQuotation() {
   return useMutation({
     mutationFn: quotationService.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["commerce", "quotations"] }); toast.success("Quotation created"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(commerceError(e, "Could not create the quotation")),
   });
 }
 
@@ -201,11 +215,101 @@ export function useConfirmSalesOrder() {
     onSuccess: () => {
       // Confirming reserves identities, so stock and item views change with it.
       qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] });
+      qc.invalidateQueries({ queryKey: ["commerce", "fulfilment-plan"] });
       qc.invalidateQueries({ queryKey: ["items"] });
       qc.invalidateQueries({ queryKey: ["inventory"] });
       toast.success("Stock reserved for this order");
     },
     onError: (e) => toast.error(commerceError(e, "Could not confirm the order")),
+  });
+}
+
+export function useAcceptRounding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: salesOrderService.acceptRounding,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] });
+      qc.invalidateQueries({ queryKey: ["commerce", "fulfilment-plan"] });
+      toast.success("Rounding accepted");
+    },
+    onError: (e) => toast.error(commerceError(e, "Could not accept rounding")),
+  });
+}
+
+export function useReleaseSalesOrder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: salesOrderService.release,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] });
+      qc.invalidateQueries({ queryKey: ["items"] });
+      qc.invalidateQueries({ queryKey: ["inventory"] });
+      toast.success("Reserved stock released");
+    },
+    onError: (e) => toast.error(commerceError(e, "Could not release stock")),
+  });
+}
+
+export function useFulfilmentPlan(orderId: number | null, enabled = true) {
+  return useQuery({
+    queryKey: ["commerce", "fulfilment-plan", orderId],
+    queryFn: () => salesOrderService.fulfilmentPlan(orderId!),
+    enabled: enabled && !!orderId,
+  });
+}
+
+/**
+ * Optional helper: place a sales order from an accepted quotation, carrying
+ * the quote's lines through as requestedQuantity / salesUnit / unitPrice.
+ */
+export function useCreateSalesOrderFromQuotation() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (quotation: {
+      id: number;
+      customerId: number;
+      lines: {
+        productId: number;
+        requestedQuantity?: number;
+        quantity?: number;
+        salesUnit?: string | null;
+        unitPrice: number;
+        description?: string;
+      }[];
+      taxPercent?: number | null;
+      notes?: string;
+    }) => {
+      // List payloads may omit lines — fetch the quote when needed.
+      let lines = quotation.lines;
+      if (!lines?.length) {
+        const full = await quotationService.get(quotation.id);
+        lines = full.lines;
+      }
+      return salesOrderService.create({
+        customerId: quotation.customerId,
+        quotationId: quotation.id,
+        lines: lines.map((line) => ({
+          productId: line.productId,
+          requestedQuantity: String(line.requestedQuantity ?? line.quantity ?? 0),
+          unitPrice: String(line.unitPrice),
+          salesUnit: line.salesUnit ?? undefined,
+          description: line.description,
+        })),
+        taxPercent:
+          quotation.taxPercent === null || quotation.taxPercent === undefined
+            ? undefined
+            : String(quotation.taxPercent),
+        notes: quotation.notes,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["commerce", "sales-orders"] });
+      qc.invalidateQueries({ queryKey: ["commerce", "quotations"] });
+      toast.success("Sales order placed from quotation");
+    },
+    onError: (e) => toast.error(commerceError(e, "Could not place the order")),
   });
 }
 

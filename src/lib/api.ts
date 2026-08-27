@@ -45,6 +45,8 @@ export interface OrganizationResponse {
   id: number;
   name: string;
   type: OrganizationType;
+  tin?: string | null;
+  registrationNumber?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -116,9 +118,11 @@ export interface CapabilityCatalogue {
 export interface UserResponse {
   id: number;
   email: string;
-  fullName: string;
+  fullName: string | null;
   role: UserRole;
   organization: OrganizationResponse | null;
+  /** True until the user replaces an invite / admin-reset temporary password. */
+  mustChangePassword: boolean;
   /**
    * Everything this person may do, resolved by the server from their role and
    * their organization's standing. The only thing the UI should gate on.
@@ -145,6 +149,8 @@ export interface LoginInput {
 export interface CreateOrganizationInput {
   name: string;
   type: OrganizationType;
+  tin?: string;
+  registrationNumber?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -153,10 +159,17 @@ export interface CreateOrganizationInput {
 
 export interface CreateUserInput {
   email: string;
-  password: string;
-  fullName: string;
+  /** Omit when generatePassword is true. */
+  password?: string;
+  generatePassword?: boolean;
+  fullName?: string;
   organizationId: number;
   role: UserRole;
+}
+
+export interface CreateUserResponse extends UserResponse {
+  /** Returned only when the server generated the temporary password. */
+  temporaryPassword?: string;
 }
 
 export interface UpdateUserInput {
@@ -167,6 +180,11 @@ export interface UpdateUserInput {
 
 export interface ResetPasswordInput {
   password: string;
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
 }
 
 // ---------------------------------------------------------------------------

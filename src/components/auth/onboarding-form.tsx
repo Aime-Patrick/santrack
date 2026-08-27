@@ -54,6 +54,12 @@ const ORG_TYPES: { value: OrgType; label: string; hint: string }[] = [
 const organizationSchema = z.object({
   name: z.string().trim().min(2, "Enter your business name"),
   type: z.enum(ORG_TYPE_VALUES, { message: "Choose your business type" }),
+  tin: z
+    .string()
+    .trim()
+    .min(5, "Enter a valid TIN")
+    .max(32, "TIN is too long"),
+  registrationNumber: z.string().trim().optional(),
 });
 
 type OrganizationFormValues = z.infer<typeof organizationSchema>;
@@ -89,7 +95,12 @@ export function OnboardingForm() {
 
   const form = useForm<OrganizationFormValues>({
     resolver: zodResolver(organizationSchema),
-    defaultValues: { name: "", type: "" as OrgType },
+    defaultValues: {
+      name: "",
+      type: "" as OrgType,
+      tin: "",
+      registrationNumber: "",
+    },
   });
 
   const errors = form.formState.errors;
@@ -108,10 +119,18 @@ export function OnboardingForm() {
       return;
     }
     setFormError(null);
-    createOrganization.mutate(values, {
-      onSuccess: () => setDone(true),
-      onError: (error) => setFormError(getApiErrorMessage(error)),
-    });
+    createOrganization.mutate(
+      {
+        name: values.name,
+        type: values.type,
+        tin: values.tin,
+        registrationNumber: values.registrationNumber?.trim() || undefined,
+      },
+      {
+        onSuccess: () => setDone(true),
+        onError: (error) => setFormError(getApiErrorMessage(error)),
+      },
+    );
   });
 
   if (done) {
@@ -205,6 +224,38 @@ export function OnboardingForm() {
           {errors.name ? (
             <p className="text-xs font-medium text-red-500 mt-1">{errors.name.message}</p>
           ) : null}
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <label htmlFor="tin" className="block text-xs font-semibold text-slate-700">
+              TIN <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="tin"
+              placeholder="e.g. 102345678"
+              autoComplete="off"
+              {...form.register("tin")}
+              className="w-full h-11 px-3.5 text-sm text-slate-900 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg outline-none transition-all duration-150 focus:border-[#067eda] focus:ring-3 focus:ring-[#067eda]/15 hover:border-slate-300"
+            />
+            {errors.tin ? (
+              <p className="text-xs font-medium text-red-500 mt-1">{errors.tin.message}</p>
+            ) : (
+              <p className="text-[11px] text-slate-500">Tax Identification Number</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="registrationNumber" className="block text-xs font-semibold text-slate-700">
+              Registration number
+            </label>
+            <input
+              id="registrationNumber"
+              placeholder="Optional company / RDB number"
+              autoComplete="off"
+              {...form.register("registrationNumber")}
+              className="w-full h-11 px-3.5 text-sm text-slate-900 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg outline-none transition-all duration-150 focus:border-[#067eda] focus:ring-3 focus:ring-[#067eda]/15 hover:border-slate-300"
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
