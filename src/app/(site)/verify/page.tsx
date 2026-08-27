@@ -22,10 +22,8 @@ import { cn } from "@/lib/utils";
 /**
  * Public consumer verify entry.
  *
- * The registry answers only to the opaque QR payload (UUID on the label).
- * Human serials (ST-…) are sequential and must not work here — otherwise
- * anyone could walk the catalogue one code at a time. This page therefore
- * steers shoppers to scan the QR, not type the printed serial.
+ * Accepts the unit QR (UUID /verify link) and the printed serial (ST-…).
+ * Product catalogue barcodes (GTIN/SKU) are not unique to one pack.
  */
 export default function ConsumerVerifyPage() {
   const router = useRouter();
@@ -209,7 +207,7 @@ export default function ConsumerVerifyPage() {
       setCameraActive(false);
       scannerRef.current = null;
       setCameraError(
-        "Camera permission was denied or is unavailable. Enter the QR payload manually, or allow camera access.",
+        "Camera permission was denied or is unavailable. Type the serial or QR payload manually, or allow camera access.",
       );
     } finally {
       startingRef.current = false;
@@ -257,8 +255,8 @@ export default function ConsumerVerifyPage() {
             Verify Product
           </h1>
           <p className="text-xs text-slate-500 sm:text-sm">
-            Point at the packaging QR code. Public verify uses the QR payload,
-            not the printed ST- serial.
+            Point at the packaging QR, or enter the printed serial (ST-…).
+            Shared product barcodes (EAN/GTIN) are not accepted.
           </p>
         </div>
 
@@ -320,7 +318,7 @@ export default function ConsumerVerifyPage() {
                       onClick={() => setActiveMode("manual")}
                       className="rounded-xl bg-[#00A3E0] text-xs font-semibold text-white hover:bg-sky-600"
                     >
-                      Paste QR payload
+                      Type code instead
                     </Button>
                   </div>
                 )}
@@ -348,7 +346,7 @@ export default function ConsumerVerifyPage() {
                   <Input
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value)}
-                    placeholder="Paste QR payload (UUID) or /verify/… link"
+                    placeholder="QR UUID, ST-… serial, or /verify/… link"
                     className="h-12 rounded-xl border-slate-200 pl-10 pr-12 font-mono text-sm focus-visible:ring-2 focus-visible:ring-[#00A3E0]/20"
                     autoFocus
                     autoCapitalize="off"
@@ -374,9 +372,9 @@ export default function ConsumerVerifyPage() {
               </form>
 
               <p className="border-t border-slate-100 pt-3 text-[11px] leading-relaxed text-slate-500">
-                The printed serial (ST-…) identifies the unit for staff Trace
-                screens. Consumer verify only accepts the QR payload so codes
-                cannot be guessed in sequence.
+                You can scan the unit QR or type the printed serial on the same
+                label. Product shelf barcodes (GTIN) name every pack of that
+                product, so they cannot verify a single unit.
               </p>
             </div>
           )}
