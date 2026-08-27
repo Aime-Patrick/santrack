@@ -50,10 +50,15 @@ export interface IndustrySummary {
 }
 
 export interface SupplyChainSummary {
-  pendingShipments: number;
-  inTransit: number;
-  delivered: number;
-  totalValue: number;
+  availableUnits: number;
+  distinctProducts: number;
+  stockOutProducts: number;
+  inTransitUnits: number;
+  inTransitShipments: number;
+  rawMaterialCount: number;
+  materialsWithReorderLevel?: number;
+  lowRawMaterials: number | null;
+  distributionVolumes: number;
 }
 
 export interface PlatformCounts {

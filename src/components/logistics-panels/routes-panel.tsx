@@ -40,7 +40,7 @@ const columns: ColumnDef<TableFeatures, Route>[] = [
   {
     accessorKey: "destinationLocationName",
     header: "Destination",
-    cell: ({ row }) => <Badge variant="outline" className="border-success/30 bg-success/10 text-success">{row.getValue("destinationLocationName")}</Badge>,
+    cell: ({ row }) => <Badge variant="outline" className="border-transparent bg-success text-white">{row.getValue("destinationLocationName")}</Badge>,
   },
   {
     accessorKey: "distanceKm",
@@ -90,16 +90,7 @@ export function RoutesPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
-            <MapPin className="size-4" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">Routes</h2>
-            <p className="text-sm text-muted-foreground">Manage shipping routes between locations.</p>
-          </div>
-        </div>
+      <div className="flex justify-end">
         <Button onClick={() => setCreating(true)}>
           <Plus className="mr-2 size-4" /> Add Route
         </Button>

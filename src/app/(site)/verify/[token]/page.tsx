@@ -123,7 +123,7 @@ function VerifyCertificate({
           <ShieldX className="size-7" />
         </div>
         <div>
-          <Badge variant="outline" className="border-rose-300 bg-rose-50 text-rose-700 text-[11px] font-bold">
+          <Badge variant="outline" className="border-transparent bg-danger text-white text-[11px] font-bold">
             WARNING
           </Badge>
           <h2 className="mt-2 text-xl font-bold text-slate-900 uppercase tracking-wide">

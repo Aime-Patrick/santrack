@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCapabilities } from "@/hooks/permissions";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { type Capability } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
@@ -65,6 +66,14 @@ interface SubNavEntry {
   icon?: React.ComponentType<{ className?: string }>;
   /** Child links are filtered on their own, not just with their parent. */
   requires?: Capability[];
+  /** Hide when the caller has no organization (platform operator). */
+  requiresOrganization?: boolean;
+  /**
+   * Trading-business screens (own licences, org compliance, ops reports).
+   * Hidden for REGULATOR orgs — they supervise industries, they do not apply
+   * for their own trading permits.
+   */
+  requiresTradingOrg?: boolean;
 }
 
 interface NavEntry {
@@ -83,6 +92,10 @@ interface NavEntry {
   requires?: Capability[];
   /** At least one of these. For entries a few different roles legitimately reach. */
   requiresAny?: Capability[];
+  /** Hide when the caller has no organization (platform operator). */
+  requiresOrganization?: boolean;
+  /** Hide for licensing authorities (see SubNavEntry). */
+  requiresTradingOrg?: boolean;
   children?: SubNavEntry[];
 }
 
@@ -110,6 +123,10 @@ export function AppSidebar() {
   const pathname = usePathname();
   const t = useTranslations("sidebar");
   const permissions = useCapabilities();
+  const { data: me } = useCurrentUser();
+  const hasOrganization = !!me?.organization;
+  const isTradingOrg =
+    !!me?.organization && me.organization.type !== "REGULATOR";
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
 
@@ -139,8 +156,12 @@ export function AppSidebar() {
   const hasAccess = (entry: {
     requires?: Capability[];
     requiresAny?: Capability[];
+    requiresOrganization?: boolean;
+    requiresTradingOrg?: boolean;
   }) => {
     if (permissions.loading) return false;
+    if (entry.requiresOrganization && !hasOrganization) return false;
+    if (entry.requiresTradingOrg && !isTradingOrg) return false;
     if (entry.requires && !permissions.canAll(entry.requires)) return false;
     if (entry.requiresAny && !permissions.canAny(entry.requiresAny)) return false;
     return true;
@@ -167,7 +188,21 @@ export function AppSidebar() {
       requires: ["OVERSEE_INDUSTRIES"],
       children: [
         { title: "All Industries", href: "/dashboard/industries", icon: List },
+        {
+          title: "Industry compliance",
+          href: "/dashboard/compliance/findings",
+          icon: AlertTriangle,
+        },
       ],
+    },
+    {
+      key: "users",
+      title: "Users",
+      href: "/dashboard/users",
+      icon: Users,
+      // Platform-wide user administration. Authority staff manage their own
+      // people from Settings; this entry is for the platform operator only.
+      requires: ["ADMINISTER_PLATFORM"],
     },
     {
       key: "manufacturing",
@@ -292,7 +327,11 @@ export function AppSidebar() {
       // operates. Both screens render what the server decided — the browser
       // works out no part of a licensing verdict, for the same reason the
       // entries in this file are not computed from a role.
+      // Platform operators have no organization to assess — they use Industries.
+      // Regulators supervise others via Industries → Industry compliance, not
+      // this org-self view.
       requires: ["VIEW_OPERATIONS"],
+      requiresTradingOrg: true,
       children: [
         { title: "Overview", href: "/dashboard/compliance", icon: ShieldCheck },
         { title: "Sites", href: "/dashboard/compliance/facilities", icon: Factory },
@@ -301,15 +340,20 @@ export function AppSidebar() {
     {
       key: "regulators",
       title: "Regulators",
+      href: "/dashboard/regulators",
       icon: ShieldCheck,
-      // Standing up an authority is the platform operator's act; reviewing the
-      // licence queue is the authority's own work, which is a different
-      // capability and a different person.
-      requiresAny: ["ADMINISTER_PLATFORM", "MANAGE_RECALL"],
-      children: [
-        { title: "Manage Regulators", href: "/dashboard/regulators", icon: List, requires: ["ADMINISTER_PLATFORM"] },
-        { title: "License Review", href: "/dashboard/regulator", icon: FileBadge, requires: ["MANAGE_RECALL"] },
-      ],
+      // Standing up an authority is the platform operator's act. Licence
+      // review is a separate top-level entry for DECIDE_LICENCES holders —
+      // bundling both under "Regulators" made authorities open a parent that
+      // looked like self-administration.
+      requires: ["ADMINISTER_PLATFORM"],
+    },
+    {
+      key: "license-review",
+      title: "License Review",
+      href: "/dashboard/regulator",
+      icon: FileBadge,
+      requires: ["DECIDE_LICENCES"],
     },
   ];
 
@@ -327,30 +371,27 @@ export function AppSidebar() {
       href: "/dashboard/reports",
       icon: BarChart3,
       requires: ["VIEW_OPERATIONS"],
+      requiresTradingOrg: true,
     },
     {
       title: "Analytics",
       href: "/dashboard/analytics",
       icon: BarChart3,
       requires: ["VIEW_OPERATIONS"],
+      requiresTradingOrg: true,
     },
     {
       title: "Licenses & Permits",
       href: "/dashboard/licenses",
       icon: FileBadge,
       requires: ["VIEW_OPERATIONS"],
+      requiresTradingOrg: true,
     },
     {
       title: t("auditLogs"),
       href: "/dashboard/audit",
       icon: ClipboardList,
       requires: ["ADMINISTER_PLATFORM"],
-    },
-    {
-      title: t("maintenance"),
-      href: "/dashboard/maintenance",
-      icon: Wrench,
-      requires: ["APPLY_LIFECYCLE"],
     },
     {
       // Reading the recall register needs VIEW_OPERATIONS. Issuing and
@@ -361,6 +402,7 @@ export function AppSidebar() {
       href: "/dashboard/recall",
       icon: AlertTriangle,
       requires: ["VIEW_OPERATIONS"],
+      requiresOrganization: true,
     },
   ];
   const utilityNavItems: NavEntry[] = [

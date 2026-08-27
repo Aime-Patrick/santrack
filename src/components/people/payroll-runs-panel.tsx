@@ -11,10 +11,10 @@ import { usePayrollRuns } from "@/hooks/payroll";
 import type { PayrollRun } from "@/services/payroll.service";
 
 const statusColors: Record<string, string> = {
-  DRAFT: "border-warning/30 bg-warning/10 text-warning-foreground",
-  PROCESSED: "border-primary/30 bg-primary/10 text-primary",
-  PAID: "border-success/30 bg-success/10 text-success",
-  CANCELLED: "border-danger/30 bg-danger/10 text-danger",
+  DRAFT: "border-transparent bg-warning-foreground text-white",
+  PROCESSED: "border-transparent bg-primary text-white",
+  PAID: "border-transparent bg-success text-white",
+  CANCELLED: "border-transparent bg-danger text-white",
 };
 
 const columns: ColumnDef<TableFeatures, PayrollRun>[] = [

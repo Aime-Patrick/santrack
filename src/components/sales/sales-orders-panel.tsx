@@ -74,9 +74,9 @@ import type { Product } from "@/services/product.service";
 
 const statusColors: Record<string, string> = {
   PLACED: "border-border bg-muted/60 text-muted-foreground",
-  CONFIRMED: "border-primary/30 bg-primary/10 text-primary",
-  FULFILLED: "border-success/30 bg-success/10 text-success",
-  CANCELLED: "border-danger/30 bg-danger/10 text-danger",
+  CONFIRMED: "border-transparent bg-primary text-white",
+  FULFILLED: "border-transparent bg-success text-white",
+  CANCELLED: "border-transparent bg-danger text-white",
 };
 
 function isRoundingError(message: string | undefined): boolean {

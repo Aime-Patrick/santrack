@@ -27,7 +27,7 @@ const roleLabels: Record<UserRole, string> = {
 };
 
 const roleDescriptions: Record<UserRole, string> = {
-  SYSTEM_ADMIN: "Platform operator. Administers the registry, regulatory standing and licence approval across every organization.",
+  SYSTEM_ADMIN: "Platform operator. Oversees the industry registry and regulatory standing. Can open Trace to investigate, but does not run manufacturing, stock, sales or payroll.",
   ORG_ADMIN: "The most senior role a customer holds. Everything inside their own organization, and nothing outside it.",
   PRODUCTION_MANAGER: "Oversees production: the catalogue, production orders, raw materials and inspection.",
   PRODUCTION_OFFICER: "Day-to-day production. Registers identities and handles packaging.",

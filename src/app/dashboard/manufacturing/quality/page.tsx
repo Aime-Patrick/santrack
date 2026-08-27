@@ -68,10 +68,10 @@ const VERDICTS = [
 ] as const;
 
 const resultColors: Record<string, string> = {
-  APPROVED: "border-success/30 bg-success/10 text-success",
-  REJECTED: "border-danger/30 bg-danger/10 text-danger",
-  REWORK: "border-warning/30 bg-warning/10 text-warning",
-  QUARANTINE: "border-warning/30 bg-warning/10 text-warning",
+  APPROVED: "border-transparent bg-success text-white",
+  REJECTED: "border-transparent bg-danger text-white",
+  REWORK: "border-transparent bg-warning-foreground text-white",
+  QUARANTINE: "border-transparent bg-warning-foreground text-white",
 };
 
 const batchStatusColors: Record<string, string> = {

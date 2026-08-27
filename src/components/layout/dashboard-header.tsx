@@ -27,6 +27,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useLogout } from "@/hooks/auth";
+import { useCapabilities } from "@/hooks/permissions";
 import { useNotifications } from "@/components/providers/notification-provider";
 import {
   GlobalSearch,
@@ -36,11 +37,13 @@ import { cn } from "@/lib/utils";
 
 export function DashboardHeader() {
   const { data: me } = useCurrentUser();
+  const permissions = useCapabilities();
   const logout = useLogout();
   const { notifications, unreadCount, markAllRead, connected } = useNotifications();
   const { open: searchOpen, setOpen: setSearchOpen } = useGlobalSearchHotkey();
 
   const displayNotifications = notifications.slice(0, 5);
+  const canOpenRegulatorPortal = permissions.can("DECIDE_LICENCES");
 
   const userDisplayName = me?.fullName || "Design Admin";
   const userEmail = me?.email || "admin@santrack.rw";
@@ -192,10 +195,12 @@ export function DashboardHeader() {
                 <Settings className="size-3.5 text-muted-foreground" />
                 Settings
               </DropdownMenuItem>
-              <DropdownMenuItem render={<Link href="/dashboard/regulator" />} className="gap-2 text-xs">
-                <ShieldCheck className="size-3.5 text-muted-foreground" />
-                Regulator Portal
-              </DropdownMenuItem>
+              {canOpenRegulatorPortal ? (
+                <DropdownMenuItem render={<Link href="/dashboard/regulator" />} className="gap-2 text-xs">
+                  <ShieldCheck className="size-3.5 text-muted-foreground" />
+                  License Review
+                </DropdownMenuItem>
+              ) : null}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem

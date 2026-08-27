@@ -6,7 +6,11 @@ import { usePathname } from "next/navigation";
 import { ShieldOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCapabilities } from "@/hooks/permissions";
-import { capabilitiesForRoute } from "@/lib/permissions";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import {
+  capabilitiesForRoute,
+  routeRequiresTradingOrg,
+} from "@/lib/permissions";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
@@ -25,6 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function RouteGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const permissions = useCapabilities();
+  const { data: me } = useCurrentUser();
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -32,6 +37,9 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
   }, []);
 
   const required = capabilitiesForRoute(pathname);
+  const needsTradingOrg = routeRequiresTradingOrg(pathname);
+  const isTradingOrg =
+    !!me?.organization && me.organization.type !== "REGULATOR";
 
   // Deciding before /me lands would flash "not permitted" at people who are.
   // On the server we always show loading; the client waits one tick to avoid
@@ -42,6 +50,30 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  if (needsTradingOrg && !isTradingOrg) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
+        <div className="flex size-14 items-center justify-center rounded-full bg-danger/10">
+          <ShieldOff className="size-6 text-danger" />
+        </div>
+
+        <h1 className="mt-5 text-lg font-bold tracking-tight text-foreground">
+          This screen is for trading businesses
+        </h1>
+
+        <p className="mt-2 max-w-md text-sm text-muted-foreground">
+          Licensing authorities review applications and oversee industries —
+          they do not apply for operating licences or run factory reports here.
+          Use License Review and Industries instead.
+        </p>
+
+        <Button className="mt-6" render={<Link href="/dashboard" />} nativeButton={false}>
+          Back to dashboard
+        </Button>
       </div>
     );
   }
@@ -63,7 +95,7 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
       <p className="mt-2 max-w-md text-sm text-muted-foreground">
         Your account does not hold the permission this screen needs. If you
         believe it should, your organization&apos;s administrator can change it
-        under Users.
+        under Settings.
       </p>
 
       <p className="mt-4 font-mono text-xs text-faint">

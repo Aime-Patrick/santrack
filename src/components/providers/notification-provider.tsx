@@ -1,8 +1,17 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  type ReactNode,
+} from "react";
 import { io, Socket } from "socket.io-client";
 import { api } from "@/lib/api";
+import { getAuthToken } from "@/lib/auth";
 
 interface Notification {
   id: number;
@@ -37,62 +46,93 @@ export function useNotifications() {
   return useContext(SocketContext);
 }
 
+function apiBase(): string {
+  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081";
+}
+
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("santrack_token") : null;
-    if (!token) return;
-
-    // Load existing notifications from the REST API on mount
-    api.get<Notification[]>("/api/notifications", { params: { limit: 20 } })
+  const loadRest = useCallback(() => {
+    api
+      .get<Notification[]>("/api/notifications", { params: { limit: 20 } })
       .then((res) => {
         setNotifications(res.data);
-        const unread = res.data.filter((n) => !n.read).length;
-        setUnreadCount(unread);
+        setUnreadCount(res.data.filter((n) => !n.read).length);
       })
       .catch(() => {});
 
-    // Also fetch the unread count
-    api.get<{ count: number }>("/api/notifications/count")
+    api
+      .get<{ count: number }>("/api/notifications/count")
       .then((res) => setUnreadCount(res.data.count))
       .catch(() => {});
+  }, []);
 
-    const socket = io(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8081"}/notifications`, {
-      auth: { token },
-      transports: ["websocket", "polling"],
-      autoConnect: true,
-    });
+  const connectSocket = useCallback(
+    (token: string) => {
+      socketRef.current?.disconnect();
 
-    socketRef.current = socket;
+      const socket = io(`${apiBase()}/notifications`, {
+        auth: { token },
+        transports: ["websocket", "polling"],
+        autoConnect: true,
+      });
 
-    socket.on("connect", () => setConnected(true));
-    socket.on("disconnect", () => setConnected(false));
+      socketRef.current = socket;
 
-    socket.on("notification", (notification: Notification) => {
-      setNotifications((prev) => [notification, ...prev].slice(0, 50));
-      setUnreadCount((prev) => prev + 1);
-    });
+      socket.on("connect", () => setConnected(true));
+      socket.on("disconnect", () => setConnected(false));
 
-    socket.on("unread_count", (data: { count: number }) => {
-      setUnreadCount(data.count);
+      socket.on("notification", (notification: Notification) => {
+        setNotifications((prev) => [notification, ...prev].slice(0, 50));
+        setUnreadCount((prev) => prev + 1);
+      });
+
+      socket.on("unread_count", (data: { count: number }) => {
+        setUnreadCount(data.count);
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const boot = () => {
+      const token = getAuthToken();
+      if (!token) {
+        socketRef.current?.disconnect();
+        socketRef.current = null;
+        setConnected(false);
+        return;
+      }
+      loadRest();
+      connectSocket(token);
+    };
+
+    boot();
+
+    // Login/logout in this tab updates localStorage without a storage event.
+    const onAuthChanged = () => boot();
+    window.addEventListener("santrack-auth-changed", onAuthChanged);
+    window.addEventListener("storage", (event) => {
+      if (event.key === "auth_token") onAuthChanged();
     });
 
     return () => {
-      socket.disconnect();
+      window.removeEventListener("santrack-auth-changed", onAuthChanged);
+      socketRef.current?.disconnect();
       socketRef.current = null;
       setConnected(false);
     };
-  }, []);
+  }, [connectSocket, loadRest]);
 
   const markRead = useCallback((id: number) => {
     socketRef.current?.emit("mark_read", { notificationId: id });
     api.patch(`/api/notifications/${id}/read`).catch(() => {});
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
     setUnreadCount((prev) => Math.max(0, prev - 1));
   }, []);
@@ -105,7 +145,16 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current, connected, unreadCount, notifications, markRead, markAllRead }}>
+    <SocketContext.Provider
+      value={{
+        socket: socketRef.current,
+        connected,
+        unreadCount,
+        notifications,
+        markRead,
+        markAllRead,
+      }}
+    >
       {children}
     </SocketContext.Provider>
   );

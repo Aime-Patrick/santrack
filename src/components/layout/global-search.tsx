@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, CornerDownLeft, Search } from "lucide-react";
 import { Dialog, DialogPopup, DialogTitle } from "@/components/ui/dialog";
 import { useGlobalSearch, type SearchHit } from "@/hooks/search";
+import { useCapabilities } from "@/hooks/permissions";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import type { Capability } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 type PageItem = {
@@ -12,45 +15,114 @@ type PageItem = {
   id: string;
   title: string;
   href: string;
+  requires?: Capability[];
+  requiresAny?: Capability[];
+  /** Hide when the caller has no organization (platform operator). */
+  requiresOrganization?: boolean;
+  /** Hide for licensing authorities (applicant / trading-business screens). */
+  requiresTradingOrg?: boolean;
 };
 
 type ListItem =
   | (PageItem & { group: "Pages" })
   | (SearchHit & { group: string });
 
+/**
+ * Destinations offered before/while typing. Each entry declares the same
+ * capability gates as the sidebar so search never suggests a forbidden page.
+ */
 const PAGES: PageItem[] = [
   { type: "page", id: "dashboard", title: "Home", href: "/dashboard" },
-  { type: "page", id: "products", title: "Products", href: "/dashboard/products" },
+  {
+    type: "page",
+    id: "industries",
+    title: "Industries",
+    href: "/dashboard/industries",
+    requires: ["OVERSEE_INDUSTRIES"],
+  },
+  {
+    type: "page",
+    id: "findings",
+    title: "Industry compliance",
+    href: "/dashboard/compliance/findings",
+    requires: ["OVERSEE_INDUSTRIES"],
+  },
+  {
+    type: "page",
+    id: "users",
+    title: "Users",
+    href: "/dashboard/users",
+    requires: ["ADMINISTER_PLATFORM"],
+  },
+  {
+    type: "page",
+    id: "regulators",
+    title: "Regulators",
+    href: "/dashboard/regulators",
+    requires: ["ADMINISTER_PLATFORM"],
+  },
+  {
+    type: "page",
+    id: "audit",
+    title: "Audit logs",
+    href: "/dashboard/audit",
+    requires: ["ADMINISTER_PLATFORM"],
+  },
+  {
+    type: "page",
+    id: "license-review",
+    title: "License Review",
+    href: "/dashboard/regulator",
+    requires: ["DECIDE_LICENCES"],
+  },
+  {
+    type: "page",
+    id: "products",
+    title: "Products",
+    href: "/dashboard/products",
+    requiresAny: ["MANAGE_CATALOG", "REGISTER_IDENTITY"],
+  },
   {
     type: "page",
     id: "categories",
     title: "Categories",
     href: "/dashboard/products/categories",
+    requires: ["MANAGE_CATALOG"],
   },
   {
     type: "page",
     id: "production",
     title: "Production",
     href: "/dashboard/manufacturing/production",
+    requires: ["RUN_PRODUCTION"],
   },
   {
     type: "page",
     id: "quality",
     title: "Quality Control",
     href: "/dashboard/manufacturing/quality",
+    requires: ["PERFORM_QC"],
   },
   {
     type: "page",
     id: "inventory",
     title: "Inventory",
     href: "/dashboard/inventory",
+    requiresAny: ["HANDLE_PACKAGING", "MOVE_STOCK", "REGISTER_IDENTITY", "RUN_PRODUCTION"],
   },
-  { type: "page", id: "sales", title: "Sales", href: "/dashboard/sales" },
+  {
+    type: "page",
+    id: "sales",
+    title: "Sales",
+    href: "/dashboard/sales",
+    requires: ["SELL"],
+  },
   {
     type: "page",
     id: "customers",
     title: "Customers",
     href: "/dashboard/sales/customers",
+    requires: ["MANAGE_CLIENTS"],
   },
   {
     type: "page",
@@ -58,18 +130,47 @@ const PAGES: PageItem[] = [
     title: "Trace & Act",
     href: "/dashboard/manufacturing/trace",
   },
-  { type: "page", id: "recall", title: "Recalls", href: "/dashboard/recall" },
+  {
+    type: "page",
+    id: "recall",
+    title: "Recalls",
+    href: "/dashboard/recall",
+    requiresOrganization: true,
+  },
   {
     type: "page",
     id: "licenses",
     title: "Licenses & Permits",
     href: "/dashboard/licenses",
+    requiresTradingOrg: true,
+  },
+  {
+    type: "page",
+    id: "compliance",
+    title: "Compliance",
+    href: "/dashboard/compliance",
+    requiresTradingOrg: true,
+  },
+  {
+    type: "page",
+    id: "reports",
+    title: "Reports",
+    href: "/dashboard/reports",
+    requiresTradingOrg: true,
+  },
+  {
+    type: "page",
+    id: "analytics",
+    title: "Analytics",
+    href: "/dashboard/analytics",
+    requiresTradingOrg: true,
   },
   {
     type: "page",
     id: "settings",
     title: "Settings",
     href: "/dashboard/settings",
+    requires: ["MANAGE_USERS"],
   },
 ];
 
@@ -79,6 +180,8 @@ const TYPE_GROUP: Record<SearchHit["type"], string> = {
   batch: "Lots",
   customer: "Customers",
   item: "Identities",
+  organization: "Industries",
+  user: "Users",
 };
 
 function useDebounced(value: string, ms: number) {
@@ -98,6 +201,11 @@ export function GlobalSearch({
   onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
+  const permissions = useCapabilities();
+  const { data: me } = useCurrentUser();
+  const hasOrganization = !!me?.organization;
+  const isTradingOrg =
+    !!me?.organization && me.organization.type !== "REGULATOR";
   const [query, setQuery] = React.useState("");
   const [activeIndex, setActiveIndex] = React.useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -107,22 +215,30 @@ export function GlobalSearch({
 
   const pageHits = React.useMemo(() => {
     const q = query.trim().toLowerCase();
+    const allowed = PAGES.filter((p) => {
+      if (permissions.loading) return false;
+      if (p.requiresOrganization && !hasOrganization) return false;
+      if (p.requiresTradingOrg && !isTradingOrg) return false;
+      if (p.requires && !permissions.canAll(p.requires)) return false;
+      if (p.requiresAny && !permissions.canAny(p.requiresAny)) return false;
+      return true;
+    });
     const pages = !q
-      ? PAGES
-      : PAGES.filter((p) => p.title.toLowerCase().includes(q));
+      ? allowed
+      : allowed.filter((p) => p.title.toLowerCase().includes(q));
     return pages.map(
       (p): ListItem => ({
         ...p,
         group: "Pages",
       }),
     );
-  }, [query]);
+  }, [query, permissions, hasOrganization, isTradingOrg]);
 
   const remoteHits = React.useMemo((): ListItem[] => {
     if (!data?.results?.length) return [];
     return data.results.map((hit) => ({
       ...hit,
-      group: TYPE_GROUP[hit.type],
+      group: TYPE_GROUP[hit.type] ?? "Results",
     }));
   }, [data]);
 
@@ -177,6 +293,10 @@ export function GlobalSearch({
 
   let flatIndex = -1;
 
+  const placeholder = hasOrganization
+    ? "Search products, lots, pages…"
+    : "Search industries, users, pages…";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPopup
@@ -196,7 +316,7 @@ export function GlobalSearch({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Search products, lots, pages…"
+              placeholder={placeholder}
               className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               autoComplete="off"
               spellCheck={false}

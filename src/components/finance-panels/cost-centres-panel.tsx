@@ -41,11 +41,11 @@ const columns: ColumnDef<TableFeatures, CostCentre>[] = [
     cell: ({ row }) => {
       const active = row.getValue("active") as boolean;
       return active ? (
-        <Badge variant="outline" className="border-success/30 bg-success/10 text-success">
+        <Badge variant="outline" className="border-transparent bg-success text-white">
           <CheckCircle className="mr-1 size-3" /> Active
         </Badge>
       ) : (
-        <Badge variant="outline" className="border-muted bg-muted/60 text-muted-foreground">
+        <Badge variant="outline" className="border-transparent bg-muted-foreground text-white">
           <XCircle className="mr-1 size-3" /> Inactive
         </Badge>
       );

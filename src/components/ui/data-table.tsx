@@ -75,6 +75,8 @@ interface DataTableProps<TData extends RowData> {
   headerClassName?: string;
   /** Per-row className callback */
   rowClassName?: (row: ReturnType<ReturnType<typeof useTable<TableFeatures, TData>>['getRowModel']>['rows'][number]) => string;
+  /** When set, the whole row is clickable. */
+  onRowClick?: (row: TData) => void;
 }
 
 export function DataTable<TData extends RowData>({
@@ -91,6 +93,7 @@ export function DataTable<TData extends RowData>({
   tableClassName,
   headerClassName,
   rowClassName,
+  onRowClick,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] =
@@ -160,7 +163,19 @@ export function DataTable<TData extends RowData>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className={rowClassName ? rowClassName(row) : undefined}
+                  className={
+                    [
+                      onRowClick ? "cursor-pointer hover:bg-muted/50" : "",
+                      rowClassName ? rowClassName(row) : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ") || undefined
+                  }
+                  onClick={
+                    onRowClick
+                      ? () => onRowClick(row.original as TData)
+                      : undefined
+                  }
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

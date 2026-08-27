@@ -13,8 +13,8 @@ import { useEmployees } from "@/hooks/payroll";
 import type { Employee } from "@/services/payroll.service";
 
 const statusColors: Record<string, string> = {
-  ACTIVE: "border-success/30 bg-success/10 text-success",
-  ON_LEAVE: "border-warning/30 bg-warning/10 text-warning-foreground",
+  ACTIVE: "border-transparent bg-success text-white",
+  ON_LEAVE: "border-transparent bg-warning-foreground text-white",
   TERMINATED: "border-border bg-muted/60 text-muted-foreground",
 };
 

@@ -73,11 +73,11 @@ import { cn } from "@/lib/utils";
 import type { Batch } from "@/services/batch.service";
 
 const categoryColors: Record<string, string> = {
-  AGRICULTURE: "border-success/30 bg-success/10 text-success",
-  MINING: "border-warning/30 bg-warning/10 text-warning-foreground",
-  MANUFACTURING: "border-primary/30 bg-primary/10 text-primary",
-  FOOD: "border-success/30 bg-success/10 text-success",
-  PHARMACEUTICAL: "border-info/30 bg-info/10 text-info",
+  AGRICULTURE: "border-transparent bg-success text-white",
+  MINING: "border-transparent bg-warning-foreground text-white",
+  MANUFACTURING: "border-transparent bg-primary text-white",
+  FOOD: "border-transparent bg-success text-white",
+  PHARMACEUTICAL: "border-transparent bg-info text-white",
 };
 
 export default function ProductDetailPage() {
@@ -486,9 +486,9 @@ const batchColumns: ColumnDef<TableFeatures, Batch>[] = [
           variant="outline"
           className={
             status === "ACTIVE" || status === "APPROVED"
-              ? "border-success/30 bg-success/10 text-success"
+              ? "border-transparent bg-success text-white"
               : status === "PENDING_QC"
-                ? "border-warning/30 bg-warning/10 text-warning-foreground"
+                ? "border-transparent bg-warning-foreground text-white"
                 : "border-border bg-muted/60 text-muted-foreground"
           }
         >

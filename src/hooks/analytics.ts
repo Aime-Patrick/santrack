@@ -31,10 +31,11 @@ export function useIndustrySummary() {
   });
 }
 
-export function useIndustryCategories() {
+export function useIndustryCategories(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["analytics", "industry-categories"],
     queryFn: analyticsService.industryCategories,
+    enabled: options?.enabled ?? true,
   });
 }
 

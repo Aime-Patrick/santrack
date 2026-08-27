@@ -61,39 +61,39 @@ import type { LifecycleAction } from "@/services/item.service";
 import type { ItemAction } from "@/services/trace.service";
 
 const EVENT_COLORS: Record<string, string> = {
-  REGISTERED: "border-success/30 bg-success/10 text-success",
-  PACKAGED: "border-primary/30 bg-primary/10 text-primary",
-  UNIT_REMOVED: "border-warning/30 bg-warning/10 text-warning-foreground",
-  DISPATCHED: "border-warning/30 bg-warning/10 text-warning-foreground",
-  RECEIVED: "border-success/30 bg-success/10 text-success",
-  RELOCATED: "border-primary/30 bg-primary/10 text-primary",
-  SOLD: "border-primary/30 bg-primary/10 text-primary",
-  QC_PASSED: "border-success/30 bg-success/10 text-success",
-  QC_FAILED: "border-danger/30 bg-danger/10 text-danger",
-  QUARANTINED: "border-warning/30 bg-warning/10 text-warning-foreground",
-  RELEASED: "border-success/30 bg-success/10 text-success",
-  RETURNED: "border-warning/30 bg-warning/10 text-warning-foreground",
-  RECALLED: "border-danger/30 bg-danger/10 text-danger",
-  EXPIRED: "border-danger/30 bg-danger/10 text-danger",
-  DAMAGED: "border-danger/30 bg-danger/10 text-danger",
-  DESTROYED: "border-danger/30 bg-danger/10 text-danger",
+  REGISTERED: "border-transparent bg-success text-white",
+  PACKAGED: "border-transparent bg-primary text-white",
+  UNIT_REMOVED: "border-transparent bg-warning-foreground text-white",
+  DISPATCHED: "border-transparent bg-warning-foreground text-white",
+  RECEIVED: "border-transparent bg-success text-white",
+  RELOCATED: "border-transparent bg-primary text-white",
+  SOLD: "border-transparent bg-primary text-white",
+  QC_PASSED: "border-transparent bg-success text-white",
+  QC_FAILED: "border-transparent bg-danger text-white",
+  QUARANTINED: "border-transparent bg-warning-foreground text-white",
+  RELEASED: "border-transparent bg-success text-white",
+  RETURNED: "border-transparent bg-warning-foreground text-white",
+  RECALLED: "border-transparent bg-danger text-white",
+  EXPIRED: "border-transparent bg-danger text-white",
+  DAMAGED: "border-transparent bg-danger text-white",
+  DESTROYED: "border-transparent bg-danger text-white",
   // Nothing changed about the product — somebody just asked what it was.
   // Neutral on purpose: a scan is not good news or bad news, and colouring it
   // either way would misread a shopper checking a label.
-  VERIFIED: "border-primary/30 bg-primary/10 text-primary",
+  VERIFIED: "border-transparent bg-primary text-white",
 };
 
 const STATUS_TONES: Record<string, string> = {
-  ACTIVE: "bg-success/10 text-success border-success/20",
-  RESERVED: "bg-primary/10 text-primary border-primary/20",
-  IN_TRANSIT: "bg-warning/10 text-warning-foreground border-warning/20",
-  SOLD: "bg-primary/10 text-primary border-primary/20",
-  RETURNED: "bg-warning/10 text-warning-foreground border-warning/20",
-  QUARANTINED: "bg-warning/10 text-warning-foreground border-warning/20",
-  RECALLED: "bg-danger/10 text-danger border-danger/20",
-  EXPIRED: "bg-danger/10 text-danger border-danger/20",
-  DAMAGED: "bg-danger/10 text-danger border-danger/20",
-  DESTROYED: "bg-danger/10 text-danger border-danger/20",
+  ACTIVE: "bg-success text-white border-transparent",
+  RESERVED: "bg-primary text-white border-transparent",
+  IN_TRANSIT: "bg-warning-foreground text-white border-transparent",
+  SOLD: "bg-primary text-white border-transparent",
+  RETURNED: "bg-warning-foreground text-white border-transparent",
+  QUARANTINED: "bg-warning-foreground text-white border-transparent",
+  RECALLED: "bg-danger text-white border-transparent",
+  EXPIRED: "bg-danger text-white border-transparent",
+  DAMAGED: "bg-danger text-white border-transparent",
+  DESTROYED: "bg-danger text-white border-transparent",
 };
 
 /** The six lifecycle verbs that share one endpoint and one dialog. */
@@ -588,10 +588,10 @@ export default function ItemConsolePage() {
                                       className={cn(
                                         "text-[10px]",
                                         insp.result === "APPROVED"
-                                          ? "border-success/30 bg-success/10 text-success"
+                                          ? "border-transparent bg-success text-white"
                                           : insp.result === "REJECTED"
-                                            ? "border-danger/30 bg-danger/10 text-danger"
-                                            : "border-warning/30 bg-warning/10 text-warning-foreground",
+                                            ? "border-transparent bg-danger text-white"
+                                            : "border-transparent bg-warning-foreground text-white",
                                       )}
                                     >
                                       {insp.result}

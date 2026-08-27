@@ -150,6 +150,30 @@ export function useRegulatorQueue() {
   });
 }
 
+/**
+ * Advisory compliance findings across businesses.
+ * Licensing authorities and the platform operator (OVERSEE_INDUSTRIES).
+ */
+export function useComplianceFindings(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: [...licenseKeys.all, "findings"],
+    queryFn: licenseService.findings,
+    staleTime: 30_000,
+    enabled: options?.enabled ?? true,
+  });
+}
+
+export function useComplianceFinding(
+  id: number,
+  options?: { enabled?: boolean },
+) {
+  return useQuery({
+    queryKey: [...licenseKeys.all, "findings", id],
+    queryFn: () => licenseService.finding(id),
+    enabled: (options?.enabled ?? true) && id > 0,
+  });
+}
+
 /** Mark an application as under review. */
 export function useReviewLicense() {
   const queryClient = useQueryClient();

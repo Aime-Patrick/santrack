@@ -28,6 +28,7 @@ import {
 import { LicenceSummaryPanel } from "@/components/compliance/licence-summary";
 import { StatusBadge, statusSurface } from "@/components/compliance/status-badge";
 import { useComplianceOverview } from "@/hooks/compliance";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { getApiErrorMessage } from "@/lib/api";
 import { enforcementLabel } from "@/services/compliance.service";
 import type { FacilityCompliance } from "@/services/compliance.service";
@@ -50,10 +51,51 @@ import { cn } from "@/lib/utils";
  * covered when they were not.
  */
 export default function CompliancePage() {
+  const { data: me } = useCurrentUser();
+  const hasOrganization = !!me?.organization;
   const { data, isLoading, isError, error, refetch, isFetching } =
-    useComplianceOverview();
+    useComplianceOverview({ enabled: hasOrganization });
 
   const evaluatedAt = data?.evaluatedAt ? new Date(data.evaluatedAt) : null;
+
+  if (me && !hasOrganization) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
+            <ShieldCheck className="size-4" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Compliance</h1>
+            <p className="text-sm text-muted-foreground">
+              Organization compliance belongs to each business, not the platform operator.
+            </p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="py-8">
+            <p className="text-sm text-muted-foreground">
+              Open <span className="font-medium text-foreground">Industries</span> for
+              the business register, or{" "}
+              <span className="font-medium text-foreground">Industry compliance</span>{" "}
+              for findings across every organization.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button render={<Link href="/dashboard/industries" />}>
+                Go to Industries
+              </Button>
+              <Button
+                variant="outline"
+                render={<Link href="/dashboard/compliance/findings" />}
+              >
+                Industry compliance
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -51,7 +51,9 @@ export function ResetPasswordDialog({
       { userId: user.id, input: { password } },
       {
         onSuccess: () => {
-          toast.success(`Password reset for ${user.fullName || user.email}`);
+          toast.success(
+            `Password reset for ${user.fullName || user.email}. An email was sent if mail is configured.`,
+          );
           onOpenChange(false);
         },
         onError: (error) => {

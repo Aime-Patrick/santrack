@@ -86,9 +86,9 @@ import type { ProductionOrder } from "@/services/manufacturing.service";
 
 const statusColors: Record<string, string> = {
   PLANNED: "border-border bg-muted/60 text-muted-foreground",
-  IN_PROGRESS: "border-primary/30 bg-primary/10 text-primary",
-  COMPLETED: "border-success/30 bg-success/10 text-success",
-  CANCELLED: "border-danger/30 bg-danger/10 text-danger",
+  IN_PROGRESS: "border-transparent bg-primary text-white",
+  COMPLETED: "border-transparent bg-success text-white",
+  CANCELLED: "border-transparent bg-danger text-white",
 };
 
 export default function ProductionOrdersPage() {

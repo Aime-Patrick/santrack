@@ -16,9 +16,9 @@ import type { Shipment } from "@/services/logistics.service";
 
 const statusColors: Record<string, string> = {
   PENDING: "border-border bg-muted/60 text-muted-foreground",
-  DISPATCHED: "border-primary/30 bg-primary/10 text-primary",
-  IN_TRANSIT: "border-warning/30 bg-warning/10 text-warning-foreground",
-  DELIVERED: "border-success/30 bg-success/10 text-success",
+  DISPATCHED: "border-transparent bg-primary text-white",
+  IN_TRANSIT: "border-transparent bg-warning-foreground text-white",
+  DELIVERED: "border-transparent bg-success text-white",
 };
 
 export function ShipmentsPanel() {
@@ -165,16 +165,7 @@ export function ShipmentsPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
-            <Truck className="size-4" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">Shipments</h2>
-            <p className="text-sm text-muted-foreground">Track and manage logistics shipments.</p>
-          </div>
-        </div>
+      <div className="flex justify-end">
         <Button onClick={() => setCreating(true)}>
           <Plus className="mr-2 size-4" /> Create Shipment
         </Button>

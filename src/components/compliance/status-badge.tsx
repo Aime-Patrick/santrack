@@ -22,22 +22,22 @@ const PRESENTATION: Record<
 > = {
   PASS: {
     label: "Pass",
-    className: "border-success/30 bg-success/10 text-success",
+    className: "border-transparent bg-success text-white",
     icon: CheckCircle2,
   },
   WARN: {
     label: "Warning",
-    className: "border-warning/50 bg-warning/15 text-warning-foreground",
+    className: "border-transparent bg-warning-foreground text-white",
     icon: AlertTriangle,
   },
   FAIL: {
     label: "Fail",
-    className: "border-danger/30 bg-danger/10 text-danger",
+    className: "border-transparent bg-danger text-white",
     icon: XCircle,
   },
   NOT_APPLICABLE: {
     label: "Not applicable",
-    className: "border-border bg-muted/60 text-faint",
+    className: "border-transparent bg-muted-foreground text-white",
     icon: MinusCircle,
   },
 };
@@ -45,7 +45,7 @@ const PRESENTATION: Record<
 function presentationFor(status: string | undefined) {
   return PRESENTATION[(status ?? "") as AnyStatus] ?? {
     label: status ?? "Unknown",
-    className: "border-border bg-muted/60 text-muted-foreground",
+    className: "border-transparent bg-muted-foreground text-white",
     icon: MinusCircle,
   };
 }

@@ -57,7 +57,7 @@ const columns: ColumnDef<TableFeatures, Bom>[] = [
     cell: ({ row }) => {
       const active = row.getValue("active") as boolean;
       return (
-        <Badge variant="outline" className={active ? "border-success/30 bg-success/10 text-success" : "border-border bg-muted/60 text-muted-foreground"}>
+        <Badge variant="outline" className={active ? "border-transparent bg-success text-white" : "border-border bg-muted/60 text-muted-foreground"}>
           {active ? "Active" : "Inactive"}
         </Badge>
       );

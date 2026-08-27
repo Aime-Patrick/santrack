@@ -18,10 +18,10 @@ import type { Invoice, SalesOrder } from "@/services/commerce.service";
 
 const statusColors: Record<string, string> = {
   DRAFT: "border-border bg-muted/60 text-muted-foreground",
-  ISSUED: "border-primary/30 bg-primary/10 text-primary",
-  PAID: "border-success/30 bg-success/10 text-success",
-  VOIDED: "border-danger/30 bg-danger/10 text-danger",
-  OVERDUE: "border-warning/30 bg-warning/10 text-warning-foreground",
+  ISSUED: "border-transparent bg-primary text-white",
+  PAID: "border-transparent bg-success text-white",
+  VOIDED: "border-transparent bg-danger text-white",
+  OVERDUE: "border-transparent bg-warning-foreground text-white",
 };
 
 export function InvoicesPanel() {

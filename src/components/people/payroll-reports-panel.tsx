@@ -139,21 +139,21 @@ export function PayrollReportsPanel() {
                 <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Approved</p>
                 <div className="flex items-center gap-2">
                   <p className="text-xl font-bold tracking-tight text-foreground">{leaveReport.approved}</p>
-                  <Badge variant="outline" className="border-success/30 bg-success/10 text-success">Approved</Badge>
+                  <Badge variant="outline" className="border-transparent bg-success text-white">Approved</Badge>
                 </div>
               </div>
               <div className="space-y-1">
                 <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Rejected</p>
                 <div className="flex items-center gap-2">
                   <p className="text-xl font-bold tracking-tight text-foreground">{leaveReport.rejected}</p>
-                  <Badge variant="outline" className="border-danger/30 bg-danger/10 text-danger">Rejected</Badge>
+                  <Badge variant="outline" className="border-transparent bg-danger text-white">Rejected</Badge>
                 </div>
               </div>
               <div className="space-y-1">
                 <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Pending</p>
                 <div className="flex items-center gap-2">
                   <p className="text-xl font-bold tracking-tight text-foreground">{leaveReport.pending}</p>
-                  <Badge variant="outline" className="border-warning/30 bg-warning/10 text-warning-foreground">Pending</Badge>
+                  <Badge variant="outline" className="border-transparent bg-warning-foreground text-white">Pending</Badge>
                 </div>
               </div>
             </div>

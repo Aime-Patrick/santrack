@@ -76,16 +76,7 @@ export function TransportersPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
-            <Building2 className="size-4" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">Transporters</h2>
-            <p className="text-sm text-muted-foreground">Manage transport companies and carriers.</p>
-          </div>
-        </div>
+      <div className="flex justify-end">
         <Button onClick={() => setCreating(true)}>
           <Plus className="mr-2 size-4" /> Add Transporter
         </Button>

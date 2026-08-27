@@ -1,5 +1,51 @@
 import { api, type License, type LicenseCategory, type LicenseDocument, type LicenseEvent, type ApplyLicenseInput, type LicenseDecision } from "@/lib/api";
 
+export interface ComplianceFindingRow {
+  id: number;
+  organizationId: number;
+  organizationName: string;
+  type: string;
+  activity: string | null;
+  action: string | null;
+  licenseNumber: string | null;
+  detail: string;
+  recordedAt: string;
+}
+
+export interface ComplianceFindingDetail {
+  id: number;
+  type: string;
+  activity: string | null;
+  action: string | null;
+  detail: string | null;
+  recordedAt: string;
+  organization: {
+    id: number;
+    name: string;
+    type: string;
+    tin: string | null;
+    registrationNumber: string | null;
+  } | null;
+  license: {
+    id: number;
+    licenseNumber: string;
+    status: string;
+    expiresOn: string | null;
+  } | null;
+  actor: {
+    id: number;
+    email: string;
+    fullName: string | null;
+    role: string;
+  } | null;
+  enforcement: string;
+}
+
+export interface ComplianceFindingsResponse {
+  enforcement: string;
+  findings: ComplianceFindingRow[];
+}
+
 export const licenseService = {
   categories(): Promise<LicenseCategory[]> {
     return api.get<LicenseCategory[]>("/api/licenses/categories").then((r) => r.data);
@@ -62,6 +108,18 @@ export const licenseService = {
   // Regulator side
   queue(): Promise<License[]> {
     return api.get<License[]>("/api/regulator/licenses/queue").then((r) => r.data);
+  },
+
+  findings(): Promise<ComplianceFindingsResponse> {
+    return api
+      .get<ComplianceFindingsResponse>("/api/regulator/licenses/findings")
+      .then((r) => r.data);
+  },
+
+  finding(id: number): Promise<ComplianceFindingDetail> {
+    return api
+      .get<ComplianceFindingDetail>(`/api/regulator/licenses/findings/${id}`)
+      .then((r) => r.data);
   },
 
   review(licenseId: number): Promise<License> {

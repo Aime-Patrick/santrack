@@ -63,13 +63,13 @@ const TYPE_LABELS: Record<string, string> = {
 function StatusBadge({ status }: { status: Industry["status"] }) {
   return (
     <Badge
-      variant={status === "active" ? "default" : status === "pending" ? "secondary" : "outline"}
+      variant={status === "active" ? "success" : status === "pending" ? "warning" : "ghost"}
       className={
         status === "active"
-          ? "bg-success/10 text-success border-success/20"
+          ? undefined
           : status === "pending"
-            ? "bg-warning/10 text-warning-foreground border-warning/20"
-            : "bg-muted text-muted-foreground"
+            ? undefined
+            : "bg-muted-foreground text-white"
       }
     >
       {status.charAt(0).toUpperCase() + status.slice(1)}

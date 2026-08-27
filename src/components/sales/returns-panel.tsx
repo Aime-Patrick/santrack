@@ -13,10 +13,10 @@ import { useReturns, useApproveReturn, useRejectReturn, useRefundReturn } from "
 import type { SalesReturn } from "@/services/commerce.service";
 
 const statusColors: Record<string, string> = {
-  PENDING: "border-warning/30 bg-warning/10 text-warning-foreground",
-  APPROVED: "border-success/30 bg-success/10 text-success",
-  REJECTED: "border-danger/30 bg-danger/10 text-danger",
-  REFUNDED: "border-primary/30 bg-primary/10 text-primary",
+  PENDING: "border-transparent bg-warning-foreground text-white",
+  APPROVED: "border-transparent bg-success text-white",
+  REJECTED: "border-transparent bg-danger text-white",
+  REFUNDED: "border-transparent bg-primary text-white",
 };
 
 export function ReturnsPanel() {

@@ -39,7 +39,7 @@ const columns: ColumnDef<TableFeatures, JobPosition>[] = [
       return (
         <Badge
           variant="outline"
-          className={active ? "border-success/30 bg-success/10 text-success" : "border-danger/30 bg-danger/10 text-danger"}
+          className={active ? "border-transparent bg-success text-white" : "border-transparent bg-danger text-white"}
         >
           {active ? "Active" : "Inactive"}
         </Badge>

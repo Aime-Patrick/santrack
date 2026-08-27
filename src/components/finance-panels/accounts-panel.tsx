@@ -14,11 +14,11 @@ import { ACCOUNT_TYPES } from "@/lib/finance-options";
 import type { Account } from "@/services/finance.service";
 
 const typeColors: Record<string, string> = {
-  ASSET: "border-primary/30 bg-primary/10 text-primary",
-  LIABILITY: "border-danger/30 bg-danger/10 text-danger",
-  EQUITY: "border-success/30 bg-success/10 text-success",
-  REVENUE: "border-success/30 bg-success/10 text-success",
-  EXPENSE: "border-warning/30 bg-warning/10 text-warning-foreground",
+  ASSET: "border-transparent bg-primary text-white",
+  LIABILITY: "border-transparent bg-danger text-white",
+  EQUITY: "border-transparent bg-success text-white",
+  REVENUE: "border-transparent bg-success text-white",
+  EXPENSE: "border-transparent bg-warning-foreground text-white",
 };
 
 const columns: ColumnDef<TableFeatures, Account>[] = [

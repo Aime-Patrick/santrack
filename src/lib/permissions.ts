@@ -60,8 +60,10 @@ export const ROUTE_CAPABILITIES: { prefix: string; requires: Capability[] }[] = 
   { prefix: "/dashboard/industries", requires: ["OVERSEE_INDUSTRIES"] },
   { prefix: "/dashboard/industries/new", requires: ["ADMINISTER_PLATFORM"] },
   { prefix: "/dashboard/regulators", requires: ["ADMINISTER_PLATFORM"] },
-  { prefix: "/dashboard/regulator", requires: ["MANAGE_RECALL"] },
+  { prefix: "/dashboard/regulator", requires: ["DECIDE_LICENCES"] },
   { prefix: "/dashboard/audit", requires: ["ADMINISTER_PLATFORM"] },
+  // Industry-wide findings (not org Sites overview). Overseers only.
+  { prefix: "/dashboard/compliance/findings", requires: ["OVERSEE_INDUSTRIES"] },
 
   // Manufacturing.
   { prefix: "/dashboard/products/new", requires: ["MANAGE_CATALOG"] },
@@ -96,19 +98,60 @@ export const ROUTE_CAPABILITIES: { prefix: string; requires: Capability[] }[] = 
   { prefix: "/dashboard/finance", requires: ["MANAGE_FINANCE"] },
   { prefix: "/dashboard/employees", requires: ["MANAGE_PAYROLL"] },
   { prefix: "/dashboard/logistics", requires: ["MANAGE_LOGISTICS"] },
-  { prefix: "/dashboard/users", requires: ["MANAGE_USERS"] },
+  { prefix: "/dashboard/users", requires: ["ADMINISTER_PLATFORM"] },
   { prefix: "/dashboard/settings", requires: ["MANAGE_USERS"] },
 
   // Compliance. Reading where the business stands is an operations question,
   // which is what the API asks for on both the overview and the site list.
   // Opening or closing a site is a catalogue decision and is gated on the page
   // and again by the API, not by this table — the list itself stays readable.
+  // Industry-wide findings are listed above; this prefix is the trading
+  // business's own standing (see TRADING_ORG_ROUTE_PREFIXES).
   { prefix: "/dashboard/compliance", requires: ["VIEW_OPERATIONS"] },
 
   // Operations.
   { prefix: "/dashboard/recall", requires: ["VIEW_OPERATIONS"] },
-  { prefix: "/dashboard/maintenance", requires: ["APPLY_LIFECYCLE"] },
 ];
+
+/**
+ * Screens that belong to a trading business applying for / operating under
+ * licences — not to a licensing authority reviewing others.
+ *
+ * Capability alone cannot express this: authorities hold VIEW_OPERATIONS and
+ * have an organization, which is exactly what these pages used to ask for.
+ * Matching is longest-prefix; `/dashboard/compliance/findings` is excluded
+ * because overseers need it.
+ */
+export const TRADING_ORG_ROUTE_PREFIXES: string[] = [
+  "/dashboard/licenses",
+  "/dashboard/reports",
+  "/dashboard/analytics",
+  "/dashboard/compliance",
+];
+
+/**
+ * True when this path is a trading-business screen and must stay hidden from
+ * REGULATOR organizations (and from platform operators with no org).
+ */
+export function routeRequiresTradingOrg(pathname: string): boolean {
+  let best: string | undefined;
+  for (const prefix of TRADING_ORG_ROUTE_PREFIXES) {
+    const matches =
+      pathname === prefix || pathname.startsWith(prefix + "/");
+    if (matches && (!best || prefix.length > best.length)) {
+      best = prefix;
+    }
+  }
+  // Industry compliance findings sit under /compliance but are supervisory.
+  if (
+    best === "/dashboard/compliance" &&
+    (pathname === "/dashboard/compliance/findings" ||
+      pathname.startsWith("/dashboard/compliance/findings/"))
+  ) {
+    return false;
+  }
+  return best !== undefined;
+}
 
 /**
  * What the given path requires. Longest matching prefix wins, so

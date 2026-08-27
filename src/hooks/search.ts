@@ -4,7 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
 export type SearchHit = {
-  type: "product" | "category" | "batch" | "customer" | "item";
+  type:
+    | "product"
+    | "category"
+    | "batch"
+    | "customer"
+    | "item"
+    | "organization"
+    | "user";
   id: number;
   title: string;
   subtitle: string | null;

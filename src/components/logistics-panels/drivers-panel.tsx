@@ -72,16 +72,7 @@ export function DriversPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
-            <User className="size-4" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">Drivers</h2>
-            <p className="text-sm text-muted-foreground">Manage driver assignments and licenses.</p>
-          </div>
-        </div>
+      <div className="flex justify-end">
         <Button onClick={() => setCreating(true)}>
           <Plus className="mr-2 size-4" /> Add Driver
         </Button>

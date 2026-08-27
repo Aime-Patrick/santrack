@@ -262,8 +262,8 @@ export default function PackItemsPage() {
                       variant="outline"
                       className={cn(
                         sealed
-                          ? "border-warning/30 bg-warning/10 text-warning-foreground"
-                          : "border-success/30 bg-success/10 text-success",
+                          ? "border-transparent bg-warning-foreground text-white"
+                          : "border-transparent bg-success text-white",
                       )}
                     >
                       {container.sealState}

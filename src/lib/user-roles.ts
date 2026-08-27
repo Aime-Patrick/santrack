@@ -15,17 +15,17 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export const ROLE_COLORS: Record<UserRole, string> = {
-  SYSTEM_ADMIN: "bg-danger/10 text-danger border-danger/20",
-  ORG_ADMIN: "bg-primary/10 text-primary border-primary/20",
-  PRODUCTION_MANAGER: "bg-success/10 text-success border-success/20",
-  PRODUCTION_OFFICER: "bg-success/10 text-success border-success/20",
-  WAREHOUSE_MANAGER: "bg-warning/10 text-warning-foreground border-warning/20",
-  WAREHOUSE_OFFICER: "bg-warning/10 text-warning-foreground border-warning/20",
-  QUALITY_OFFICER: "bg-info/10 text-info border-info/20",
-  LOGISTICS_OFFICER: "bg-primary/10 text-primary border-primary/20",
-  SALES_OFFICER: "bg-success/10 text-success border-success/20",
-  MANAGEMENT: "bg-muted text-muted-foreground border-border",
-  AUDITOR: "bg-muted text-muted-foreground border-border",
+  SYSTEM_ADMIN: "bg-danger text-white border-transparent",
+  ORG_ADMIN: "bg-primary text-white border-transparent",
+  PRODUCTION_MANAGER: "bg-success text-white border-transparent",
+  PRODUCTION_OFFICER: "bg-success text-white border-transparent",
+  WAREHOUSE_MANAGER: "bg-warning-foreground text-white border-transparent",
+  WAREHOUSE_OFFICER: "bg-warning-foreground text-white border-transparent",
+  QUALITY_OFFICER: "bg-info text-white border-transparent",
+  LOGISTICS_OFFICER: "bg-primary text-white border-transparent",
+  SALES_OFFICER: "bg-success text-white border-transparent",
+  MANAGEMENT: "bg-muted-foreground text-white border-transparent",
+  AUDITOR: "bg-muted-foreground text-white border-transparent",
 };
 
 const ALL_ROLES = Object.keys(ROLE_LABELS) as UserRole[];

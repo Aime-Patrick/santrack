@@ -116,7 +116,7 @@ export default function RegulatorsPage() {
           ) : (
             // An authority nobody works at reviews nothing, and that is worth
             // seeing at a glance rather than counting to zero.
-            <Badge variant="outline" className="border-warning/30 bg-warning/10 text-warning">
+            <Badge variant="warning">
               No one assigned
             </Badge>
           ),

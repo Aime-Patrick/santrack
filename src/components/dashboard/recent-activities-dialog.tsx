@@ -92,14 +92,7 @@ const columns: ColumnDef<TableFeatures, Activity>[] = [
     cell: ({ row }) => {
       const status = row.getValue("status") as string;
       return (
-        <Badge
-          variant={status === "success" ? "default" : "secondary"}
-          className={
-            status === "success"
-              ? "bg-success/10 text-success border-success/20"
-              : "bg-warning/10 text-warning-foreground border-warning/20"
-          }
-        >
+        <Badge variant={status === "success" ? "success" : "warning"}>
           {status === "success" ? "Success" : "Pending"}
         </Badge>
       );

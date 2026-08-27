@@ -14,9 +14,9 @@ import { VEHICLE_TYPES } from "@/lib/logistics-options";
 import type { Vehicle } from "@/services/logistics.service";
 
 const statusColors: Record<string, string> = {
-  AVAILABLE: "border-success/30 bg-success/10 text-success",
-  IN_TRANSIT: "border-primary/30 bg-primary/10 text-primary",
-  MAINTENANCE: "border-danger/30 bg-danger/10 text-danger",
+  AVAILABLE: "border-transparent bg-success text-white",
+  IN_TRANSIT: "border-transparent bg-primary text-white",
+  MAINTENANCE: "border-transparent bg-danger text-white",
 };
 
 const columns: ColumnDef<TableFeatures, Vehicle>[] = [
@@ -80,16 +80,7 @@ export function VehiclesPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
-            <Truck className="size-4" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">Vehicles</h2>
-            <p className="text-sm text-muted-foreground">Manage your fleet of transport vehicles.</p>
-          </div>
-        </div>
+      <div className="flex justify-end">
         <Button onClick={() => setCreating(true)}>
           <Plus className="mr-2 size-4" /> Register Vehicle
         </Button>

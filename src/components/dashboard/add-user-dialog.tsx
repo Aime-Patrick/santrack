@@ -121,7 +121,7 @@ export function AddUserDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogPopup className="max-w-md">
+      <DialogPopup className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {createdSecret ? "Share temporary password" : "Add team member"}
@@ -129,7 +129,9 @@ export function AddUserDialog({
           <DialogDescription>
             {createdSecret
               ? "An invite email was sent if mail is configured. Copy this password in case they need it."
-              : "Creates a login in your organization. They must change the temporary password on first sign-in."}
+              : needsOrgPicker
+                ? "Creates a login on the platform. They must change the temporary password on first sign-in."
+                : "Creates a login in your organization. They must change the temporary password on first sign-in."}
           </DialogDescription>
         </DialogHeader>
 
@@ -229,10 +231,16 @@ export function AddUserDialog({
                   value={role}
                   onValueChange={(v) => v && setRole(v as UserRole)}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select role">
+                      {ROLE_LABELS[role]}
+                    </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent
+                    alignItemWithTrigger={false}
+                    align="start"
+                    className="min-w-[var(--anchor-width)] w-auto max-w-[min(100vw-2rem,28rem)]"
+                  >
                     {roles.map((r) => (
                       <SelectItem key={r} value={r}>
                         {ROLE_LABELS[r]}
@@ -248,10 +256,18 @@ export function AddUserDialog({
                     value={organizationId}
                     onValueChange={(v) => setOrganizationId(v ?? "")}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select organization" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select organization">
+                        {(organizations ?? []).find(
+                          (o) => String(o.id) === organizationId,
+                        )?.name}
+                      </SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent
+                      alignItemWithTrigger={false}
+                      align="start"
+                      className="min-w-[var(--anchor-width)] w-auto max-w-[min(100vw-2rem,28rem)]"
+                    >
                       {(organizations ?? []).map((org) => (
                         <SelectItem key={org.id} value={String(org.id)}>
                           {org.name}

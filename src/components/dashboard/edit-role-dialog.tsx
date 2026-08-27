@@ -89,10 +89,16 @@ export function EditRoleDialog({ open, onOpenChange, user }: EditRoleDialogProps
               value={selectedRole}
               onValueChange={(v) => v && setSelectedRole(v as UserRole)}
             >
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select role">
+                  {ROLE_LABELS[selectedRole]}
+                </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent
+                alignItemWithTrigger={false}
+                align="start"
+                className="min-w-[var(--anchor-width)] w-auto max-w-[min(100vw-2rem,28rem)]"
+              >
                 {roles.map((role) => (
                   <SelectItem key={role} value={role}>
                     {ROLE_LABELS[role]}

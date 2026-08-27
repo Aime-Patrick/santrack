@@ -54,10 +54,10 @@ import type { Product } from "@/services/product.service";
 
 const statusColors: Record<string, string> = {
   DRAFT: "border-border bg-muted/60 text-muted-foreground",
-  SENT: "border-primary/30 bg-primary/10 text-primary",
-  ACCEPTED: "border-success/30 bg-success/10 text-success",
-  REJECTED: "border-danger/30 bg-danger/10 text-danger",
-  EXPIRED: "border-warning/30 bg-warning/10 text-warning-foreground",
+  SENT: "border-transparent bg-primary text-white",
+  ACCEPTED: "border-transparent bg-success text-white",
+  REJECTED: "border-transparent bg-danger text-white",
+  EXPIRED: "border-transparent bg-warning-foreground text-white",
 };
 
 export function QuotationsPanel() {

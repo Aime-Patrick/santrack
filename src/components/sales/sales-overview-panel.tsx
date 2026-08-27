@@ -30,12 +30,12 @@ const columns: ColumnDef<TableFeatures, Sale>[] = [
     cell: ({ row }) => {
       const type = row.getValue("type") as string;
       return type === "BUSINESS" ? (
-        <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary gap-1">
+        <Badge variant="default" className="gap-1">
           <Building2 className="size-3" />
           BUSINESS
         </Badge>
       ) : (
-        <Badge variant="outline" className="border-success/30 bg-success/10 text-success gap-1">
+        <Badge variant="success" className="gap-1">
           <User className="size-3" />
           CONSUMER
         </Badge>

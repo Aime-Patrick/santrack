@@ -13,9 +13,9 @@ import { ResourceFormDialog, str } from "@/components/ui/resource-form-dialog";
 import type { Machine } from "@/services/machine.service";
 
 const statusColors: Record<string, string> = {
-  ACTIVE: "border-success/30 bg-success/10 text-success",
-  IDLE: "border-warning/30 bg-warning/10 text-warning-foreground",
-  MAINTENANCE: "border-danger/30 bg-danger/10 text-danger",
+  ACTIVE: "border-transparent bg-success text-white",
+  IDLE: "border-transparent bg-warning-foreground text-white",
+  MAINTENANCE: "border-transparent bg-danger text-white",
   DECOMMISSIONED: "border-border bg-muted/60 text-muted-foreground",
 };
 

@@ -52,8 +52,10 @@ import type { Facility } from "@/services/facility.service";
  *
  * The sites this organization operates. Reading the list is an operations
  * question (`VIEW_OPERATIONS`); opening, renaming, closing or reopening one is
- * a catalogue decision (`MANAGE_CATALOG`), which is the same pair the API
- * enforces on `GET`, `POST` and `PATCH /api/facilities`.
+ * catalogue work (`MANAGE_CATALOG`) or org administration (`MANAGE_USERS`) —
+ * the same pair the API accepts on `POST` / `PATCH /api/facilities`. Retailers
+ * and warehouses never get catalogue capability, so without the second gate
+ * their site register was read-only.
  *
  * Two things this screen does not do. It does not offer to edit a site's code:
  * the code is minted by the server from a shared counter, it is printed on
@@ -64,7 +66,7 @@ import type { Facility } from "@/services/facility.service";
  */
 export default function ComplianceFacilitiesPage() {
   const permissions = useCapabilities();
-  const mayManage = permissions.can("MANAGE_CATALOG");
+  const mayManage = permissions.canAny(["MANAGE_CATALOG", "MANAGE_USERS"]);
 
   const { data, isLoading } = useFacilities();
   const createFacility = useCreateFacility();
@@ -142,7 +144,7 @@ export default function ComplianceFacilitiesPage() {
     },
     {
       id: "actions",
-      header: "",
+      header: mayManage ? "Actions" : "",
       cell: ({ row }) => {
         if (!mayManage) return null;
         const facility = row.original;
@@ -191,8 +193,8 @@ export default function ComplianceFacilitiesPage() {
           <div>
             <h1 className="text-xl font-bold tracking-tight">Sites</h1>
             <p className="text-sm text-muted-foreground">
-              The premises this organization operates. Production is recorded
-              against one of them.
+              Premises this organization operates — name, address, and whether
+              each site is open.
             </p>
           </div>
         </div>
@@ -217,7 +219,7 @@ export default function ComplianceFacilitiesPage() {
           value={openCount}
           icon={<CheckCircle className="size-4" />}
           iconBg="bg-success"
-          caption="Able to produce"
+          caption="Open sites"
         />
         <MetricCard
           title="Closed"
@@ -233,9 +235,9 @@ export default function ComplianceFacilitiesPage() {
           discovered as a 409 halfway through a production run. */}
       {openCount > 1 && (
         <p className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-          This organization operates {openCount} sites, so every production run
-          must name the one producing it. The platform will not choose between
-          them — a guess would put a recall at the wrong plant.
+          This organization operates {openCount} sites. Name the site when
+          recording work that belongs to one of them — the platform will not
+          guess.
         </p>
       )}
 
@@ -253,9 +255,16 @@ export default function ComplianceFacilitiesPage() {
               Loading sites…
             </div>
           ) : facilities.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              No sites on record yet.
-            </p>
+            <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <p className="text-sm text-muted-foreground">
+                No sites on record yet.
+              </p>
+              {mayManage ? (
+                <Button onClick={() => setDialog({ mode: "create" })}>
+                  <Plus className="mr-2 size-4" /> Open a site
+                </Button>
+              ) : null}
+            </div>
           ) : (
             <DataTable
               columns={columns}

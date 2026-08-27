@@ -12,9 +12,9 @@ import { useLeaves, useApproveLeave, useRejectLeave } from "@/hooks/payroll";
 import type { Leave } from "@/services/payroll.service";
 
 const statusColors: Record<string, string> = {
-  PENDING: "border-warning/30 bg-warning/10 text-warning-foreground",
-  APPROVED: "border-success/30 bg-success/10 text-success",
-  REJECTED: "border-danger/30 bg-danger/10 text-danger",
+  PENDING: "border-transparent bg-warning-foreground text-white",
+  APPROVED: "border-transparent bg-success text-white",
+  REJECTED: "border-transparent bg-danger text-white",
 };
 
 export function LeavePanel() {

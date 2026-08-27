@@ -17,12 +17,12 @@ import { useLocations, useCreateLocation } from "@/hooks/locations";
 import type { Location } from "@/services/location.service";
 
 const typeColors: Record<string, string> = {
-  FACTORY: "border-primary/30 bg-primary/10 text-primary",
-  WAREHOUSE: "border-success/30 bg-success/10 text-success",
-  DISTRIBUTION_CENTER: "border-warning/30 bg-warning/10 text-warning-foreground",
-  STORE: "border-danger/30 bg-danger/10 text-danger",
-  SHOP: "border-primary/30 bg-primary/10 text-primary",
-  VEHICLE: "border-muted bg-muted/60 text-muted-foreground",
+  FACTORY: "border-transparent bg-primary text-white",
+  WAREHOUSE: "border-transparent bg-success text-white",
+  DISTRIBUTION_CENTER: "border-transparent bg-warning-foreground text-white",
+  STORE: "border-transparent bg-danger text-white",
+  SHOP: "border-transparent bg-primary text-white",
+  VEHICLE: "border-transparent bg-muted-foreground text-white",
 };
 
 const columns: ColumnDef<TableFeatures, Location>[] = [

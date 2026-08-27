@@ -37,10 +37,11 @@ export function useIndustries() {
  * operator. The route guard keeps everyone else off the page, and the API
  * refuses the call regardless.
  */
-export function useIndustryRegistry() {
+export function useIndustryRegistry(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: organizationKeys.registry,
     queryFn: () => organizationService.registry(),
+    enabled: options?.enabled ?? true,
   });
 }
 

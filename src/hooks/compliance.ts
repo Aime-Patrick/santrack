@@ -19,12 +19,13 @@ export const complianceKeys = {
  * screen, and a stale PASS is the one kind of wrong answer this screen must
  * not give. It is refetched on focus for the same reason.
  */
-export function useComplianceOverview() {
+export function useComplianceOverview(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: complianceKeys.overview(),
     queryFn: DESIGN_MODE
       ? async () => previewOverview()
       : complianceService.overview,
     staleTime: 30_000,
+    enabled: options?.enabled ?? true,
   });
 }

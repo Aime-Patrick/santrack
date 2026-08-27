@@ -121,14 +121,14 @@ export function TeamMembersPanel({
               >
                 <MoreHorizontal className="size-4" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="min-w-52">
                 <DropdownMenuItem
                   onClick={() => {
                     setActiveUser(user);
                     setEditOpen(true);
                   }}
                 >
-                  <Shield className="mr-2 size-4" />
+                  <Shield className="size-4" />
                   Edit role
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -137,7 +137,7 @@ export function TeamMembersPanel({
                     setResetOpen(true);
                   }}
                 >
-                  <KeyRound className="mr-2 size-4" />
+                  <KeyRound className="size-4" />
                   Reset password
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -149,7 +149,7 @@ export function TeamMembersPanel({
                     setDeactivateOpen(true);
                   }}
                 >
-                  <UserMinus className="mr-2 size-4" />
+                  <UserMinus className="size-4" />
                   Deactivate
                 </DropdownMenuItem>
               </DropdownMenuContent>

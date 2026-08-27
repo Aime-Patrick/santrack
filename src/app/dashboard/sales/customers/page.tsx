@@ -122,8 +122,8 @@ export default function CustomersPage() {
               variant="outline"
               className={
                 type === "BUSINESS"
-                  ? "border-primary/30 bg-primary/10 text-primary"
-                  : "border-success/30 bg-success/10 text-success"
+                  ? "border-transparent bg-primary text-white"
+                  : "border-transparent bg-success text-white"
               }
             >
               {type}
@@ -195,7 +195,7 @@ export default function CustomersPage() {
               variant="outline"
               className={
                 active
-                  ? "border-success/30 bg-success/10 text-success"
+                  ? "border-transparent bg-success text-white"
                   : "border-border bg-muted/60 text-muted-foreground"
               }
             >

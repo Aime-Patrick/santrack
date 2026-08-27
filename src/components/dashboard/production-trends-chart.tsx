@@ -5,10 +5,26 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "rec
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useProductionTrend } from "@/hooks/analytics";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export function ProductionTrendsChart() {
   const [timeRange, setTimeRange] = React.useState<"3m" | "30d" | "7d">("3m");
   const { data: trendData, isLoading } = useProductionTrend();
+  const { data: me } = useCurrentUser();
+  const orgType = me?.organization?.type;
+
+  const title =
+    orgType === "MANUFACTURER"
+      ? "Production & Traceability Output"
+      : "Operational volume";
+  const subtitle =
+    orgType === "MANUFACTURER"
+      ? "Plant output volume (units / batches)"
+      : orgType === "WAREHOUSE"
+        ? "Warehouse throughput over time"
+        : orgType === "RETAILER"
+          ? "Store activity over time"
+          : "Organization volume over time";
 
   const filterTabs = [
     { key: "3m" as const, label: "Last 3 months" },
@@ -16,7 +32,6 @@ export function ProductionTrendsChart() {
     { key: "7d" as const, label: "Last 7 days" },
   ];
 
-  // Filter data based on time range
   const chartData = React.useMemo(() => {
     if (!trendData) return [];
     const now = new Date();
@@ -38,24 +53,23 @@ export function ProductionTrendsChart() {
 
   return (
     <Card className="border border-border/80 bg-card shadow-xs">
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5 pb-3">
+      <CardHeader className="flex flex-col gap-4 p-5 pb-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-base font-semibold text-foreground">Production & Traceability Output</h3>
-          <p className="text-xs text-muted-foreground">National industrial output volume (Tons / Batches)</p>
+          <h3 className="text-base font-semibold text-foreground">{title}</h3>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
         </div>
 
-        {/* Time range toggle tabs */}
-        <div className="flex items-center rounded-lg border border-border/80 bg-muted/40 p-0.5 self-start sm:self-auto">
+        <div className="flex items-center self-start rounded-lg border border-border/80 bg-muted/40 p-0.5 sm:self-auto">
           {filterTabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setTimeRange(tab.key)}
               className={cn(
-                "rounded-md px-3 py-1 text-xs font-medium transition-colors cursor-pointer",
+                "cursor-pointer rounded-md px-3 py-1 text-xs font-medium transition-colors",
                 timeRange === tab.key
-                  ? "bg-background text-foreground shadow-xs font-semibold"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-background font-semibold text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               {tab.label}
@@ -67,12 +81,12 @@ export function ProductionTrendsChart() {
       <CardContent className="p-5 pt-2">
         <div className="h-[280px] w-full">
           {isLoading ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              Loading production data...
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              Loading data...
             </div>
           ) : chartData.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              No production data available
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              No volume data available
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
@@ -108,15 +122,17 @@ export function ProductionTrendsChart() {
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="rounded-lg border border-border bg-background p-2.5 shadow-md text-xs">
-                          <p className="font-semibold text-foreground mb-1">{payload[0]?.payload?.date}</p>
+                        <div className="rounded-lg border border-border bg-background p-2.5 text-xs shadow-md">
+                          <p className="mb-1 font-semibold text-foreground">
+                            {payload[0]?.payload?.date}
+                          </p>
                           <div className="flex items-center justify-between gap-4 text-primary">
                             <span>Output:</span>
-                            <span className="font-bold">{payload[0]?.value}k Tons</span>
+                            <span className="font-bold">{payload[0]?.value}</span>
                           </div>
                           <div className="flex items-center justify-between gap-4 text-[#00953C]">
                             <span>Baseline:</span>
-                            <span className="font-medium">{payload[1]?.value}k Tons</span>
+                            <span className="font-medium">{payload[1]?.value}</span>
                           </div>
                         </div>
                       );

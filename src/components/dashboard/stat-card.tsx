@@ -46,8 +46,8 @@ export function MetricCard({
               variant="outline"
               className={cn(
                 "rounded-full px-1.5 py-px text-[10px] font-semibold border h-5",
-                badgeType === "positive" && "border-success/30 bg-success/10 text-success",
-                badgeType === "negative" && "border-danger/30 bg-danger/10 text-danger",
+                badgeType === "positive" && "border-transparent bg-success text-white",
+                badgeType === "negative" && "border-transparent bg-danger text-white",
                 badgeType === "neutral" && "border-border bg-muted/60 text-muted-foreground"
               )}
             >

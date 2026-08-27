@@ -67,9 +67,9 @@ const UNITS: SelectOption[] = [
 ];
 
 const machineStatusColors: Record<string, string> = {
-  ACTIVE: "border-success/30 bg-success/10 text-success",
-  IDLE: "border-warning/30 bg-warning/10 text-warning-foreground",
-  MAINTENANCE: "border-danger/30 bg-danger/10 text-danger",
+  ACTIVE: "border-transparent bg-success text-white",
+  IDLE: "border-transparent bg-warning-foreground text-white",
+  MAINTENANCE: "border-transparent bg-danger text-white",
   DECOMMISSIONED: "border-border bg-muted/60 text-muted-foreground",
 };
 
@@ -244,7 +244,7 @@ const bomColumns: ColumnDef<TableFeatures, Bom>[] = [
           variant="outline"
           className={
             active
-              ? "border-success/30 bg-success/10 text-success"
+              ? "border-transparent bg-success text-white"
               : "border-border bg-muted/60 text-muted-foreground"
           }
         >

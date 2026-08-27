@@ -153,7 +153,7 @@ export default function ReportsPage() {
               <CardTitle>Trial Balance</CardTitle>
               <CardDescription>Debits and credits overview</CardDescription>
             </div>
-            <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
+            <Badge variant="outline" className="border-transparent bg-primary text-white">
               {tbTotal} accounts
             </Badge>
           </div>
@@ -174,7 +174,7 @@ export default function ReportsPage() {
               <CardTitle>Receivables</CardTitle>
               <CardDescription>Outstanding receivable balances</CardDescription>
             </div>
-            <Badge variant="outline" className="border-warning/30 bg-warning/10 text-warning-foreground">
+            <Badge variant="outline" className="border-transparent bg-warning-foreground text-white">
               {recLines.length} accounts
             </Badge>
           </div>

@@ -11,10 +11,10 @@ import { useAttendance } from "@/hooks/payroll";
 import type { Attendance } from "@/services/payroll.service";
 
 const statusColors: Record<string, string> = {
-  PRESENT: "border-success/30 bg-success/10 text-success",
-  ABSENT: "border-danger/30 bg-danger/10 text-danger",
-  LATE: "border-warning/30 bg-warning/10 text-warning-foreground",
-  HALF_DAY: "border-primary/30 bg-primary/10 text-primary",
+  PRESENT: "border-transparent bg-success text-white",
+  ABSENT: "border-transparent bg-danger text-white",
+  LATE: "border-transparent bg-warning-foreground text-white",
+  HALF_DAY: "border-transparent bg-primary text-white",
 };
 
 const columns: ColumnDef<TableFeatures, Attendance>[] = [

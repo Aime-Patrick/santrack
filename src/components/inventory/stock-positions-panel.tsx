@@ -320,12 +320,7 @@ export function StockPositionsPanel() {
         />
       </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="max-w-prose text-sm text-muted-foreground">
-          Quantities by product. Use <strong>View stock codes</strong> for each
-          unit&apos;s serial (ST-…) — Trace and New Sale need those, not the
-          product SKU.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex items-center gap-3">
           <Select
             onValueChange={(v) =>
