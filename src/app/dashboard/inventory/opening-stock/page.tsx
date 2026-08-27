@@ -1377,7 +1377,7 @@ export default function OpeningStockPage() {
                 </div>
                 <Select
                   value={newProductCategoryId}
-                  onValueChange={setNewProductCategoryId}
+                  onValueChange={(v) => setNewProductCategoryId(v ?? "")}
                 >
                   <SelectTrigger className="h-11 w-full">
                     <SelectValue placeholder="Select a category">
