@@ -31,10 +31,35 @@ import type { VerifyResult } from "@/services/trace.service";
 function useVerify(token: string) {
   return useQuery<VerifyResult>({
     queryKey: ["verify", token],
-    queryFn: () => api.get(`/api/verify/${token}`).then((r) => r.data),
+    queryFn: () =>
+      api
+        .get(`/api/verify/${encodeURIComponent(token)}`)
+        .then((r) => r.data),
     enabled: !!token,
     retry: false,
   });
+}
+
+function normalizeClientToken(raw: string): string {
+  let token = raw.trim().replace(/^["']|["']$/g, "");
+  try {
+    token = decodeURIComponent(token);
+  } catch {
+    // keep
+  }
+  token = token.trim();
+  if (token.includes("/verify/")) {
+    token =
+      token.split("/verify/").pop()?.split("?")[0].split("#")[0].trim() ?? token;
+  }
+  if (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      token,
+    )
+  ) {
+    return token.toLowerCase();
+  }
+  return token;
 }
 
 export default function VerifyTokenPage({
@@ -42,7 +67,7 @@ export default function VerifyTokenPage({
 }: {
   params: Promise<{ token: string }>;
 }) {
-  const { token } = use(params);
+  const token = normalizeClientToken(use(params).token);
   const { data, isLoading, error } = useVerify(token);
 
   return (
@@ -131,6 +156,9 @@ function VerifyCertificate({
           </h2>
           <p className="mt-1 text-xs text-slate-500 max-w-xs mx-auto">
             {result.verdict || "This code has no matching record in the national traceability registry."}
+          </p>
+          <p className="mt-3 mx-auto max-w-full break-all rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-[10px] text-slate-600">
+            Scanned: {token}
           </p>
         </div>
 
