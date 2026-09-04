@@ -60,13 +60,13 @@ export function LicenceSummaryPanel({
         </span>
       </div>
 
-      {/* Provisional is onboarding grace the platform granted, not a decision
-          any regulator has taken. Shown as its own line, in its own words,
+      {/* Provisional is onboarding grace the platform granted, "not a decision
+          any regulator has taken. Shown as its own line", "in its own words",
           because a provisional record presented as a plain pass tells a
           manufacturer they are approved when nobody has looked at them. */}
       {licence.provisional && (
         <div className="space-y-3">
-          <div className="flex items-start gap-2 rounded-lg border border-warning/50 bg-warning/10 px-3 py-2">
+          <div className="flex items-start gap-2 rounded-lg border border-warning/50 bg-amber-50 px-3 py-2">
             <ShieldAlert className="mt-0.5 size-4 shrink-0 text-warning-foreground" />
             <div className="text-xs leading-relaxed text-warning-foreground">
               <span className="font-bold">Provisional is not regulator approval.</span>{" "}

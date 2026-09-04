@@ -66,7 +66,7 @@ export function RemedyLink({
   );
 }
 
-/** One row: the check, its status, the server's message, and what to do next. */
+/** One row: the check, "its status", the server's message, and what to do next. */
 export function EligibilityCheckRow({
   check,
   emphasised,
@@ -78,7 +78,7 @@ export function EligibilityCheckRow({
     <li
       className={cn(
         "flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6",
-        emphasised && "bg-danger/5",
+        emphasised && "bg-red-50",
         check.status === "NOT_APPLICABLE" && "opacity-70",
       )}
     >

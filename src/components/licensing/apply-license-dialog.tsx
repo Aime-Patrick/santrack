@@ -172,7 +172,7 @@ export function ApplyLicenseDialog({
                           "rounded-lg border p-3 text-left transition-all",
                           "hover:border-primary/50 hover:bg-primary/5",
                           selectedCategoryId === category.id
-                            ? "border-primary bg-primary/5 ring-1 ring-primary"
+                            ? "border-primary bg-primary-light ring-1 ring-primary"
                             : "border-border bg-card",
                         )}
                       >
@@ -210,7 +210,7 @@ export function ApplyLicenseDialog({
 
               {/* Error */}
               {applyMutation.isError && (
-                <div className="rounded-md bg-danger/5 p-3 text-sm text-danger">
+                <div className="rounded-md bg-red-50 p-3 text-sm text-danger">
                   {getApiErrorMessage(applyMutation.error)}
                 </div>
               )}
@@ -244,7 +244,7 @@ export function ApplyLicenseDialog({
                       className={cn(
                         "flex items-center justify-between rounded-lg border p-3 transition-colors",
                         result.done
-                          ? "border-success/30 bg-success/5"
+                          ? "border-success/30 bg-emerald-50"
                           : "border-border"
                       )}
                     >
@@ -340,7 +340,7 @@ export function ApplyLicenseDialog({
               </div>
 
               {submitError && (
-                <div className="rounded-md bg-danger/5 p-3 text-sm text-danger">
+                <div className="rounded-md bg-red-50 p-3 text-sm text-danger">
                   {submitError}
                 </div>
               )}

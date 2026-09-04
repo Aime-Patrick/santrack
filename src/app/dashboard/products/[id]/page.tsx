@@ -114,7 +114,7 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="py-12 text-center">
-        <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-danger/10">
+        <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-red-50">
           <AlertCircle className="size-6 text-danger" />
         </div>
         <h2 className="text-lg font-semibold">Product Not Found</h2>
@@ -497,6 +497,23 @@ const batchColumns: ColumnDef<TableFeatures, Batch>[] = [
       );
     },
   },
+  {
+    id: "journey",
+    header: "",
+    cell: ({ row }) => (
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-8 text-xs"
+        nativeButton={false}
+        render={
+          <Link href={`/dashboard/manufacturing/trace?code=${row.original.id}`} />
+        }
+      >
+        Journey
+      </Button>
+    ),
+  },
 ];
 
 function BatchesTab({
@@ -532,7 +549,7 @@ function BatchesTab({
             </div>
           ) : batches.length === 0 ? (
             <div className="py-10 text-center">
-              <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10">
+              <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary-light">
                 <Layers className="size-6 text-primary" />
               </div>
               <p className="font-medium">No batches created yet</p>
@@ -791,7 +808,7 @@ function LabelsTab({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 text-sm">
+      <div className="rounded-xl border border-primary/25 bg-primary-light p-4 text-sm">
         <p className="font-semibold text-foreground">
           This is the catalogue barcode — not your stock identities
         </p>
@@ -915,7 +932,7 @@ function LabelsTab({
           </CardHeader>
           <CardContent className="space-y-4">
             {missingGtin && (
-              <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-xs text-warning-foreground">
+              <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-amber-50 p-3 text-xs text-warning-foreground">
                 <AlertCircle className="mt-0.5 size-4 shrink-0 text-warning" />
                 <span>
                   {spec?.label} encodes a GTIN, but this product has none. Add a
@@ -925,7 +942,7 @@ function LabelsTab({
             )}
 
             {invalidForSymbology && (
-              <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/5 p-3 text-xs text-danger">
+              <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-red-50 p-3 text-xs text-danger">
                 <AlertCircle className="mt-0.5 size-4 shrink-0 text-danger" />
                 <span>
                   {validity?.valid === false

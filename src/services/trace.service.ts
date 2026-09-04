@@ -54,7 +54,7 @@ export interface AvailableAction {
  * The whole picture for one identity, in one response.
  *
  * An operator arrives here by scanning the thing in front of them, so this
- * carries what it is, where it came from, what is inside it, what it is inside,
+ * carries what it is, "where it came from", "what is inside it", "what it is inside",
  * where it has been, and what can be done to it — rather than making them
  * re-enter the code they just scanned on four other screens.
  */
@@ -139,7 +139,7 @@ export interface TraceTimeline {
     remaining: Item[];
     removed: Item[];
   } | null;
-  /** Full batch detail: QC, production order, raw materials, facility. */
+  /** Full batch detail: QC, "production order", "raw materials", facility. */
   batchDetail: BatchDetail | null;
   /** Manufacturer licence status. */
   manufacturerCompliance: {
@@ -155,6 +155,89 @@ export interface TraceTimeline {
   verificationCount: number;
   eventCount: number;
   events: TraceEvent[];
+}
+
+export interface BatchJourneyStageMetrics {
+  totalUnits: number;
+  producedUnits: number;
+  inTransitUnits: number;
+  inStockUnits: number;
+  reservedUnits: number;
+  soldUnits: number;
+  quarantinedUnits: number;
+  damagedUnits: number;
+  destroyedUnits: number;
+  recalledUnits: number;
+  discrepancyUnits: number;
+  verificationScansCount: number;
+}
+
+export interface BatchCustodyNode {
+  organizationId: number | null;
+  organizationName: string;
+  organizationType: string | null;
+  facilityId: number | null;
+  facilityName: string | null;
+  isOrigin: boolean;
+  totalUnits: number;
+  byStatus: Record<string, number>;
+}
+
+export interface BatchTransferReconciliation {
+  transferId: number;
+  reference: string;
+  status: string;
+  sourceOrgId: number;
+  sourceOrgName: string;
+  destinationOrgId: number;
+  destinationOrgName: string;
+  dispatchedCount: number;
+  receivedCount: number;
+  missingCount: number;
+  dispatchedAt: string | null;
+  receivedAt: string | null;
+}
+
+export interface BatchMilestoneEvent {
+  title: string;
+  description: string;
+  timestamp: string;
+  type: string;
+  actor?: string | null;
+}
+
+export interface BatchJourneyResponse {
+  batch: {
+    id: number;
+    batchCode: string;
+    status: string;
+    statusReason: string | null;
+    statusChangedAt: string | null;
+    manufacturedOn: string | null;
+    expiresOn: string | null;
+    productId: number;
+    productName: string;
+    productSku: string;
+    gtin: string | null;
+    manufacturerId: number | null;
+    manufacturerName: string | null;
+    facilityId: number | null;
+    facilityName: string | null;
+  };
+  metrics: BatchJourneyStageMetrics;
+  pipelineProgress: {
+    manufacturedPct: number;
+    dispatchedPct: number;
+    inStockPct: number;
+    soldPct: number;
+    hasDiscrepancy: boolean;
+  };
+  custodyNodes: BatchCustodyNode[];
+  transfers: BatchTransferReconciliation[];
+  inspections: QualityInspectionSummary[];
+  productionOrder: ProductionOrderSummary | null;
+  rawMaterials: RawMaterialSummary[];
+  milestones: BatchMilestoneEvent[];
 }
 
 export interface VerifyResult {
@@ -183,7 +266,14 @@ export const traceService = {
       .then((r) => r.data);
   },
 
-  /** Public verification (no auth required). */
+  /** Full supply chain journey and reconciliation for a batch. */
+  batchJourney(batchId: number): Promise<BatchJourneyResponse> {
+    return api
+      .get<BatchJourneyResponse>(`/api/trace/batch/${batchId}/journey`)
+      .then((r) => r.data);
+  },
+
+  /** Public verification ("no auth required"). */
   verify(token: string): Promise<VerifyResult> {
     return api.get<VerifyResult>(`/api/verify/${token}`).then((r) => r.data);
   },

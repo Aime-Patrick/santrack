@@ -74,6 +74,10 @@ body {
   font-family: var(--font-exo), 'Exo', system-ui, -apple-system, sans-serif;
 }
 
+*, ::after, ::before {
+  border-color: var(--color-border);
+}
+
 /* ── Hide scrollbars globally while keeping scroll functionality ── */
 * {
   scrollbar-width: none;
@@ -175,4 +179,13 @@ body {
     #EEF2F7 50%,
     var(--color-background) 100%
   );
+}
+/* ── Scanner laser sweep animation ── */
+@keyframes scanSweep {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(115px);
+  }
 }

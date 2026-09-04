@@ -10,31 +10,31 @@ import Link from "next/link";
 const typeConfig: Record<string, { icon: React.ReactNode; bg: string }> = {
   warning: {
     icon: <AlertTriangle className="size-4 text-warning" />,
-    bg: "bg-warning/10",
+    bg: "bg-amber-50",
   },
   info: {
     icon: <Bell className="size-4 text-info" />,
-    bg: "bg-info/10",
+    bg: "bg-primary-light",
   },
   success: {
     icon: <CheckCircle2 className="size-4 text-success" />,
-    bg: "bg-success/10",
+    bg: "bg-emerald-50",
   },
   RECALLED: {
     icon: <AlertTriangle className="size-4 text-danger" />,
-    bg: "bg-danger/10",
+    bg: "bg-red-50",
   },
   TRANSFERRED: {
     icon: <Truck className="size-4 text-primary" />,
-    bg: "bg-primary/10",
+    bg: "bg-primary-light",
   },
   SOLD: {
     icon: <ShoppingCart className="size-4 text-success" />,
-    bg: "bg-success/10",
+    bg: "bg-emerald-50",
   },
   REGISTERED: {
     icon: <Package className="size-4 text-primary" />,
-    bg: "bg-primary/10",
+    bg: "bg-primary-light",
   },
 };
 

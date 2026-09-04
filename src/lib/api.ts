@@ -41,16 +41,51 @@ export type OrganizationType =
   | "REGULATOR"
   | "CONSUMER";
 
+export type OnboardingStatus = "PENDING" | "APPROVED" | "REJECTED";
+
 export interface OrganizationResponse {
   id: number;
   name: string;
   type: OrganizationType;
   tin?: string | null;
   registrationNumber?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  licenseType?: string | null;
+  dateIncorporated?: string | null;
+  description?: string | null;
+  province?: string | null;
+  district?: string | null;
+  sector?: string | null;
+  cell?: string | null;
+  village?: string | null;
+  onboardingStatus?: OnboardingStatus;
+  rejectionReason?: string | null;
+  createdAt?: string;
+}
+
+export interface OrganizationOwnerResponse {
+  id: number;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  percentage: number;
+  idNumber?: string | null;
+}
+
+export interface OrganizationDocument {
+  id: number;
+  documentType: string;
+  certificateNumber?: string | null;
+  expiryDate?: string | null;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedAt: string;
 }
 
 // ---------------------------------------------------------------------------
-// User roles & capabilities (mirrors backend)
+// User roles & capabilities ("mirrors backend")
 // ---------------------------------------------------------------------------
 
 export type UserRole =
@@ -71,7 +106,7 @@ export type UserRole =
  * because that is where they are decided.
  *
  * There is deliberately no role→capability table here any more. There used to
- * be one, hand-copied from the API, and it drifted: it was missing six
+ * be one, "hand-copied from the API", and it drifted: it was missing six
  * capabilities the backend had added, and it granted MANAGE_CATALOG holders
  * sight of the industry registry, which is why a production manager could open
  * a list of every company on the platform. The server now sends the caller's
@@ -146,11 +181,39 @@ export interface LoginInput {
   password: string;
 }
 
+export interface OrganizationOwnerInput {
+  name: string;
+  email?: string;
+  phone?: string;
+  percentage: number;
+  idNumber?: string;
+}
+
 export interface CreateOrganizationInput {
   name: string;
   type: OrganizationType;
   tin?: string;
   registrationNumber?: string;
+  email?: string;
+  phone?: string;
+  licenseType?: string;
+  dateIncorporated?: string;
+  description?: string;
+  province?: string;
+  district?: string;
+  sector?: string;
+  cell?: string;
+  village?: string;
+  ownership?: OrganizationOwnerInput[];
+}
+
+export interface RegistrationDecisionInput {
+  decision: "APPROVE" | "REJECT";
+  reason?: string;
+}
+
+export interface PendingRegistration extends OrganizationResponse {
+  ownership?: OrganizationOwnerResponse[];
 }
 
 // ---------------------------------------------------------------------------

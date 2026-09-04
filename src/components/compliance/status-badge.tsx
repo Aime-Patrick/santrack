@@ -80,11 +80,11 @@ export function StatusBadge({
 export function statusSurface(status: string | undefined): string {
   switch (status) {
     case "PASS":
-      return "border-success/30 bg-success/5";
+      return "border-success/30 bg-emerald-50";
     case "WARN":
-      return "border-warning/50 bg-warning/10";
+      return "border-warning/50 bg-amber-50";
     case "FAIL":
-      return "border-danger/30 bg-danger/5";
+      return "border-danger/30 bg-red-50";
     default:
       return "border-border bg-muted/30";
   }

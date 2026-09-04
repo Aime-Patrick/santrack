@@ -971,7 +971,7 @@ export default function OpeningStockPage() {
                   className={cn(
                     "flex flex-col items-start gap-2 rounded-xl border border-border p-4 text-left transition-colors",
                     !sameCodeOnEveryBottle
-                      ? "border-primary/50 bg-primary/5"
+                      ? "border-primary/50 bg-primary-light"
                       : "hover:bg-muted/40"
                   )}
                 >
@@ -987,7 +987,7 @@ export default function OpeningStockPage() {
                   className={cn(
                     "flex flex-col items-start gap-2 rounded-xl border border-border p-4 text-left transition-colors",
                     sameCodeOnEveryBottle
-                      ? "border-amber-500/50 bg-amber-500/5"
+                      ? "border-amber-500/50 bg-amber-50"
                       : "hover:bg-muted/40"
                   )}
                 >

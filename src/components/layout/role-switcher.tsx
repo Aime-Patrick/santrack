@@ -187,7 +187,7 @@ export function RoleSwitcher() {
                   className={cn(
                     "w-full rounded-lg px-3 py-2.5 text-left transition-all",
                     isSelected
-                      ? "bg-primary/5 ring-1 ring-primary/20"
+                      ? "bg-primary-light ring-1 ring-primary/20"
                       : "hover:bg-muted",
                   )}
                 >

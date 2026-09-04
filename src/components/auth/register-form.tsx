@@ -59,7 +59,7 @@ export function RegisterForm() {
             Your account is ready
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            One more step — tell us about your business and you&apos;re in.
+            One more step — submit your business details for regulator review.
           </p>
           {DESIGN_MODE ? (
             <p className="mt-3 font-mono text-xs text-amber-600">
@@ -71,7 +71,7 @@ export function RegisterForm() {
             className="mt-6 w-full h-11 sm:h-12 rounded-lg font-semibold text-white text-sm sm:text-base tracking-wide bg-gradient-to-r from-[#0066d6] via-[#10b981] via-60% to-[#eab308] hover:opacity-95 hover:shadow-lg transition-all duration-200 cursor-pointer"
             onClick={() => router.push("/onboarding")}
           >
-            Set up your business
+            Start business registration
           </button>
         </div>
       </div>
@@ -168,7 +168,7 @@ export function RegisterForm() {
         </div>
 
         {formError ? (
-          <div className="rounded-lg border border-red-200 bg-red-50/80 p-3 text-xs font-medium text-red-700">
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
             {formError}
           </div>
         ) : null}

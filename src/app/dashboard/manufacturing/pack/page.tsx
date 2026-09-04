@@ -169,7 +169,7 @@ export default function PackItemsPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-primary-light">
             <PackageCheck className="size-5 text-primary" />
           </div>
           <div>
@@ -216,10 +216,10 @@ export default function PackItemsPage() {
                   key={entry.id}
                   className={cn(
                     "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs",
-                    entry.tone === "container" && "bg-primary/5 text-primary",
-                    entry.tone === "queued" && "bg-success/5 text-success",
+                    entry.tone === "container" && "bg-primary-light text-primary",
+                    entry.tone === "queued" && "bg-emerald-50 text-success",
                     entry.tone === "ignored" && "bg-muted text-muted-foreground",
-                    entry.tone === "error" && "bg-danger/5 text-danger",
+                    entry.tone === "error" && "bg-red-50 text-danger",
                   )}
                 >
                   {entry.tone === "error" ? (
@@ -278,7 +278,7 @@ export default function PackItemsPage() {
                   {/* A sealed container cannot take anything, and the fix is
                       one click rather than a trip to another screen. */}
                   {sealed && (
-                    <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2.5">
+                    <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-amber-50 px-3 py-2.5">
                       <PackageOpen className="mt-0.5 size-4 shrink-0 text-warning-foreground" />
                       <div className="min-w-0 flex-1">
                         <p className="text-xs leading-relaxed text-warning-foreground">

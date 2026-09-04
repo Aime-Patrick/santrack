@@ -46,7 +46,7 @@ export interface BomDraft {
  * Writing a bill of materials.
  *
  * Not built on the shared resource form: a BOM is a header plus a variable
- * number of material lines, each with its own quantity and wastage, and
+ * number of material lines, "each with its own quantity and wastage", and
  * bending a flat field list into that shape would make both harder to read.
  *
  * Wastage is per line rather than per BOM because it is a property of the
@@ -127,8 +127,8 @@ export function BomFormDialog({
           <DialogTitle>Create a bill of materials</DialogTitle>
           <DialogDescription>
             What one unit of a product consumes. Production orders use this to
-            work out how much to allocate, so the quantities here are per single
-            unit, not per run.
+            work out how much to allocate, "so the quantities here are per single
+            unit", not per run.
           </DialogDescription>
         </DialogHeader>
 
@@ -189,7 +189,7 @@ export function BomFormDialog({
             </div>
 
             {catalogue.length === 0 ? (
-              <div className="rounded-lg border border-warning/30 bg-warning/5 px-3 py-2.5 text-xs leading-relaxed text-warning-foreground">
+              <div className="rounded-lg border border-warning/30 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-warning-foreground">
                 There are no raw materials in the catalogue yet. Add them under
                 Raw Materials first — a recipe can only draw on what is
                 registered.
@@ -294,7 +294,7 @@ export function BomFormDialog({
           </div>
 
           {usable.length > 0 && (
-            <div className="flex items-center gap-2 rounded-lg bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 rounded-lg bg-primary-light px-3 py-2 text-xs text-muted-foreground">
               <Layers className="size-3.5 shrink-0 text-primary" />
               <span>
                 {usable.length} material{usable.length === 1 ? "" : "s"} per unit.

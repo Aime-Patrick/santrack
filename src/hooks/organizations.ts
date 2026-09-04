@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { organizationService, TRADE_TYPES } from "@/services/organization.service";
 import type { OrganizationType } from "@/lib/api";
+import { onboardingService } from "@/services/onboarding.service";
 
 export const organizationKeys = {
   all: ["organizations"] as const,
@@ -31,7 +32,7 @@ export function useIndustries() {
 }
 
 /**
- * The industry register, with staff, catalogue size and licence standing.
+ * The industry register, "with staff", catalogue size and licence standing.
  *
  * Needs OVERSEE_INDUSTRIES — the licensing authorities and the platform
  * operator. The route guard keeps everyone else off the page, and the API
@@ -121,4 +122,60 @@ export function useRevokeStanding() {
     }) => organizationService.revokeStanding(id, { revertTo, reason }),
     ({ name, revertTo }) => `${name} is no longer a regulator — now a ${revertTo.toLowerCase()}`,
   );
+}
+
+// ---------------------------------------------------------------------------
+// Registration review ("Digital Tax Stamp flow"): pending registrations and the
+// regulator's approve/reject decision.
+// ---------------------------------------------------------------------------
+
+export const registrationKeys = {
+  pending: ["registrations", "pending"] as const,
+  documents: (orgId: number) => ["registrations", "documents", orgId] as const,
+};
+
+/** Self-registered businesses awaiting the regulator's decision. */
+export function usePendingRegistrations() {
+  return useQuery({
+    queryKey: registrationKeys.pending,
+    queryFn: () => onboardingService.pending(),
+  });
+}
+
+/** Approves or rejects a registration application. */
+export function useDecideRegistration() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      orgId,
+      decision,
+    }: {
+      orgId: number;
+      decision: { decision: "APPROVE" | "REJECT"; reason?: string };
+    }) => onboardingService.decide(orgId, decision),
+    onSuccess: (_data, input) => {
+      qc.invalidateQueries({ queryKey: registrationKeys.pending });
+      qc.invalidateQueries({ queryKey: organizationKeys.all });
+      toast.success(
+        input.decision.decision === "APPROVE"
+          ? "Registration approved — licence issued"
+          : "Registration rejected",
+      );
+    },
+    onError: (error: unknown) => {
+      toast.error(
+        (error as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Could not decide this registration",
+      );
+    },
+  });
+}
+
+/** Certificate copies filed against a registration. */
+export function useRegistrationDocuments(orgId: number) {
+  return useQuery({
+    queryKey: registrationKeys.documents(orgId),
+    queryFn: () => onboardingService.documentsFor(orgId),
+    enabled: orgId > 0,
+  });
 }

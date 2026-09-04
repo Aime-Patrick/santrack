@@ -99,7 +99,7 @@ export function LicenseCard({
 
         {/* Rejection/suspension reason */}
         {license.statusReason && (
-          <div className="rounded-md bg-danger/5 p-3 text-sm text-danger">
+          <div className="rounded-md bg-red-50 p-3 text-sm text-danger">
             {license.statusReason}
           </div>
         )}
@@ -118,7 +118,7 @@ export function LicenseCard({
                     key={docType}
                     className={cn(
                       "flex items-center gap-2 rounded px-3 py-1.5 text-sm",
-                      uploaded ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                      uploaded ? "bg-emerald-50 text-success" : "bg-muted text-muted-foreground"
                     )}
                   >
                     {uploaded ? (

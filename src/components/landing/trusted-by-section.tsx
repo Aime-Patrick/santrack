@@ -126,6 +126,7 @@ export function TrustedBySection() {
                     alt="Coat of Arms of Rwanda"
                     width={28}
                     height={28}
+                    style={{ width: "auto", height: "auto" }}
                     className="object-contain"
                   />
                   <span className="font-black text-[12px] sm:text-[13px] tracking-widest text-slate-700">

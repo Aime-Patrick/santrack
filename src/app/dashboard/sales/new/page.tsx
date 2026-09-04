@@ -295,7 +295,7 @@ export default function NewSalePage() {
                   onClick={() => setSaleType("BUSINESS")}
                   className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
                     saleType === "BUSINESS"
-                      ? "border-primary bg-primary/5"
+                      ? "border-primary bg-primary-light"
                       : "border-border hover:border-primary/40"
                   }`}
                 >
@@ -310,7 +310,7 @@ export default function NewSalePage() {
                   onClick={() => setSaleType("CONSUMER")}
                   className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
                     saleType === "CONSUMER"
-                      ? "border-primary bg-primary/5"
+                      ? "border-primary bg-primary-light"
                       : "border-border hover:border-primary/40"
                   }`}
                 >
@@ -501,7 +501,7 @@ export default function NewSalePage() {
                 placeholder="Scan item or package QR…"
               />
               {scanning && pendingCode ? (
-                <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-foreground">
+                <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary-light px-3 py-2 text-sm text-foreground">
                   <ScanLine className="size-4 animate-pulse text-primary" />
                   Looking up <span className="font-mono">{pendingCode}</span>…
                 </div>
@@ -512,8 +512,8 @@ export default function NewSalePage() {
                     scanFeedback.tone === "ok"
                       ? "flex items-center gap-2 rounded-lg bg-success px-3 py-2 text-sm text-success-foreground"
                       : scanFeedback.tone === "warn"
-                        ? "flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/15 px-3 py-2 text-sm text-foreground"
-                        : "flex items-center gap-2 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger"
+                        ? "flex items-center gap-2 rounded-lg border border-warning/40 bg-amber-50 px-3 py-2 text-sm text-foreground"
+                        : "flex items-center gap-2 rounded-lg border border-danger/40 bg-red-50 px-3 py-2 text-sm text-danger"
                   }
                 >
                   {scanFeedback.tone === "ok" ? (
@@ -654,7 +654,7 @@ export default function NewSalePage() {
               )}
 
               {!canSubmit && scannedItems.some((i) => !isSellable(i.status)) ? (
-                <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
+                <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-red-50 px-3 py-2 text-sm text-danger">
                   <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                   Remove non-sellable items before completing.
                 </div>

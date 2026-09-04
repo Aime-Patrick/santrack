@@ -22,6 +22,14 @@ export const userService = {
     return api.post(`/api/users/${userId}/reset-password`, input).then(() => undefined);
   },
 
+  resendInvite(userId: number): Promise<{ temporaryPassword?: string; email?: string }> {
+    return api.post<{ temporaryPassword?: string; email?: string }>(`/api/users/${userId}/resend-invite`).then((r) => r.data);
+  },
+
+  resendOrgAdminInvite(organizationId: number): Promise<{ temporaryPassword?: string; email?: string }> {
+    return api.post<{ temporaryPassword?: string; email?: string }>(`/api/users/resend-org-admin-invite/${organizationId}`).then((r) => r.data);
+  },
+
   remove(userId: number): Promise<void> {
     return api.delete(`/api/users/${userId}`).then(() => undefined);
   },

@@ -42,3 +42,15 @@ export function useLiftRecall() {
     onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
   });
 }
+
+export function useRecordRecallRecovery() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: recallService.recover,
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["recalls"] });
+      toast.success(`${result.item.code} recorded as ${result.outcome.toLowerCase()}`);
+    },
+    onError: (e: unknown) => toast.error(getApiErrorMessage(e)),
+  });
+}

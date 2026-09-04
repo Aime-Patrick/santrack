@@ -1,0 +1,92 @@
+/* SanTrack Modern Studio Theme for PDFme Designer */
+
+.santrack-designer-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #f1f5f9;
+  background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
+}
+
+/* Force modern background on the internal canvas scroll container */
+.santrack-designer-canvas [class*="canvas"],
+.santrack-designer-canvas [style*="rgb(82, 86, 89)"],
+.santrack-designer-canvas [style*="rgb(82,86,89)"],
+.santrack-designer-canvas [style*="#525659"] {
+  background-color: #f1f5f9 !important;
+  background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px) !important;
+  background-size: 20px 20px !important;
+}
+
+/* Give the paper canvas an ultra-premium drop shadow and die-cut border */
+.santrack-designer-canvas [class*="paper"],
+.santrack-designer-canvas div[style*="box-shadow"][style*="background-color: rgb(255, 255, 255)"],
+.santrack-designer-canvas div[style*="box-shadow"][style*="background-color:#ffffff"] {
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 4px !important;
+}
+
+/* Sleek rulers */
+.santrack-designer-canvas [class*="ruler"] {
+  background-color: #ffffff !important;
+  color: #64748b !important;
+  border-color: #e2e8f0 !important;
+  font-size: 9px !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+}
+
+/* Floating bottom zoom bar — glassmorphic floating pill */
+.santrack-designer-canvas [style*="position: absolute"][style*="bottom:"] {
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+  padding: 4px 8px !important;
+}
+
+.santrack-designer-canvas [style*="position: absolute"][style*="bottom:"] button {
+  border-radius: 6px !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+  transition: all 0.15s ease !important;
+}
+
+.santrack-designer-canvas [style*="position: absolute"][style*="bottom:"] button:hover {
+  background: rgba(241, 245, 249, 0.9) !important;
+  color: #0f172a !important;
+}
+
+/* Left tools sidebar */
+.santrack-designer-canvas [style*="position: absolute"][style*="left:"] {
+  border-radius: 12px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08) !important;
+  background: #ffffff !important;
+}
+
+/* Right field / property inspector panel */
+.santrack-designer-canvas [class*="sidebar"],
+.santrack-designer-canvas [style*="position: absolute"][style*="right:"] {
+  background: #ffffff !important;
+  border-left: 1px solid #e2e8f0 !important;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.03) !important;
+  font-family: inherit !important;
+}
+
+.santrack-designer-canvas [class*="sidebar"] input,
+.santrack-designer-canvas [class*="sidebar"] select {
+  border-radius: 6px !important;
+  border: 1px solid #cbd5e1 !important;
+  font-size: 12px !important;
+}
+
+.santrack-designer-canvas [class*="sidebar"] input:focus,
+.santrack-designer-canvas [class*="sidebar"] select:focus {
+  border-color: #0284c7 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2) !important;
+}

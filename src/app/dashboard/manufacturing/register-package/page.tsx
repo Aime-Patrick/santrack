@@ -60,7 +60,7 @@ export default function RegisterPackagePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
+        <div className="flex size-10 items-center justify-center rounded-xl bg-primary-light">
           <PackagePlus className="size-5 text-primary" />
         </div>
         <div>

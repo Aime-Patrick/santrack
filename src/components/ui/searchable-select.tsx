@@ -249,7 +249,7 @@ export function SearchableSelect({
                 className={cn(
                   "flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 cursor-pointer transition-colors text-left select-none",
                   isHighlighted && "bg-muted text-foreground",
-                  isSelected && "bg-primary/10 text-primary font-semibold",
+                  isSelected && "bg-primary-light text-primary font-semibold",
                 )}
               >
                 <div className="flex items-center gap-2 truncate">

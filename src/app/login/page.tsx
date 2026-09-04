@@ -152,7 +152,7 @@ export default function LoginPage() {
 
           {/* Error Banner */}
           {login.isError ? (
-            <div className="rounded-lg border border-red-200 bg-red-50/80 p-3 text-xs font-medium text-red-700">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
               {getApiErrorMessage(login.error, "Invalid username or password")}
             </div>
           ) : null}

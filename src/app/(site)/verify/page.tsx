@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Html5Qrcode } from "html5-qrcode";
+import {
+  BrowserMultiFormatReader,
+  BarcodeFormat,
+  DecodeHintType,
+} from "@zxing/library";
 import {
   Camera,
   CameraOff,
@@ -12,7 +16,6 @@ import {
   Sparkles,
   RotateCw,
   QrCode,
-  Lock,
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,6 +28,22 @@ import { cn } from "@/lib/utils";
  * Accepts the unit QR (UUID /verify link) and the printed serial (ST-…).
  * Product catalogue barcodes (GTIN/SKU) are not unique to one pack.
  */
+
+function RwandaMark({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-6 items-center gap-1 rounded-full bg-white px-2.5 shadow-xs",
+        className,
+      )}
+    >
+      <i className="h-3.5 w-1 rounded-full bg-rwanda-blue" />
+      <i className="h-3.5 w-1 rounded-full bg-rwanda-yellow" />
+      <i className="h-3.5 w-1 rounded-full bg-rwanda-green" />
+    </span>
+  );
+}
+
 export default function ConsumerVerifyPage() {
   const router = useRouter();
 
@@ -36,8 +55,10 @@ export default function ConsumerVerifyPage() {
     "environment",
   );
 
-  const qrRegionId = "consumer-qr-reader";
-  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const zxingReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+  const scanLoopRef = useRef<number | null>(null);
   const cameraActiveRef = useRef(false);
   const lastScanRef = useRef<{ code: string; time: number }>({
     code: "",
@@ -48,29 +69,19 @@ export default function ConsumerVerifyPage() {
   const startingRef = useRef(false);
 
   const stopCamera = useCallback(async () => {
-    const scanner = scannerRef.current;
-    if (!scanner) {
-      cameraActiveRef.current = false;
-      setCameraActive(false);
-      return;
+    if (scanLoopRef.current) {
+      cancelAnimationFrame(scanLoopRef.current);
+      scanLoopRef.current = null;
     }
-    scannerRef.current = null;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
     cameraActiveRef.current = false;
     setCameraActive(false);
-    try {
-      const state = scanner.getState?.();
-      // 2 = SCANNING in html5-qrcode; avoid stop() when already idle.
-      if (state === undefined || state === 2) {
-        await scanner.stop();
-      }
-    } catch {
-      // Camera may already be torn down on navigation.
-    }
-    try {
-      scanner.clear();
-    } catch {
-      // ignore
-    }
   }, []);
 
   const handleScannedResult = useCallback(
@@ -169,6 +180,25 @@ export default function ConsumerVerifyPage() {
     };
   }, [handleScannedResult]);
 
+  // zxing's MultiFormatReader console.warns internally on every reader miss
+  // ("non-ReaderException") — normal when no code is in view, but it floods the
+  // console 12×/second. Silence warnings only for the synchronous decode call.
+  const quietDecode = useCallback(() => {
+    const reader = zxingReaderRef.current;
+    if (!reader || !videoRef.current) return null;
+    const originalWarn = console.warn;
+    try {
+      console.warn = () => {};
+      const res = reader.decode(videoRef.current);
+      if (res && res.getText()) return res.getText();
+    } catch {
+      // NotFound — no code in frame, keep scanning
+    } finally {
+      console.warn = originalWarn;
+    }
+    return null;
+  }, []);
+
   const startCamera = useCallback(async () => {
     if (startingRef.current) return;
     startingRef.current = true;
@@ -177,42 +207,104 @@ export default function ConsumerVerifyPage() {
     try {
       await stopCamera();
 
-      // Region must exist in the DOM (camera mode only).
-      const region = document.getElementById(qrRegionId);
-      if (!region) {
-        setCameraError("Scanner viewport is not ready. Try again.");
-        return;
+      if (!zxingReaderRef.current) {
+        const hints = new Map();
+        hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+          BarcodeFormat.QR_CODE,
+          BarcodeFormat.DATA_MATRIX,
+          BarcodeFormat.CODE_128,
+        ]);
+        hints.set(DecodeHintType.TRY_HARDER, true);
+        zxingReaderRef.current = new BrowserMultiFormatReader(hints);
       }
 
-      const html5QrCode = new Html5Qrcode(qrRegionId);
-      scannerRef.current = html5QrCode;
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        });
+      } catch {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode },
+            audio: false,
+          });
+        } catch {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
+      }
 
-      await html5QrCode.start(
-        { facingMode },
-        {
-          fps: 10,
-          qrbox: { width: 220, height: 220 },
-          aspectRatio: 1.0,
-        },
-        (decodedText) => {
-          handleScannedResult(decodedText);
-        },
-        () => {},
-      );
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => {});
+      }
 
       cameraActiveRef.current = true;
       setCameraActive(true);
+
+      const hasNative = typeof window !== "undefined" && "BarcodeDetector" in window;
+      type NativeDetector = {
+        detect: (s: HTMLVideoElement) => Promise<Array<{ rawValue: string }>>;
+      };
+      let nativeDetector: NativeDetector | null = null;
+      if (hasNative) {
+        try {
+          const DetCtor = (globalThis as unknown as { BarcodeDetector: new (opts: { formats: string[] }) => NativeDetector }).BarcodeDetector;
+          nativeDetector = new DetCtor({ formats: ["qr_code", "data_matrix", "code_128"] });
+        } catch {
+          nativeDetector = null;
+        }
+      }
+
+      let lastScanTime = 0;
+      const processFrame = async (timestamp: number) => {
+        const video = videoRef.current;
+        if (!video || video.readyState < 2 || video.videoWidth === 0) {
+          scanLoopRef.current = requestAnimationFrame(processFrame);
+          return;
+        }
+
+        if (timestamp - lastScanTime >= 80) {
+          lastScanTime = timestamp;
+          let detectedText: string | null = null;
+
+          if (nativeDetector) {
+            try {
+              const res = await nativeDetector.detect(video);
+              if (res.length > 0) {
+                detectedText = res[0].rawValue;
+              }
+            } catch {
+              // fallback
+            }
+          }
+
+          if (!detectedText) {
+            detectedText = quietDecode();
+          }
+
+          if (detectedText) {
+            handleScannedResult(detectedText);
+            return;
+          }
+        }
+
+        scanLoopRef.current = requestAnimationFrame(processFrame);
+      };
+
+      scanLoopRef.current = requestAnimationFrame(processFrame);
     } catch {
       cameraActiveRef.current = false;
       setCameraActive(false);
-      scannerRef.current = null;
       setCameraError(
         "Camera permission was denied or is unavailable. Type the serial or QR payload manually, or allow camera access.",
       );
     } finally {
       startingRef.current = false;
     }
-  }, [facingMode, handleScannedResult, stopCamera]);
+  }, [facingMode, handleScannedResult, quietDecode, stopCamera]);
 
   const toggleCamera = async () => {
     await stopCamera();
@@ -239,115 +331,171 @@ export default function ConsumerVerifyPage() {
     }
   };
 
+  const corner = "absolute size-5 border-rwanda-yellow";
+
   return (
-    <div className="relative flex min-h-screen flex-col justify-center overflow-hidden bg-slate-50/50 pb-20 pt-24">
-      <div className="pointer-events-none absolute -top-24 left-1/2 h-72 w-[600px] -translate-x-1/2 bg-gradient-to-r from-sky-400/15 via-amber-300/20 to-emerald-500/15 opacity-70 blur-3xl" />
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-primary text-white">
+      {/* ── Flag edge ── */}
+      <div className="flex h-1.5 shrink-0">
+        <span className="flex-1 bg-rwanda-blue" />
+        <span className="flex-1 bg-rwanda-yellow" />
+        <span className="flex-1 bg-rwanda-green" />
+      </div>
 
-      <div className="relative z-10 mx-auto w-full max-w-md space-y-6 px-4">
-        <div className="space-y-2 text-center">
-          <div className="mb-3 flex items-center justify-center gap-1.5">
-            <div className="h-1.5 w-8 rounded-full bg-[#00A3E0]" />
-            <div className="h-1.5 w-6 rounded-full bg-[#FAD201]" />
-            <div className="h-1.5 w-8 rounded-full bg-[#20603D]" />
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 pb-7 pt-5">
+        {/* ── Header ── */}
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <RwandaMark />
+            <div className="leading-none">
+              <p className="text-[11px] font-extrabold tracking-[0.22em] text-white">
+                SANTRACK
+              </p>
+              <p className="mt-1 text-[9px] font-semibold tracking-[0.18em] text-white/55">
+                PUBLIC VERIFICATION
+              </p>
+            </div>
           </div>
+          <p className="text-right text-[10px] font-semibold uppercase tracking-widest text-white/55">
+            National registry
+          </p>
+        </header>
 
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-            Verify Product
+        {/* ── Hero copy ── */}
+        <div className="mt-9 text-center">
+          <h1 className="text-[1.7rem] font-extrabold leading-tight tracking-tight sm:text-3xl">
+            Check it&apos;s genuine.
           </h1>
-          <p className="text-xs text-slate-500 sm:text-sm">
-            Point at the packaging QR, or enter the printed serial (ST-…).
-            Shared product barcodes (EAN/GTIN) are not accepted.
+          <p className="mx-auto mt-2 max-w-xs text-[13px] leading-relaxed text-white/75">
+            Scan the QR code or type the ST‑serial printed on the label — the
+            registry answers in seconds.
           </p>
         </div>
 
-        <div className="mx-auto flex max-w-xs rounded-xl border border-slate-200 bg-slate-200/60 p-1 shadow-2xs">
+        {/* ── Mode switch (no pill card) ── */}
+        <div className="mt-6 flex items-center justify-center gap-1">
           <button
             type="button"
             onClick={() => setActiveMode("camera")}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-all",
+              "flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all",
               activeMode === "camera"
-                ? "bg-white text-slate-900 shadow-xs ring-1 ring-slate-900/5"
-                : "text-slate-600 hover:text-slate-900",
+                ? "bg-white text-primary"
+                : "text-white/70 hover:text-white",
             )}
           >
-            <Camera className="size-3.5 text-[#00A3E0]" />
-            <span>Camera</span>
+            <Camera className="size-3.5" />
+            Camera
           </button>
           <button
             type="button"
             onClick={() => setActiveMode("manual")}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold transition-all",
+              "flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all",
               activeMode === "manual"
-                ? "bg-white text-slate-900 shadow-xs ring-1 ring-slate-900/5"
-                : "text-slate-600 hover:text-slate-900",
+                ? "bg-white text-primary"
+                : "text-white/70 hover:text-white",
             )}
           >
-            <QrCode className="size-3.5 text-[#00A3E0]" />
-            <span>Paste QR</span>
+            <QrCode className="size-3.5" />
+            Type code
           </button>
         </div>
 
-        <div className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+        {/* ── Interactive panel ── */}
+        <div className="mt-6">
           {activeMode === "camera" ? (
-            <div className="space-y-4 text-center">
-              <div className="relative mx-auto flex aspect-square max-w-[280px] items-center justify-center overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-inner">
-                <div id={qrRegionId} className="h-full w-full object-cover" />
+            <div className="text-center">
+              {/* Camera viewport — no surrounding card chrome */}
+              <div className="relative mx-auto aspect-square w-full max-w-[300px] overflow-hidden rounded-[1.75rem] bg-slate-950">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="h-full w-full object-cover"
+                />
 
                 {cameraActive && (
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <div className="relative size-48 rounded-2xl border-2 border-dashed border-white/60 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
-                      <div className="absolute left-0 right-0 top-0 h-1 animate-pulse bg-gradient-to-r from-transparent via-[#00A3E0] to-transparent shadow-[0_0_12px_#00A3E0]" />
-                      <div className="absolute -left-1 -top-1 size-3.5 border-l-2 border-t-2 border-[#FAD201]" />
-                      <div className="absolute -right-1 -top-1 size-3.5 border-r-2 border-t-2 border-[#FAD201]" />
-                      <div className="absolute -bottom-1 -left-1 size-3.5 border-b-2 border-l-2 border-[#20603D]" />
-                      <div className="absolute -bottom-1 -right-1 size-3.5 border-b-2 border-r-2 border-[#20603D]" />
-                    </div>
+                  <div className="pointer-events-none absolute inset-0">
+                    {/* Corner brackets */}
+                    <div
+                      className={cn(
+                        corner,
+                        "-left-0.5 -top-0.5 border-l-[3px] border-t-[3px] rounded-tl-2xl",
+                      )}
+                    />
+                    <div
+                      className={cn(
+                        corner,
+                        "-right-0.5 -top-0.5 border-r-[3px] border-t-[3px] rounded-tr-2xl",
+                      )}
+                    />
+                    <div
+                      className={cn(
+                        corner,
+                        "-bottom-0.5 -left-0.5 border-b-[3px] border-l-[3px] rounded-bl-2xl",
+                      )}
+                    />
+                    <div
+                      className={cn(
+                        corner,
+                        "-bottom-0.5 -right-0.5 border-b-[3px] border-r-[3px] rounded-br-2xl",
+                      )}
+                    />
+                    {/* Breathing focus line */}
+                    <div className="absolute left-6 right-6 top-1/2 h-px animate-pulse bg-rwanda-yellow shadow-[0_0_10px_#fac600]" />
+                    <p className="absolute inset-x-0 bottom-3 text-center text-[10px] font-semibold tracking-[0.2em] text-white/70">
+                      ALIGN THE CODE INSIDE
+                    </p>
                   </div>
                 )}
 
                 {cameraError && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/95 p-5 text-center text-white">
-                    <CameraOff className="size-8 text-amber-400" />
-                    <p className="text-xs leading-relaxed text-slate-300">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950 p-6 text-center">
+                    <span className="flex size-12 items-center justify-center rounded-full bg-warning">
+                      <CameraOff className="size-5 text-warning-foreground" />
+                    </span>
+                    <p className="max-w-[240px] text-xs leading-relaxed text-white/80">
                       {cameraError}
                     </p>
                     <Button
                       size="sm"
                       onClick={() => setActiveMode("manual")}
-                      className="rounded-xl bg-[#00A3E0] text-xs font-semibold text-white hover:bg-sky-600"
+                      className="h-9 rounded-full bg-warning px-4 text-xs font-extrabold text-warning-foreground hover:brightness-95"
                     >
-                      Type code instead
+                      Type the code instead
                     </Button>
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center justify-center gap-2 pt-1">
-                <Button
-                  variant="outline"
-                  size="sm"
+              <div className="mt-4 flex items-center justify-center gap-3 text-[11px] text-white/65">
+                <button
+                  type="button"
                   onClick={() => void toggleCamera()}
                   disabled={!cameraActive}
-                  className="h-8 rounded-xl border-slate-200 px-3 text-xs font-medium text-slate-700"
+                  className="inline-flex items-center gap-1 font-semibold underline underline-offset-4 transition-colors hover:text-white disabled:pointer-events-none disabled:opacity-40"
                 >
-                  <RotateCw className="mr-1.5 size-3.5" /> Switch Lens
-                </Button>
+                  <RotateCw className="size-3" />
+                  Switch lens
+                </button>
+                <span className="text-white/30">•</span>
+                <span>Works with QR, Data Matrix &amp; serials</span>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               <form onSubmit={handleManualSubmit} className="space-y-3">
                 <div className="relative">
-                  <div className="pointer-events-none absolute left-3.5 top-3.5 text-slate-400">
-                    <Search className="size-4 text-[#00A3E0]" />
+                  <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-primary">
+                    <Search className="size-4" />
                   </div>
                   <Input
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value)}
                     placeholder="QR UUID, ST-… serial, or /verify/… link"
-                    className="h-12 rounded-xl border-slate-200 pl-10 pr-12 font-mono text-sm focus-visible:ring-2 focus-visible:ring-[#00A3E0]/20"
+                    className="h-13 rounded-2xl border-0 bg-white py-0 pl-11 pr-12 font-mono text-sm text-slate-900 shadow-lg shadow-primary-dark/10 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-rwanda-yellow"
                     autoFocus
                     autoCapitalize="off"
                     autoCorrect="off"
@@ -356,7 +504,8 @@ export default function ConsumerVerifyPage() {
                   <button
                     type="submit"
                     disabled={!manualCode.trim()}
-                    className="absolute right-2 top-2 flex size-8 items-center justify-center rounded-lg bg-[#00A3E0] text-white shadow-xs transition-all hover:bg-sky-600 disabled:pointer-events-none disabled:opacity-30"
+                    aria-label="Verify code"
+                    className="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-rwanda-yellow text-warning-foreground shadow-md transition-all hover:brightness-95 disabled:pointer-events-none disabled:opacity-30"
                   >
                     <ArrowRight className="size-4" />
                   </button>
@@ -365,39 +514,41 @@ export default function ConsumerVerifyPage() {
                 <Button
                   type="submit"
                   disabled={!manualCode.trim()}
-                  className="h-11 w-full rounded-xl bg-gradient-to-r from-[#00A3E0] to-[#008751] text-xs font-semibold uppercase tracking-wide text-white shadow-xs hover:opacity-95"
+                  className="h-12 w-full rounded-2xl bg-white text-xs font-extrabold uppercase tracking-[0.18em] text-primary shadow-lg shadow-primary-dark/10 hover:bg-slate-100"
                 >
-                  <ShieldCheck className="mr-2 size-4" /> Verify
+                  <ShieldCheck className="mr-2 size-4" />
+                  Verify in the registry
                 </Button>
               </form>
 
-              <p className="border-t border-slate-100 pt-3 text-[11px] leading-relaxed text-slate-500">
-                You can scan the unit QR or type the printed serial on the same
-                label. Product shelf barcodes (GTIN) name every pack of that
-                product, so they cannot verify a single unit.
+              <p className="text-center text-[11px] leading-relaxed text-white/60">
+                QR UUIDs, ST‑serials and full /verify links all work. Shelf
+                barcodes (GTIN) name every pack of a product, so they cannot
+                verify a single unit.
               </p>
             </div>
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-2 pt-1 text-center">
-          <div className="space-y-0.5 rounded-2xl border border-slate-200/70 bg-white/80 p-2.5 shadow-2xs backdrop-blur-xs">
-            <CheckCircle2 className="mx-auto size-4 text-[#008751]" />
-            <p className="text-[11px] font-bold text-slate-800">Genuine</p>
-            <p className="text-[10px] text-slate-400">Authentic origin</p>
+        {/* ── Promise strip ── */}
+        <div className="mt-auto pt-9">
+          <div className="flex items-center justify-center gap-5">
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-white/85">
+              <CheckCircle2 className="size-3.5 text-rwanda-yellow" />
+              Genuine
+            </span>
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-white/85">
+              <Sparkles className="size-3.5 text-rwanda-yellow" />
+              Standards checked
+            </span>
+            <span className="flex items-center gap-1.5 text-[11px] font-bold text-white/85">
+              <ShieldCheck className="size-3.5 text-rwanda-yellow" />
+              Batch fresh
+            </span>
           </div>
-
-          <div className="space-y-0.5 rounded-2xl border border-slate-200/70 bg-white/80 p-2.5 shadow-2xs backdrop-blur-xs">
-            <Sparkles className="mx-auto size-4 text-[#00A3E0]" />
-            <p className="text-[11px] font-bold text-slate-800">RSB Standard</p>
-            <p className="text-[10px] text-slate-400">Quality approved</p>
-          </div>
-
-          <div className="space-y-0.5 rounded-2xl border border-slate-200/70 bg-white/80 p-2.5 shadow-2xs backdrop-blur-xs">
-            <Lock className="mx-auto size-4 text-amber-500" />
-            <p className="text-[11px] font-bold text-slate-800">Fresh Batch</p>
-            <p className="text-[10px] text-slate-400">Expiry checked</p>
-          </div>
+          <p className="mt-4 text-center text-[10px] font-medium tracking-wide text-white/45">
+            SanTrack — unit-level traceability for Rwanda
+          </p>
         </div>
       </div>
     </div>

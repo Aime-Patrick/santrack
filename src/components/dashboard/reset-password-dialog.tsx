@@ -10,7 +10,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { useResetPassword } from "@/hooks/users";
 import type { UserResponse } from "@/lib/api";
@@ -78,9 +78,8 @@ export function ResetPasswordDialog({
         <div className="space-y-3 py-2">
           <div className="space-y-2">
             <Label htmlFor="reset-password">New password</Label>
-            <Input
+            <PasswordInput
               id="reset-password"
-              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 8 characters"
@@ -89,9 +88,8 @@ export function ResetPasswordDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="reset-password-confirm">Confirm password</Label>
-            <Input
+            <PasswordInput
               id="reset-password-confirm"
-              type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               autoComplete="new-password"

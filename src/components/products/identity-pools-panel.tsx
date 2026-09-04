@@ -12,6 +12,7 @@ import {
   Download,
   ImageDown,
   Sparkles,
+  Printer,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -280,6 +281,23 @@ function PoolRow({ pool, slug }: { pool: IdentityPool; slug: string }) {
           </Button>
 
           <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-2.5 text-xs"
+            disabled={!ready || busy}
+            title="Print unit labels (template + QR bound to pool)"
+            nativeButton={false}
+            render={
+              <Link
+                href={`/dashboard/labels/print?poolId=${pool.id}&template=unit`}
+              />
+            }
+          >
+            <Printer className="size-3.5" />
+            <span className="ml-1.5">Labels</span>
+          </Button>
+
+          <Button
             size="sm"
             className="h-8 px-2.5 text-xs"
             disabled={!ready}
@@ -300,7 +318,7 @@ function PoolStatusBadge({ pool }: { pool: IdentityPool }) {
     return (
       <Badge
         variant="outline"
-        className="gap-1.5 border-amber-500/30 bg-amber-500/10 text-xs font-medium text-amber-600"
+        className="gap-1.5 border-amber-500/30 bg-amber-50 text-xs font-medium text-amber-600"
       >
         <Loader2 className="size-3 animate-spin" /> Minting…
       </Badge>
@@ -310,7 +328,7 @@ function PoolStatusBadge({ pool }: { pool: IdentityPool }) {
     return (
       <Badge
         variant="outline"
-        className="gap-1.5 border-danger/30 bg-danger/10 text-xs font-medium text-danger"
+        className="gap-1.5 border-danger/30 bg-red-50 text-xs font-medium text-danger"
       >
         <XCircle className="size-3" /> Failed
       </Badge>
@@ -319,7 +337,7 @@ function PoolStatusBadge({ pool }: { pool: IdentityPool }) {
   return (
     <Badge
       variant="outline"
-      className="gap-1.5 border-emerald-500/30 bg-emerald-500/10 text-xs font-medium text-emerald-600"
+      className="gap-1.5 border-emerald-500/30 bg-emerald-50 text-xs font-medium text-emerald-600"
     >
       <CheckCircle2 className="size-3" /> Ready
     </Badge>
@@ -329,7 +347,7 @@ function PoolStatusBadge({ pool }: { pool: IdentityPool }) {
 function EmptyState() {
   return (
     <div className="py-10 text-center">
-      <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10">
+      <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary-light">
         <QrCode className="size-6 text-primary" />
       </div>
       <p className="font-medium">No code runs yet</p>

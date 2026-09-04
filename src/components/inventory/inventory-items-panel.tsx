@@ -206,7 +206,7 @@ function StockCodesPanelInner() {
         header: "Product",
         cell: ({ row }) => (
           <div className="flex items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary">
               <Package className="size-4" />
             </div>
             <div>
@@ -311,7 +311,7 @@ function StockCodesPanelInner() {
               variant="outline"
               className={
                 ok
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600"
+                  ? "border-emerald-500/30 bg-emerald-50 text-emerald-600"
                   : "border-border bg-muted/60 text-muted-foreground"
               }
             >
@@ -424,7 +424,7 @@ function StockCodesPanelInner() {
               code.
             </p>
           ) : (
-            <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-primary/5 px-3 py-1.5 text-sm">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-border bg-primary-light px-3 py-1.5 text-sm">
               <Package className="size-3.5 text-primary" />
               <span>
                 Codes for <strong>{productName}</strong>

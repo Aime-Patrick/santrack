@@ -35,6 +35,7 @@ export default function ChangePasswordPage() {
   const changePassword = useChangePassword();
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -150,13 +151,22 @@ export default function ChangePasswordPage() {
             <label htmlFor="confirmPassword" className="block text-xs font-semibold text-slate-700">
               Confirm new password
             </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              {...form.register("confirmPassword")}
-            />
+            <div className="relative">
+              <input
+                id="confirmPassword"
+                type={showConfirm ? "text" : "password"}
+                autoComplete="new-password"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 pr-10 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                {...form.register("confirmPassword")}
+              />
+              <button
+                type="button"
+                className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400"
+                onClick={() => setShowConfirm((v) => !v)}
+              >
+                {showConfirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
             {errors.confirmPassword ? (
               <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
             ) : null}

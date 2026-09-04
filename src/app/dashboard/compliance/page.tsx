@@ -35,7 +35,7 @@ import type { FacilityCompliance } from "@/services/compliance.service";
 import { cn } from "@/lib/utils";
 
 /**
- * Compliance → Overview (DR-07 WU-8).
+ * Compliance → Overview ("DR-07 WU-8").
  *
  * Everything on this page was decided by `GET /api/compliance/overview`. The
  * organization's standing, each site's standing, each product's standing and
@@ -150,7 +150,7 @@ export default function CompliancePage() {
       )}
 
       {isError && (
-        <Card className="border-danger/30 bg-danger/5">
+        <Card className="border-danger/30 bg-red-50">
           <CardContent className="py-6">
             <p className="text-sm font-semibold text-danger">
               The compliance assessment could not be loaded.

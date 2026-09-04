@@ -1,14 +1,23 @@
+"use client";
+
+import { useState } from "react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { RegisterForm } from "@/components/auth/register-form";
-
-export const metadata = {
-  title: "Register — San Track",
-};
+import { RegistrationGate } from "@/components/onboarding/registration-gate";
 
 export default function RegisterPage() {
+  const [gateOpen, setGateOpen] = useState(true);
+
   return (
-    <AuthShell>
-      <RegisterForm />
-    </AuthShell>
+    <>
+      <AuthShell>
+        <RegisterForm />
+      </AuthShell>
+      <RegistrationGate
+        open={gateOpen}
+        onOpenChange={setGateOpen}
+        onProceed={() => setGateOpen(false)}
+      />
+    </>
   );
 }

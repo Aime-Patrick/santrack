@@ -330,10 +330,10 @@ export default function StockTransferPage() {
                         key={entry.id}
                         className={cn(
                           "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs",
-                          entry.tone === "added" && "bg-success/5 text-success",
-                          entry.tone === "destination" && "bg-primary/5 text-primary",
+                          entry.tone === "added" && "bg-emerald-50 text-success",
+                          entry.tone === "destination" && "bg-primary-light text-primary",
                           entry.tone === "ignored" && "bg-muted text-muted-foreground",
-                          entry.tone === "error" && "bg-danger/5 text-danger",
+                          entry.tone === "error" && "bg-red-50 text-danger",
                         )}
                       >
                         {entry.tone === "error" ? (
@@ -386,7 +386,7 @@ export default function StockTransferPage() {
                   className={cn(
                     "flex items-start gap-2 rounded-lg border px-3 py-2.5",
                     destOrgId
-                      ? "border-primary/30 bg-primary/5"
+                      ? "border-primary/30 bg-primary-light"
                       : "border-dashed border-border bg-muted/30",
                   )}
                 >

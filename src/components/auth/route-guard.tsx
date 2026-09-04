@@ -57,7 +57,7 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
   if (needsTradingOrg && !isTradingOrg) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
-        <div className="flex size-14 items-center justify-center rounded-full bg-danger/10">
+        <div className="flex size-14 items-center justify-center rounded-full bg-red-50">
           <ShieldOff className="size-6 text-danger" />
         </div>
 
@@ -84,7 +84,7 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
-      <div className="flex size-14 items-center justify-center rounded-full bg-danger/10">
+      <div className="flex size-14 items-center justify-center rounded-full bg-red-50">
         <ShieldOff className="size-6 text-danger" />
       </div>
 

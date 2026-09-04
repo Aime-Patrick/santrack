@@ -370,7 +370,7 @@ function VerdictDialog({
               <p className="text-xs text-muted-foreground">Checking this lot…</p>
             ) : null}
             {blocked && eligibility?.reason ? (
-              <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-foreground">
+              <div className="rounded-lg border border-warning/40 bg-amber-50 px-3 py-2 text-sm text-foreground">
                 <p>{eligibility.reason}</p>
                 <Link
                   href="/dashboard/recall"

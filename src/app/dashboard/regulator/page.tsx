@@ -21,6 +21,13 @@ import {
 import { getApiErrorMessage, type License, type LicenseDocument } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CaseWorkQueue } from "@/components/regulator/case-work-queue";
+import { PendingRegistrations } from "@/components/regulator/pending-registrations";
+import { ComplaintTriage } from "@/components/regulator/complaint-triage";
+import { SignalWatch } from "@/components/regulator/signal-watch";
+import { FieldInspectionMode } from "@/components/regulator/field-inspection-mode";
+import { CommandOverview } from "@/components/regulator/command-overview";
+import { IncomingReferrals } from "@/components/regulator/incoming-referrals";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { Document, Page, pdfjs } from "react-pdf";
@@ -521,7 +528,7 @@ function ReviewDialog({
               )}
 
               {error && (
-                <div className="mt-3 rounded-md bg-danger/5 p-3 text-sm text-danger">
+                <div className="mt-3 rounded-md bg-red-50 p-3 text-sm text-danger">
                   {error}
                 </div>
               )}
@@ -632,6 +639,10 @@ export default function RegulatorPage() {
         </div>
       </div>
 
+      <PendingRegistrations />
+      <CommandOverview />
+      <IncomingReferrals />
+
       <Card>
         <CardContent className="pt-6">
           {isLoading ? (
@@ -660,6 +671,11 @@ export default function RegulatorPage() {
           )}
         </CardContent>
       </Card>
+
+      <CaseWorkQueue />
+      <FieldInspectionMode />
+      <ComplaintTriage />
+      <SignalWatch />
 
       {selectedLicense && (
         <ReviewDialog

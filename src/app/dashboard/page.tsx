@@ -6,6 +6,8 @@ import { ProductionTrendsChart } from "@/components/dashboard/production-trends-
 import { RecentActivities } from "@/components/dashboard/recent-activities";
 import { PlatformDashboard } from "@/components/dashboard/platform-dashboard";
 import { RegulatorDashboard } from "@/components/dashboard/regulator-dashboard";
+import { OversightDashboard } from "@/components/dashboard/oversight-dashboard";
+import { useRegulatoryOversightSummary } from "@/hooks/regulatory-oversight";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import type { OrganizationType } from "@/lib/api";
 
@@ -50,6 +52,7 @@ function homeCopy(type: OrganizationType | undefined | null): {
 
 export default function DashboardPage() {
   const { data: me, isLoading } = useCurrentUser();
+  const oversight = useRegulatoryOversightSummary(me?.organization?.type === "REGULATOR");
 
   if (isLoading) {
     return (
@@ -65,6 +68,7 @@ export default function DashboardPage() {
   }
 
   if (me?.organization?.type === "REGULATOR") {
+    if (oversight.data) return <OversightDashboard />;
     return <RegulatorDashboard />;
   }
 

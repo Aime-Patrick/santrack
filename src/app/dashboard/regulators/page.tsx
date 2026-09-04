@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, ShieldOff, ShieldPlus, MoreHorizontal, Users, UserPlus } from "lucide-react";
+import { Shield, ShieldOff, ShieldPlus, MoreHorizontal, CheckCircle2, RefreshCw, Copy, Check, Eye, EyeOff, Users, AlertCircle } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { TableFeatures } from "@/components/ui/data-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { DataTable } from "@/components/ui/data-table";
 import {
@@ -37,21 +38,22 @@ import {
   organizationKeys,
   useRegulators,
   useOrganizations,
-  useRegisterRegulator,
   useGrantStanding,
   useRevokeStanding,
 } from "@/hooks/organizations";
-import { useUsers, useCreateUser } from "@/hooks/users";
+import { useUsers, useCreateUser, useResendOrgAdminInvite } from "@/hooks/users";
 import { TRADE_TYPES, type RegulatorResponse } from "@/services/organization.service";
-import type { OrganizationType, UserRole } from "@/lib/api";
+import { getApiErrorMessage, type OrganizationType, type UserRole } from "@/lib/api";
 import { toast } from "sonner";
+import { useOnboardAuthorityFull, useRegulatoryAuthorities } from "@/hooks/regulatory-authorities";
+import { generatePassword } from "@/lib/generate-password";
 
 /**
  * Regulator management, for the platform operator.
  *
  * This page used to render the unfiltered organization directory — every
  * manufacturer, warehouse and shop on the platform — under a regulator
- * heading, and its grant and revoke calls sent no body, so both were rejected.
+ * heading, "and its grant and revoke calls sent no body", so both were rejected.
  * It now works from the regulator roster, and each action does what its label
  * says.
  *
@@ -76,22 +78,34 @@ const STAFF_ROLES: UserRole[] = ["ORG_ADMIN", "AUDITOR", "MANAGEMENT"];
 
 export default function RegulatorsPage() {
   const { data: regulators, isLoading } = useRegulators();
+  const { data: authorities = [] } = useRegulatoryAuthorities();
+  const onboardAuthorityFull = useOnboardAuthorityFull();
   const { data: businesses } = useOrganizations(TRADE_TYPES);
 
-  const registerRegulator = useRegisterRegulator();
   const grantStanding = useGrantStanding();
   const revokeStanding = useRevokeStanding();
+  const resendAdminInvite = useResendOrgAdminInvite();
 
-  const [registerOpen, setRegisterOpen] = useState(false);
+  const [onboardOpen, setOnboardOpen] = useState(false);
+  const [onboardFor, setOnboardFor] = useState<RegulatorResponse | null>(null);
+  const [onboardSuccess, setOnboardSuccess] = useState<{ orgName: string; code: string; email: string; password?: string; alreadyExisted?: boolean } | null>(null);
   const [grantOpen, setGrantOpen] = useState(false);
-  const [staffFor, setStaffFor] = useState<RegulatorResponse | null>(null);
   const [revokeFor, setRevokeFor] = useState<RegulatorResponse | null>(null);
 
   const rows = regulators ?? [];
   const staffed = rows.filter((r) => r.staff > 0).length;
 
+  const authoritiesByOrganization = new Map(authorities.filter((authority) => authority.operatingOrganization).map((authority) => [authority.operatingOrganization!.id, authority]));
   const columns: ColumnDef<TableFeatures, RegulatorResponse>[] = useMemo(
     () => [
+      {
+        id: "workspace",
+        header: "Authority workspace",
+        cell: ({ row }) => {
+          const authority = authoritiesByOrganization.get(row.original.id);
+          return authority ? <Badge variant={authority.isActive ? "success" : "outline"}>{authority.isActive ? `Active · ${authority.code}` : "Inactive"}</Badge> : <Badge variant="warning">Not onboarded</Badge>;
+        },
+      },
       {
         accessorKey: "name",
         header: "Authority",
@@ -114,8 +128,6 @@ export default function RegulatorsPage() {
           row.original.staff > 0 ? (
             <span className="tabular-nums">{row.original.staff}</span>
           ) : (
-            // An authority nobody works at reviews nothing, and that is worth
-            // seeing at a glance rather than counting to zero.
             <Badge variant="warning">
               No one assigned
             </Badge>
@@ -135,79 +147,108 @@ export default function RegulatorsPage() {
       {
         id: "actions",
         header: "",
-        cell: ({ row }) => (
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="size-8 p-0" />}>
-              <MoreHorizontal className="size-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setStaffFor(row.original)}>
-                <Users className="mr-2 size-4" /> Manage staff
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setRevokeFor(row.original)}>
-                <ShieldOff className="mr-2 size-4" /> Withdraw standing
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ),
+        cell: ({ row }) => {
+          const authority = authoritiesByOrganization.get(row.original.id);
+          const needsOnboarding = !authority || row.original.staff === 0;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="size-8 p-0" />}>
+                <MoreHorizontal className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {needsOnboarding && (
+                  <DropdownMenuItem onClick={() => setOnboardFor(row.original)}>
+                    <ShieldPlus className="mr-2 size-4" /> Complete onboarding
+                  </DropdownMenuItem>
+                )}
+                {row.original.staff > 0 && (
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      try {
+                        const res = await resendAdminInvite.mutateAsync(row.original.id);
+                        if (res.temporaryPassword) {
+                          setOnboardSuccess({
+                            orgName: row.original.name,
+                            code: authoritiesByOrganization.get(row.original.id)?.code ?? `ORG-${row.original.id}`,
+                            email: res.email ?? "Admin",
+                            password: res.temporaryPassword,
+                            alreadyExisted: false,
+                          });
+                        }
+                        toast.success(`Invite & login instructions resent to ${row.original.name}`);
+                      } catch (err) {
+                        toast.error(getApiErrorMessage(err, "Failed to resend invite"));
+                      }
+                    }}
+                  >
+                    <RefreshCw className="mr-2 size-4" /> Resend login email
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setRevokeFor(row.original)}>
+                  <ShieldOff className="mr-2 size-4" /> Withdraw standing
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
       },
     ],
-    [],
+    [authoritiesByOrganization, resendAdminInvite],
   );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-success text-white">
-            <Shield className="size-4" />
+          <div className="flex size-9 lg:size-10 items-center justify-center rounded-lg bg-success text-white">
+            <Shield className="size-4 lg:size-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Regulators</h1>
+            <h1 className="text-xl lg:text-2xl font-bold tracking-tight">Authority onboarding</h1>
             <p className="text-sm text-muted-foreground">
-              Register oversight bodies, staff them, and withdraw standing.
+              Create the technical workspace; each authority configures its own operations.
             </p>
           </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setGrantOpen(true)}>
-            <ShieldPlus className="mr-2 size-4" /> Grant standing
+            <Shield className="mr-2 size-4" /> Grant standing
           </Button>
-          <Button onClick={() => setRegisterOpen(true)}>
-            <Shield className="mr-2 size-4" /> Register regulator
+          <Button onClick={() => setOnboardOpen(true)}>
+            <ShieldPlus className="mr-2 size-4" /> Onboard authority
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MetricCard
-          title="Regulators"
+          title="Regulator organizations"
           value={rows.length}
-          icon={<Shield className="size-4" />}
+          icon={<Shield className="size-4 lg:size-5" />}
           iconBg="bg-success"
-          caption="Bodies holding standing"
+          caption="Organizations eligible for onboarding"
         />
         <MetricCard
           title="Staffed"
           value={staffed}
-          icon={<Users className="size-4" />}
+          icon={<Users className="size-4 lg:size-5" />}
           iconBg="bg-primary"
           caption="With at least one user"
         />
         <MetricCard
           title="Businesses"
           value={businesses?.length ?? 0}
-          icon={<ShieldPlus className="size-4" />}
+          icon={<ShieldPlus className="size-4 lg:size-5" />}
           iconBg="bg-muted text-muted-foreground"
           caption="Eligible for standing"
         />
       </div>
 
-      <Card>
+      <Card className="w-full">
         <CardHeader>
-          <CardTitle>Oversight bodies</CardTitle>
+          <CardTitle>Authority workspaces</CardTitle>
           <CardDescription>
-            A regulator reads every timeline on the platform and can recall any batch.
+            Authorities work only their configured cases. Oversight visibility is separately configured and read-only.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -219,10 +260,10 @@ export default function RegulatorsPage() {
             <div className="flex flex-col items-center gap-3 py-12 text-center">
               <Shield className="size-8 text-faint" />
               <p className="text-sm text-muted-foreground">
-                No regulator is registered yet. Nothing on the platform is being overseen.
+                No regulator organization is registered yet. Onboard your first authority workspace.
               </p>
-              <Button size="sm" onClick={() => setRegisterOpen(true)}>
-                Register the first one
+              <Button size="sm" onClick={() => setOnboardOpen(true)}>
+                <ShieldPlus className="mr-2 size-4" /> Onboard the first authority
               </Button>
             </div>
           ) : (
@@ -238,13 +279,41 @@ export default function RegulatorsPage() {
         </CardContent>
       </Card>
 
-      <RegisterDialog
-        open={registerOpen}
-        onOpenChange={setRegisterOpen}
-        onSubmit={(name) =>
-          registerRegulator.mutate(name, { onSuccess: () => setRegisterOpen(false) })
+      <UnifiedOnboardDialog
+        open={onboardOpen || !!onboardFor}
+        regulator={onboardFor}
+        onOpenChange={(open) => {
+          if (!open) {
+            setOnboardOpen(false);
+            setOnboardFor(null);
+          }
+        }}
+        onSubmit={(input, onError) =>
+          onboardAuthorityFull.mutate(input, {
+            onSuccess: (data) => {
+              setOnboardOpen(false);
+              setOnboardFor(null);
+              setOnboardSuccess({
+                orgName: data.organization.name,
+                code: data.authority.code,
+                email: data.adminUser.email,
+                password: input.adminPassword,
+                alreadyExisted: data.adminUser.alreadyExisted,
+              });
+            },
+            onError: (err) => {
+              const msg = getApiErrorMessage(err, "Could not onboard this authority");
+              if (onError) onError(msg);
+              toast.error(msg);
+            },
+          })
         }
-        pending={registerRegulator.isPending}
+        pending={onboardAuthorityFull.isPending}
+      />
+
+      <OnboardSuccessDialog
+        info={onboardSuccess}
+        onOpenChange={(open) => !open && setOnboardSuccess(null)}
       />
 
       <GrantDialog
@@ -270,56 +339,290 @@ export default function RegulatorsPage() {
         pending={revokeStanding.isPending}
       />
 
-      <StaffDialog regulator={staffFor} onOpenChange={(open) => !open && setStaffFor(null)} />
     </div>
   );
 }
 
-// ---------------------------------------------------------------- register
-
-function RegisterDialog({
+function UnifiedOnboardDialog({
   open,
+  regulator,
   onOpenChange,
   onSubmit,
   pending,
 }: {
   open: boolean;
+  regulator: RegulatorResponse | null;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (name: string) => void;
+  onSubmit: (
+    input: {
+      name: string;
+      code: string;
+      operatingOrganizationId?: number;
+      adminFullName?: string;
+      adminEmail?: string;
+      adminPassword?: string;
+    },
+    onError?: (message: string) => void,
+  ) => void;
   pending: boolean;
 }) {
   const [name, setName] = useState("");
+  const [code, setCode] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const hasExistingStaff = !!regulator && regulator.staff > 0;
+
+  useEffect(() => {
+    if (regulator) {
+      setName(regulator.name);
+      setCode(regulator.name.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 8));
+    } else {
+      setName("");
+      setCode("");
+    }
+    setAdminEmail("");
+    setAdminPassword(hasExistingStaff ? "" : generatePassword());
+    setShowPassword(true);
+    setError(null);
+  }, [regulator, open, hasExistingStaff]);
+
+  const canSubmit = hasExistingStaff
+    ? name.trim().length >= 2 && /^[A-Z0-9_]{2,32}$/.test(code)
+    : name.trim().length >= 2 &&
+      /^[A-Z0-9_]{2,32}$/.test(code) &&
+      adminEmail.trim().includes("@") &&
+      adminPassword.length >= 8;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogPopup>
+      <DialogPopup className="w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Register a regulator</DialogTitle>
+          <DialogTitle>
+            {regulator ? `Complete onboarding · ${regulator.name}` : "Onboard authority"}
+          </DialogTitle>
           <DialogDescription>
-            Creates the authority as its own organization. You are not added to it — staff are
-            assigned afterwards.
+            {hasExistingStaff
+              ? "Set the authority identifier to activate regulatory standing."
+              : "Set up the authority workspace and first administrator login."}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2 py-2">
-          <Label htmlFor="regulator-name">Name of the authority</Label>
-          <Input
-            id="regulator-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Rwanda Standards Board"
-            autoFocus
-          />
+
+        <div className="space-y-4 py-2">
+          {error && (
+            <div className="flex items-start gap-2 rounded-lg border border-destructive bg-muted p-3 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 size-4 shrink-0" />
+              <div className="flex-1 font-medium">{error}</div>
+            </div>
+          )}
+
+          {hasExistingStaff && (
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted px-3.5 py-2.5 text-xs text-foreground">
+              <CheckCircle2 className="size-4 shrink-0 text-success" />
+              <span>Staff account ({regulator.staff} {regulator.staff === 1 ? "user" : "users"}) already assigned.</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="auth-name">Authority name</Label>
+              <Input
+                id="auth-name"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setError(null);
+                }}
+                disabled={!!regulator}
+                placeholder="Authority name"
+                autoFocus={!regulator}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="auth-code">Authority code</Label>
+              <Input
+                id="auth-code"
+                value={code}
+                onChange={(e) => {
+                  setCode(e.target.value.toUpperCase());
+                  setError(null);
+                }}
+                placeholder="e.g. RSB, FDA"
+                className="font-mono font-medium uppercase tracking-wider"
+                autoFocus={!!regulator}
+              />
+            </div>
+          </div>
+
+          {!hasExistingStaff && (
+            <div className="space-y-3 border-t border-border pt-3">
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="admin-email">Admin email</Label>
+                  <Input
+                    id="admin-email"
+                    type="email"
+                    value={adminEmail}
+                    onChange={(e) => {
+                      setAdminEmail(e.target.value);
+                      setError(null);
+                    }}
+                    placeholder="admin@authority.gov.rw"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="admin-password">Generated password</Label>
+                  <div className="flex items-center gap-1.5">
+                    <div className="relative flex-1 min-w-0">
+                      <Input
+                        id="admin-password"
+                        readOnly
+                        type={showPassword ? "text" : "password"}
+                        value={adminPassword}
+                        className="bg-background pr-8 font-mono text-sm"
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        className="absolute inset-y-0 right-0 flex items-center px-2.5 text-muted-foreground transition-colors hover:text-foreground"
+                        onClick={() => setShowPassword(!showPassword)}
+                        title={showPassword ? "Hide password" : "Show password"}
+                      >
+                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                      title="Regenerate"
+                      onClick={() => setAdminPassword(generatePassword())}
+                    >
+                      <RefreshCw className="size-3.5" />
+                    </Button>
+                    <CopyButton text={adminPassword} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-        <DialogFooter>
+
+        <DialogFooter className="gap-2 sm:gap-0 pt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
-            disabled={name.trim().length < 2 || pending}
-            onClick={() => onSubmit(name.trim())}
+            disabled={!canSubmit || pending}
+            onClick={() => {
+              setError(null);
+              onSubmit(
+                {
+                  name: name.trim(),
+                  code: code.trim(),
+                  operatingOrganizationId: regulator?.id,
+                  adminEmail: hasExistingStaff ? undefined : adminEmail.trim(),
+                  adminPassword: hasExistingStaff ? undefined : adminPassword,
+                },
+                (errMessage) => setError(errMessage),
+              );
+            }}
           >
-            {pending ? "Registering..." : "Register"}
+            {pending
+              ? "Saving…"
+              : hasExistingStaff
+                ? "Complete onboarding"
+                : "Onboard authority"}
           </Button>
+        </DialogFooter>
+      </DialogPopup>
+    </Dialog>
+  );
+}
+
+/** Tiny copy-to-clipboard button with a brief checkmark feedback. */
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="icon"
+      className="shrink-0"
+      title="Copy to clipboard"
+      onClick={() => {
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }}
+    >
+      {copied ? <Check className="size-3.5 text-success" /> : <Copy className="size-3.5" />}
+    </Button>
+  );
+}
+
+function OnboardSuccessDialog({
+  info,
+  onOpenChange,
+}: {
+  info: { orgName: string; code: string; email: string; password?: string; alreadyExisted?: boolean } | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [showPw, setShowPw] = useState(false);
+  return (
+    <Dialog open={!!info} onOpenChange={onOpenChange}>
+      <DialogPopup className="w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-success">
+            <CheckCircle2 className="size-5" /> Authority onboarded
+          </DialogTitle>
+          <DialogDescription>
+            Workspace is ready.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 py-3">
+          <div className="space-y-2 rounded-lg border border-border bg-muted p-3 text-sm text-foreground">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Authority</span>
+              <span className="font-medium">{info?.orgName}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Code</span>
+              <span className="font-mono font-medium">{info?.code}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Admin Login</span>
+              <span className="font-medium">{info?.email}</span>
+            </div>
+            {info?.alreadyExisted ? (
+              <div className="rounded-md border border-border bg-card p-2 text-xs text-muted-foreground">
+                Existing login remains active.
+              </div>
+            ) : info?.password ? (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Password</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-sm font-medium">
+                    {showPw ? info.password : "••••••••••••"}
+                  </span>
+                  <button
+                    type="button"
+                    className="text-muted-foreground transition-colors hover:text-foreground"
+                    onClick={() => setShowPw((v) => !v)}
+                  >
+                    {showPw ? <span className="text-xs">hide</span> : <span className="text-xs">show</span>}
+                  </button>
+                  <CopyButton text={info.password} />
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)}>Got it</Button>
         </DialogFooter>
       </DialogPopup>
     </Dialog>
@@ -346,12 +649,11 @@ function GrantDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogPopup>
+      <DialogPopup className="w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Grant regulatory standing</DialogTitle>
           <DialogDescription>
-            Promotes an existing business to an oversight body. It will be able to read every
-            organization&apos;s chain of custody and recall any batch.
+            Promotes an existing business to an oversight body with platform-wide chain of custody visibility.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2 py-2">
@@ -376,7 +678,7 @@ function GrantDialog({
             </p>
           ) : null}
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0 pt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -410,17 +712,16 @@ function RevokeDialog({
 
   return (
     <Dialog open={!!regulator} onOpenChange={onOpenChange}>
-      <DialogPopup>
+      <DialogPopup className="w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Withdraw standing from {regulator?.name}</DialogTitle>
           <DialogDescription>
-            Standing is the organization&apos;s type, so something has to replace it. Say what
-            this body becomes — it keeps its record and its staff either way.
+            Select the replacement organization type. The entity keeps its staff and audit history.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label>It becomes a</Label>
+            <Label>New organization type</Label>
             <Select value={revertTo} onValueChange={(v) => setRevertTo(v ?? "")}>
               <SelectTrigger>
                 <SelectValue placeholder="Choose a business type">
@@ -446,7 +747,7 @@ function RevokeDialog({
             />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0 pt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -462,169 +763,3 @@ function RevokeDialog({
   );
 }
 
-// ------------------------------------------------------------------- staff
-
-function StaffDialog({
-  regulator,
-  onOpenChange,
-}: {
-  regulator: RegulatorResponse | null;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const { data: staff, isLoading } = useUsers(regulator?.id);
-  const createUser = useCreateUser();
-  const qc = useQueryClient();
-
-  const [adding, setAdding] = useState(false);
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState<string>("AUDITOR");
-
-  const reset = () => {
-    setAdding(false);
-    setFullName("");
-    setEmail("");
-    setPassword("");
-    setRole("AUDITOR");
-  };
-
-  const submit = () => {
-    if (!regulator) return;
-    createUser.mutate(
-      {
-        email: email.trim(),
-        password,
-        fullName: fullName.trim() || undefined,
-        organizationId: regulator.id,
-        role: role as UserRole,
-        generatePassword: false,
-      },
-      {
-        onSuccess: () => {
-          qc.invalidateQueries({ queryKey: organizationKeys.regulators });
-          toast.success(`${fullName.trim() || email.trim()} added to ${regulator.name}`);
-          reset();
-        },
-        onError: (error: unknown) => {
-          const message =
-            (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-            "Could not add that person";
-          toast.error(message);
-        },
-      },
-    );
-  };
-
-  return (
-    <Dialog
-      open={!!regulator}
-      onOpenChange={(open) => {
-        if (!open) reset();
-        onOpenChange(open);
-      }}
-    >
-      <DialogPopup>
-        <DialogHeader>
-          <DialogTitle>{regulator?.name} staff</DialogTitle>
-          <DialogDescription>
-            Authority comes from the organization&apos;s standing; the role decides what each
-            person does inside it.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="max-h-64 space-y-2 overflow-y-auto py-2">
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading staff...</p>
-          ) : (staff?.length ?? 0) === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nobody works here yet, so nothing gets reviewed. Add the first inspector.
-            </p>
-          ) : (
-            staff?.map((user) => (
-              <div
-                key={user.id}
-                className="flex items-center justify-between rounded-lg border border-border px-3 py-2"
-              >
-                <div>
-                  <div className="text-sm font-medium">{user.fullName}</div>
-                  <div className="font-mono text-xs text-faint">{user.email}</div>
-                </div>
-                <Badge variant="outline">{user.role.replace(/_/g, " ")}</Badge>
-              </div>
-            ))
-          )}
-        </div>
-
-        {adding ? (
-          <div className="space-y-3 border-t border-border pt-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="staff-name">Full name (optional)</Label>
-                <Input id="staff-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="staff-email">Email</Label>
-                <Input id="staff-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="staff-password">Temporary password</Label>
-                <Input
-                  id="staff-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="At least 8 characters"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Role</Label>
-                <Select value={role} onValueChange={(v) => setRole(v ?? "AUDITOR")}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STAFF_ROLES.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {r.replace(/_/g, " ")}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        <DialogFooter>
-          {adding ? (
-            <>
-              <Button variant="outline" onClick={reset}>
-                Cancel
-              </Button>
-              <Button
-                disabled={
-                  email.trim().length === 0 ||
-                  password.length < 8 ||
-                  createUser.isPending
-                }
-                onClick={submit}
-              >
-                {createUser.isPending ? "Adding..." : "Add to regulator"}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-              <Button onClick={() => setAdding(true)}>
-                <UserPlus className="mr-2 size-4" /> Add staff
-              </Button>
-            </>
-          )}
-        </DialogFooter>
-      </DialogPopup>
-    </Dialog>
-  );
-}

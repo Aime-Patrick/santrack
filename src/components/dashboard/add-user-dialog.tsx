@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Copy, RefreshCw } from "lucide-react";
+import { Check, Copy, RefreshCw, Eye, EyeOff } from "lucide-react";
 import {
   Dialog,
   DialogPopup,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -26,20 +27,16 @@ import { useMe } from "@/hooks/auth";
 import type { UserRole } from "@/lib/api";
 import { ROLE_LABELS, apiErrorMessage, assignableRoles } from "@/lib/user-roles";
 import { toast } from "sonner";
+import { generatePassword } from "@/lib/generate-password";
 
 interface AddUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** When set, the new user is always created in this org (org admin path). */
+  /** When set, "the new user is always created in this org (org admin path"). */
   lockedOrganizationId?: number;
 }
 
-function clientGeneratePassword(): string {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-  const bytes = new Uint8Array(12);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
-}
+
 
 export function AddUserDialog({
   open,
@@ -55,7 +52,8 @@ export function AddUserDialog({
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [generatePassword, setGeneratePassword] = useState(true);
+  const [autoPassword, setAutoPassword] = useState(true);
+  const [showAutoPassword, setShowAutoPassword] = useState(true);
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("QUALITY_OFFICER");
   const [organizationId, setOrganizationId] = useState<string>(
@@ -71,8 +69,9 @@ export function AddUserDialog({
       : (assignableRoles(me?.role)[0] ?? "ORG_ADMIN");
     setFullName("");
     setEmail("");
-    setGeneratePassword(true);
-    setPassword(clientGeneratePassword());
+    setAutoPassword(true);
+    setShowAutoPassword(true);
+    setPassword(generatePassword());
     setRole(nextRole);
     setOrganizationId(lockedOrganizationId ? String(lockedOrganizationId) : "");
     setCreatedSecret(null);
@@ -82,7 +81,7 @@ export function AddUserDialog({
   const resolvedOrgId = lockedOrganizationId ?? Number(organizationId);
   const canSubmit =
     email.trim().length > 0 &&
-    (generatePassword || password.length >= 8) &&
+    (autoPassword || password.length >= 8) &&
     Number.isFinite(resolvedOrgId) &&
     resolvedOrgId > 0 &&
     !createUser.isPending;
@@ -121,7 +120,7 @@ export function AddUserDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogPopup className="max-w-lg">
+      <DialogPopup className="max-w-xl">
         <DialogHeader>
           <DialogTitle>
             {createdSecret ? "Share temporary password" : "Add team member"}
@@ -181,10 +180,10 @@ export function AddUserDialog({
                   <Button
                     type="button"
                     size="sm"
-                    variant={generatePassword ? "default" : "outline"}
+                    variant={autoPassword ? "default" : "outline"}
                     onClick={() => {
-                      setGeneratePassword(true);
-                      setPassword(clientGeneratePassword());
+                      setAutoPassword(true);
+                      setPassword(generatePassword());
                     }}
                   >
                     Generate
@@ -192,28 +191,44 @@ export function AddUserDialog({
                   <Button
                     type="button"
                     size="sm"
-                    variant={!generatePassword ? "default" : "outline"}
-                    onClick={() => setGeneratePassword(false)}
+                    variant={!autoPassword ? "default" : "outline"}
+                    onClick={() => setAutoPassword(false)}
                   >
                     Set myself
                   </Button>
                 </div>
-                {generatePassword ? (
+                {autoPassword ? (
                   <div className="flex items-center gap-2">
-                    <Input readOnly value={password} className="font-mono text-sm" />
+                    <div className="relative flex-1">
+                      <Input
+                        readOnly
+                        type={showAutoPassword ? "text" : "password"}
+                        value={password}
+                        className="font-mono text-sm bg-background pr-8"
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        className="absolute inset-y-0 right-0 flex items-center px-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setShowAutoPassword(!showAutoPassword)}
+                        title={showAutoPassword ? "Hide password" : "Show password"}
+                      >
+                        {showAutoPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
                     <Button
                       type="button"
                       variant="outline"
                       size="icon"
+                      className="shrink-0"
                       title="Regenerate"
-                      onClick={() => setPassword(clientGeneratePassword())}
+                      onClick={() => setPassword(generatePassword())}
                     >
                       <RefreshCw className="size-3.5" />
                     </Button>
                   </div>
                 ) : (
-                  <Input
-                    type="password"
+                  <PasswordInput
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="At least 8 characters"

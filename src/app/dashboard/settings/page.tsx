@@ -27,6 +27,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMe } from "@/hooks/auth";
 import { TeamMembersPanel } from "@/components/dashboard/team-members-panel";
 import { ROLE_LABELS } from "@/lib/user-roles";
+import { AuthoritySelfSetup } from "@/components/regulator/authority-self-setup";
+import { OversightScopeSettings } from "@/components/dashboard/oversight-scope-settings";
 
 const maintenanceFeatures = [
   {
@@ -180,7 +182,7 @@ function PlatformSettings({
         </TabsContent>
 
         <TabsContent value="platform" className="mt-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-4"><div className="grid gap-4 sm:grid-cols-2">
             {platformLinks.map((link) => (
               <Link
                 key={link.href}
@@ -189,7 +191,7 @@ function PlatformSettings({
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <div className="flex size-9 items-center justify-center rounded-lg bg-primary-light text-primary">
                       <link.icon className="size-4" />
                     </div>
                     <div>
@@ -205,7 +207,7 @@ function PlatformSettings({
                 </div>
               </Link>
             ))}
-          </div>
+          </div><OversightScopeSettings /></div>
         </TabsContent>
 
         <TabsContent value="users" className="mt-4 space-y-4">
@@ -276,6 +278,7 @@ function OrganizationSettings({
         </TabsList>
 
         <TabsContent value="organization" className="mt-4">
+          {org?.type === "REGULATOR" && me.role === "ORG_ADMIN" ? <div className="mb-4"><AuthoritySelfSetup /></div> : null}
           <Card>
             <CardHeader>
               <CardTitle>Organization Profile</CardTitle>
@@ -332,7 +335,7 @@ function OrganizationSettings({
               <CardHeader>
                 <CardTitle>Maintenance & Equipment</CardTitle>
                 <CardDescription>
-                  Manage machine lifecycle, maintenance schedules, and warranties
+                  Manage machine lifecycle, "maintenance schedules", and warranties
                 </CardDescription>
               </CardHeader>
             </Card>

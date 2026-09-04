@@ -196,13 +196,13 @@ export default function AnalyticsPage() {
                 </p>
                 <p className="mt-1 text-xs text-faint">Available units</p>
               </div>
-              <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-center">
+              <div className="rounded-lg border border-warning/30 bg-amber-50 px-4 py-3 text-center">
                 <p className="text-2xl font-bold text-warning-foreground">
                   {(supplyChain.inTransitUnits ?? 0).toLocaleString()}
                 </p>
                 <p className="mt-1 text-xs text-faint">Units in transit</p>
               </div>
-              <div className="rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-center">
+              <div className="rounded-lg border border-success/30 bg-emerald-50 px-4 py-3 text-center">
                 <p className="text-2xl font-bold text-success">
                   {supplyChain.inTransitShipments ?? 0}
                 </p>

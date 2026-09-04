@@ -8,6 +8,7 @@ import {
   Building2,
   FileBadge,
   User,
+  FolderPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useComplianceFinding } from "@/hooks/licensing";
 import { getApiErrorMessage } from "@/lib/api";
 import { ROLE_LABELS } from "@/lib/user-roles";
+import { useOpenRegulatoryCase } from "@/hooks/regulatory-cases";
+import { toast } from "sonner";
 
 const typeLabel: Record<string, string> = {
   UNLICENSED_ACTIVITY: "Unlicensed activity",
@@ -54,6 +57,7 @@ export default function FindingDetailPage() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const { data, isLoading, isError, error } = useComplianceFinding(id);
+  const openCase = useOpenRegulatoryCase();
 
   if (isLoading) {
     return (
@@ -86,6 +90,23 @@ export default function FindingDetailPage() {
   }
 
   const when = new Date(data.recordedAt);
+  const startCase = () => {
+    if (!data.organization) return;
+    openCase.mutate(
+      {
+        organizationId: data.organization.id,
+        findingId: data.id,
+        licenseId: data.license?.id,
+        priority: data.type === "SUSPENDED_LICENCE" ? "HIGH" : "NORMAL",
+        title: `${typeLabel[data.type] ?? data.type}: ${data.organization.name}`,
+        description: data.detail ?? undefined,
+      },
+      {
+        onSuccess: (caseRecord) => toast.success(`${caseRecord.caseNumber} opened`),
+        onError: (reason) => toast.error(getApiErrorMessage(reason) || "Could not open a regulatory case"),
+      },
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -117,6 +138,11 @@ export default function FindingDetailPage() {
           </Badge>
         </div>
       </div>
+
+      <Button onClick={startCase} disabled={!data.organization || openCase.isPending}>
+        {openCase.isPending ? <span className="size-4 animate-spin rounded-full border-2 border-current border-r-transparent" /> : <FolderPlus className="size-4" />}
+        Open regulatory case
+      </Button>
 
       <Card>
         <CardHeader>

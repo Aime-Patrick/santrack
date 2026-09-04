@@ -74,7 +74,7 @@ const POSTS: UpdatePost[] = [
     date: "July 28, 2026",
     readTime: "3 min read",
     author: "Supply Chain Solutions",
-    badgeColor: "bg-purple-100 text-purple-800 border-purple-200",
+    badgeColor: "bg-sky-100 text-sky-800 border-sky-200",
   },
   {
     id: "cold-chain-batch-recalls",

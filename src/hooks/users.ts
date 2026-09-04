@@ -47,6 +47,22 @@ export function useResetPassword() {
   });
 }
 
+export function useResendInvite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: number) => userService.resendInvite(userId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: userKeys.all }),
+  });
+}
+
+export function useResendOrgAdminInvite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (organizationId: number) => userService.resendOrgAdminInvite(organizationId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: userKeys.all }),
+  });
+}
+
 export function useRemoveUser() {
   const qc = useQueryClient();
   return useMutation({

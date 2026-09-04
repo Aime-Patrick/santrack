@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
@@ -77,7 +78,7 @@ export default function AddEmployeePage() {
                   <Label>
                     Password <span className="text-destructive">*</span>
                   </Label>
-                  <Input type="password" placeholder="Enter password" {...register("password")} />
+                  <PasswordInput placeholder="Enter password" {...register("password")} />
                   {errors.password && (
                     <p className="text-xs text-destructive">{errors.password.message}</p>
                   )}

@@ -115,7 +115,7 @@ export function SymbologyPanelPicker({
                 className={cn(
                   "flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-medium transition-colors",
                   isActive
-                    ? "bg-primary/10 text-primary font-semibold border-l-2 border-primary"
+                    ? "bg-primary-light text-primary font-semibold border-l-2 border-primary"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground border-l-2 border-transparent",
                 )}
               >
@@ -143,7 +143,7 @@ export function SymbologyPanelPicker({
                 className={cn(
                   "flex items-center justify-between px-3.5 py-2.5 text-left transition-colors text-xs border-b last:border-0 border-border/40",
                   isSelected
-                    ? "bg-primary/10 text-primary font-semibold"
+                    ? "bg-primary-light text-primary font-semibold"
                     : "hover:bg-muted/60 text-foreground",
                 )}
               >
@@ -164,7 +164,7 @@ export function SymbologyPanelPicker({
           {selectedSpec ? (
             <div className="space-y-3">
               {/* Centered Large Barcode Graphic */}
-              <div className="flex items-center justify-center p-3 rounded-lg border border-border/50 bg-slate-50/70 dark:bg-muted/10 h-32">
+              <div className="flex items-center justify-center p-3 rounded-lg border border-border/50 bg-slate-100 dark:bg-muted/10 h-32">
                 <BarcodePreview
                   symbology={selectedSpec.symbology}
                   value={selectedSpec.example}

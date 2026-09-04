@@ -25,7 +25,7 @@ export function LicenseEnforcementBanner() {
   );
 
   return (
-    <Card className="border-warning/30 bg-warning/5">
+    <Card className="border-warning/30 bg-amber-50">
       <CardContent className="flex flex-col gap-3 py-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="font-medium text-foreground">

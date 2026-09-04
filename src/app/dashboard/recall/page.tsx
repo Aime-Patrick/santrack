@@ -10,6 +10,11 @@ import {
   Trash2,
   Eye,
   Plus,
+  ScanLine,
+  CheckCircle2,
+  Loader2,
+  ListFilter,
+  ShieldAlert,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -42,6 +47,9 @@ import {
 import { useRecalls, useInitiateRecall } from "@/hooks/recall";
 import { useBatches } from "@/hooks/batches";
 import { useCapabilities } from "@/hooks/permissions";
+import { scanService } from "@/services/scan.service";
+import { QrScanInput } from "@/components/ui/qr-scanner";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { RecallBatch } from "@/services/recall.service";
 
@@ -274,9 +282,72 @@ function IssueRecallDialog({
   const initiate = useInitiateRecall();
   const [batchId, setBatchId] = useState("");
   const [reason, setReason] = useState("");
+  const [step, setStep] = useState<1 | 2>(1);
+  const [scanMode, setScanMode] = useState(true);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [isResolving, setIsResolving] = useState(false);
 
   const recallable = (batches ?? []).filter((b) => b.status !== "RECALLED");
   const chosen = recallable.find((b) => String(b.id) === batchId);
+
+  const handleScan = async (code: string) => {
+    const scanned = code.trim();
+    if (!scanned) return;
+
+    // A lot code is already in the open dialog's batch list. Resolve it here
+    // first: it is instant and remains useful when the scan service is slow.
+    const findLocalLot = (value: string) => {
+      const normalised = value.trim().toLowerCase();
+      return recallable.find((batch) => {
+        const batchCode = batch.batchCode.toLowerCase();
+        return (
+          batchCode === normalised ||
+          String(batch.id) === normalised ||
+          (batchCode.length >= 3 && normalised.includes(batchCode))
+        );
+      });
+    };
+
+    const directLot = findLocalLot(scanned);
+    if (directLot) {
+      setBatchId(String(directLot.id));
+      setScanError(null);
+      return;
+    }
+
+    setIsResolving(true);
+    setScanError(null);
+    try {
+      const res = await scanService.resolve(scanned);
+      let matchedBatchId: number | undefined = res.batchId;
+
+      if (!matchedBatchId && res.carried?.batchCode) {
+        const found = findLocalLot(res.carried.batchCode);
+        if (found) matchedBatchId = found.id;
+      }
+
+      if (matchedBatchId) {
+        setBatchId(String(matchedBatchId));
+      } else {
+        setScanError(
+          res.kind === "UNKNOWN"
+            ? "No active lot matches this code. Keep the camera open and scan the lot label or select it from the list."
+            : res.describes || "Could not identify a recallable lot from this code.",
+        );
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("401") || msg.includes("Unauthorized")) {
+        setScanError("Session expired — please log in again.");
+      } else if (msg.includes("Network") || msg.includes("fetch")) {
+        setScanError("Cannot reach the server — check your connection.");
+      } else {
+        setScanError(`Scan failed: ${msg.slice(0, 120)}`);
+      }
+    } finally {
+      setIsResolving(false);
+    }
+  };
 
   return (
     <Dialog
@@ -285,56 +356,157 @@ function IssueRecallDialog({
         if (!next) {
           setBatchId("");
           setReason("");
+          setStep(1);
+          setScanError(null);
+          setScanMode(true);
         }
         onOpenChange(next);
       }}
     >
-      <DialogPopup className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Issue recall</DialogTitle>
-          <DialogDescription>
-            Pulls the lot wherever its units are — including stock already
-            shipped or sold.
-          </DialogDescription>
+      <DialogPopup className="w-[calc(100vw-10rem)] max-h-[90vh] overflow-y-auto p-0 sm:max-w-5xl">
+        <DialogHeader className="border-b border-border px-5 pb-4 pt-5 sm:px-6">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-danger text-white shadow-sm shadow-danger/25">
+              <ShieldAlert className="size-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="mb-0.5 text-[11px] font-bold uppercase tracking-[0.14em] text-danger">Safety action</p>
+              <DialogTitle className="text-2xl">Issue product recall</DialogTitle>
+              <DialogDescription>
+                Stop a specific lot across every distribution point.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label>Lot</Label>
-            <Select value={batchId} onValueChange={(v) => setBatchId(v ?? "")}>
-              <SelectTrigger className="h-11 w-full">
-                <SelectValue placeholder="Select a lot">
-                  {chosen
-                    ? () => `${chosen.batchCode} — ${chosen.productName}`
-                    : undefined}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {recallable.map((batch) => (
-                  <SelectItem key={batch.id} value={String(batch.id)}>
-                    {batch.batchCode} — {batch.productName} ({batch.status})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="space-y-5 px-5 py-5 sm:px-6">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm leading-relaxed text-foreground/75">
+            <span className="font-semibold text-danger">Before issuing:</span>{" "}
+            confirm the lot and record enough detail for the response team to act.
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="recall-reason">Reason</Label>
+
+          <div className="space-y-6">
+          {/* ── Lot identification ── */}
+          <section className={cn("space-y-3", step !== 1 && "hidden")} aria-labelledby="recall-lot-heading">
+            <div className="flex items-center gap-3">
+              <span className="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">1</span>
+              <div>
+                <h3 id="recall-lot-heading" className="text-base font-semibold">Identify the lot</h3>
+                <p className="text-sm text-muted-foreground">Scan a code or choose an active lot.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 rounded-xl border border-input bg-muted/35 p-1.5" role="tablist" aria-label="Lot identification method">
+              <button type="button" role="tab" aria-selected={scanMode} onClick={() => setScanMode(true)} className={cn("flex h-10 items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-colors", scanMode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+                <ScanLine className="size-4" /> Scan code
+              </button>
+              <button type="button" role="tab" aria-selected={!scanMode} onClick={() => setScanMode(false)} className={cn("flex h-10 items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-colors", !scanMode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+                <ListFilter className="size-4" /> Choose lot
+              </button>
+            </div>
+
+            {scanMode ? (
+              <>
+                <QrScanInput
+                  compact
+                  aspect="square"
+                  onScan={handleScan}
+                  placeholder="Scan barcode or type lot code…"
+                  scanning="a product unit or lot code"
+                />
+
+                {isResolving && (
+                  <div className="flex items-center gap-2 py-1 text-xs text-muted-foreground" aria-live="polite">
+                    <Loader2 className="size-3.5 animate-spin text-primary" />
+                    Identifying lot…
+                  </div>
+                )}
+
+                {scanError && !isResolving && (
+                  <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-danger leading-relaxed" role="alert">
+                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                    <span>{scanError}</span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <Select value={batchId} onValueChange={(v) => {
+                setBatchId(v ?? "");
+              }}>
+                <SelectTrigger className="h-11 w-full">
+                  <SelectValue placeholder="Choose an active lot">
+                    {chosen
+                      ? () => `${chosen.batchCode} — ${chosen.productName}`
+                      : undefined}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {recallable.map((batch) => (
+                    <SelectItem key={batch.id} value={String(batch.id)}>
+                      {batch.batchCode} — {batch.productName} ({batch.status})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Identified lot card — shown regardless of mode */}
+            {chosen && (
+              <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3">
+                <CheckCircle2 className="size-4 shrink-0 text-success" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-foreground">{chosen.productName}</p>
+                  <p className="font-mono text-xs text-muted-foreground">
+                    Lot {chosen.batchCode}
+                    {chosen.expiresOn ? ` · Exp ${chosen.expiresOn.slice(0, 10)}` : ""}
+                    {" · "}
+                    <Badge variant="outline" className="text-[10px] px-1 py-0 align-middle">
+                      {chosen.status}
+                    </Badge>
+                  </p>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* ── Reason ── */}
+          <section className={cn("space-y-3", step !== 2 && "hidden")} aria-labelledby="recall-reason-heading">
+            <div className="flex items-center gap-3">
+              <span className="flex size-8 items-center justify-center rounded-full bg-muted text-sm font-bold text-muted-foreground">2</span>
+              <div>
+                <h3 id="recall-reason-heading" className="text-base font-semibold">Record the reason</h3>
+                <p className="text-sm text-muted-foreground">This will be visible to your response team.</p>
+              </div>
+            </div>
+            <Label htmlFor="recall-reason" className="sr-only">Recall reason and findings</Label>
             <Textarea
               id="recall-reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="What is wrong with this lot?"
-              className="min-h-[90px]"
+              placeholder="Detail the hazard, contamination, or regulatory non-compliance…"
+              className="min-h-[180px] resize-none text-sm leading-relaxed md:min-h-[300px]"
             />
+            <p className="text-xs text-muted-foreground">Include what was found, where, and the immediate action required.</p>
+          </section>
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-col-reverse gap-2 border-t border-border bg-muted/20 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
+          {step === 2 && (
+            <Button variant="outline" onClick={() => setStep(1)} disabled={initiate.isPending}>
+              Back
+            </Button>
+          )}
+          {step === 1 && (
+            <Button onClick={() => setStep(2)} disabled={!batchId}>
+              Continue
+            </Button>
+          )}
+          {step === 2 && (
           <Button
             className="bg-danger text-white hover:bg-danger/90"
             disabled={!batchId || !reason.trim() || initiate.isPending}
@@ -346,13 +518,15 @@ function IssueRecallDialog({
                     setBatchId("");
                     setReason("");
                     onOpenChange(false);
+                    toast.success("Product recall issued across all distribution points.");
                   },
                 },
               )
             }
           >
-            {initiate.isPending ? "Issuing…" : "Issue recall"}
+            {initiate.isPending ? "Issuing recall…" : "Issue recall"}
           </Button>
+          )}
         </DialogFooter>
       </DialogPopup>
     </Dialog>

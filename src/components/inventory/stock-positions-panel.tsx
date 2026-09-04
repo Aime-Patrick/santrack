@@ -63,7 +63,7 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
         const pos = row.original;
         return (
           <div className="flex items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary">
               <Package className="size-4" />
             </div>
             <div>
@@ -125,7 +125,7 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
         return (
           <Badge
             variant="outline"
-            className="border-amber-500/30 bg-amber-500/10 font-mono text-xs text-amber-600"
+            className="border-amber-500/30 bg-amber-50 font-mono text-xs text-amber-600"
           >
             {blocked.toLocaleString()} units
           </Badge>
@@ -142,7 +142,7 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
         return (
           <Badge
             variant="outline"
-            className="border-blue-500/30 bg-blue-500/10 font-mono text-xs text-blue-600"
+            className="border-blue-500/30 bg-primary-light font-mono text-xs text-blue-600"
           >
             {transit.toLocaleString()} units
           </Badge>
@@ -161,7 +161,7 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
           return (
             <Badge
               variant="outline"
-              className="border-emerald-500/30 bg-emerald-500/10 font-medium text-emerald-600"
+              className="border-emerald-500/30 bg-emerald-50 font-medium text-emerald-600"
             >
               In Stock
             </Badge>
@@ -171,7 +171,7 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
           return (
             <Badge
               variant="outline"
-              className="border-amber-500/30 bg-amber-500/10 font-medium text-amber-600"
+              className="border-amber-500/30 bg-amber-50 font-medium text-amber-600"
             >
               Quarantined
             </Badge>
@@ -181,7 +181,7 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
           return (
             <Badge
               variant="outline"
-              className="border-blue-500/30 bg-blue-500/10 font-medium text-blue-600"
+              className="border-blue-500/30 bg-primary-light font-medium text-blue-600"
             >
               In Transit
             </Badge>
@@ -190,7 +190,7 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
         return (
           <Badge
             variant="outline"
-            className="border-rose-500/30 bg-rose-500/10 font-medium text-rose-600"
+            className="border-rose-500/30 bg-red-50 font-medium text-rose-600"
           >
             Out of Stock
           </Badge>

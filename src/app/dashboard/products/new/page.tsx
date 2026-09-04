@@ -121,7 +121,7 @@ export default function NewProductPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
+        <div className="flex size-10 items-center justify-center rounded-xl bg-primary-light">
           <Package className="size-5 text-primary" />
         </div>
         <div>
@@ -324,7 +324,7 @@ export default function NewProductPage() {
               </div>
 
               {/* Which code this product's label prints by default. A book
-                  takes an ISBN, a bottle of shampoo an EAN-13, a machine part
+                  takes an ISBN, "a bottle of shampoo an EAN-13", a machine part
                   a Code 128 — a property of the trade, so it belongs on the
                   catalogue entry rather than being decided at the printer
                   every time. */}
@@ -335,7 +335,7 @@ export default function NewProductPage() {
                   <FormItem>
                     <FormLabel>Default code type</FormLabel>
                     <FormDescription className="mb-4">
-                      What this product&apos;s catalogue label prints (EAN, Code 128, etc.).
+                      What this product&apos;s catalogue label prints (EAN, "Code 128", etc.).
                       Leave blank if unsure — QR is for industry unique identity codes, not the default here.
                     </FormDescription>
                     <FormControl>
@@ -352,7 +352,7 @@ export default function NewProductPage() {
               {/* A retail or publication code encodes the GTIN, not the SKU.
                   Saying so now beats a barcode that scans to nothing later. */}
               {needsGtin && !gtin?.trim() && (
-                <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-xs leading-relaxed text-warning-foreground">
+                <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-warning-foreground">
                   <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
                   <span>
                     {chosenSpec?.label} encodes the manufacturer barcode. Without

@@ -431,7 +431,7 @@ export function DispatchDialog({
       </div>
 
       {item.kind === "PACKAGE" && (
-        <p className="rounded-lg bg-primary/5 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+        <p className="rounded-lg bg-primary-light px-3 py-2 text-xs leading-relaxed text-muted-foreground">
           Everything inside this container travels with it. Each item keeps its
           own identity and picks up its own dispatch event.
         </p>
@@ -745,7 +745,7 @@ export function LifecycleDialog({
       </div>
 
       {copy.destructive && (
-        <div className="rounded-lg border border-danger/20 bg-danger/5 px-3 py-2 text-xs leading-relaxed text-danger">
+        <div className="rounded-lg border border-danger/20 bg-red-50 px-3 py-2 text-xs leading-relaxed text-danger">
           This cannot be undone. {item.kind === "PACKAGE" && "Anything still inside this container is destroyed with it."}
         </div>
       )}
@@ -790,7 +790,7 @@ export function RecallDialog({
       onConfirm={() => onConfirm(reason.trim())}
     >
       {impactCount !== undefined && (
-        <div className="rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-xs leading-relaxed text-warning-foreground">
+        <div className="rounded-lg border border-warning/30 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-warning-foreground">
           This affects <strong>{impactCount}</strong> identit
           {impactCount === 1 ? "y" : "ies"} across every organization currently
           holding them. All of them become unsellable immediately.

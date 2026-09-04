@@ -249,7 +249,7 @@ export default function ProductionOrdersPage() {
 
               {order.status === "IN_PROGRESS" && (
                 <>
-                  <DropdownMenuItem onClick={() => setCompleting(order)} className="py-2.5 px-3 text-sm font-semibold text-success focus:text-success bg-success/5 focus:bg-success/10">
+                  <DropdownMenuItem onClick={() => setCompleting(order)} className="py-2.5 px-3 text-sm font-semibold text-success focus:text-success bg-emerald-50 focus:bg-success/10">
                     <CheckCircle className="mr-2.5 size-4 text-success shrink-0" /> Complete Batch
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setAssigningPool(order)} className="py-2.5 px-3 text-sm font-medium">
@@ -275,7 +275,7 @@ export default function ProductionOrdersPage() {
 
               {order.status === "COMPLETED" && (
                 <>
-                  <DropdownMenuItem onClick={() => setConfirmingProduction(order)} className="py-2.5 px-3 text-sm font-semibold text-success focus:text-success bg-success/5 focus:bg-success/10">
+                  <DropdownMenuItem onClick={() => setConfirmingProduction(order)} className="py-2.5 px-3 text-sm font-semibold text-success focus:text-success bg-emerald-50 focus:bg-success/10">
                     <PackageCheck className="mr-2.5 size-4 text-success shrink-0" /> Confirm Output → Enter Stock
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setAmending(order)} className="py-2.5 px-3 text-sm font-medium">
@@ -506,7 +506,7 @@ function AssignPoolDialog({
               <Loader2 className="mr-2 size-4 animate-spin" /> Loading pools…
             </div>
           ) : pools.length === 0 ? (
-            <div className="space-y-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-xs text-warning-foreground">
+            <div className="space-y-2 rounded-lg border border-warning/30 bg-amber-50 p-3 text-xs text-warning-foreground">
               <p className="font-semibold">No ready code pools available</p>
               <p>
                 Prepare codes first from the product page, then claim them here.

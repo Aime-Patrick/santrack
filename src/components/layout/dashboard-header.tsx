@@ -70,7 +70,7 @@ export function DashboardHeader() {
         {/* Global Scan Action */}
         <Link
           href="/dashboard/manufacturing/trace"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all text-xs font-semibold cursor-pointer border border-primary/20 shadow-2xs"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary-light text-primary hover:bg-primary hover:text-white transition-all text-xs font-semibold cursor-pointer border border-primary/20 shadow-2xs"
           title="Scan & Trace Any Code"
         >
           <ScanLine className="size-4" />

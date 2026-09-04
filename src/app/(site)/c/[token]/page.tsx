@@ -35,7 +35,7 @@ export default function PublicCategoryPage({
   const unknown = !isLoading && (error || data?.known === false);
 
   return (
-    <div className="min-h-screen bg-slate-50/50 px-4 pb-20 pt-24">
+    <div className="min-h-screen bg-slate-100 px-4 pb-20 pt-24">
       <div className="pointer-events-none fixed inset-x-0 top-0 h-64 bg-gradient-to-b from-sky-400/10 via-amber-300/10 to-transparent opacity-60 blur-3xl" />
 
       <div className="relative z-10 mx-auto max-w-lg space-y-6">
@@ -88,7 +88,7 @@ export default function PublicCategoryPage({
           <div className="space-y-4">
             <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs">
               <div className="flex items-start gap-3">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary-light text-primary">
                   <Tags className="size-5" />
                 </div>
                 <div className="min-w-0 flex-1">

@@ -9,7 +9,7 @@ import { EligibilityChecklist, RemedyLink, firstFailing } from "./eligibility-ch
  * What the server decided about a proposed run, and what the operator may do
  * about it.
  *
- * There are **three** outcomes, not two, and the third is the one that gets
+ * There are **three** outcomes, "not two", and the third is the one that gets
  * lost. `eligible` is the regulatory verdict and `blocking` is whether creation
  * is refused; they are separate fields because they answer separate questions.
  * Under ADVISORY an ineligible run is *permitted* — the order is created and a
@@ -50,12 +50,12 @@ export function EligibilityOutcome({
     return (
       <div
         className={cn(
-          "rounded-xl border border-danger/30 bg-danger/5 p-5",
+          "rounded-xl border border-danger/30 bg-red-50 p-5",
           className,
         )}
       >
         <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-danger/10">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-50">
             <ShieldOff className="size-5 text-danger" />
           </div>
           <div className="min-w-0 flex-1">
@@ -101,12 +101,12 @@ export function EligibilityOutcome({
     return (
       <div
         className={cn(
-          "rounded-xl border border-success/30 bg-success/5 p-5",
+          "rounded-xl border border-success/30 bg-emerald-50 p-5",
           className,
         )}
       >
         <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-success/10">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-50">
             <CheckCircle2 className="size-5 text-success" />
           </div>
           <div className="min-w-0 flex-1">
@@ -138,12 +138,12 @@ export function EligibilityOutcome({
   return (
     <div
       className={cn(
-        "rounded-xl border border-warning/50 bg-warning/10 p-5",
+        "rounded-xl border border-warning/50 bg-amber-50 p-5",
         className,
       )}
     >
       <div className="flex items-start gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-warning/20">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-50">
           <AlertTriangle className="size-5 text-warning-foreground" />
         </div>
         <div className="min-w-0 flex-1">
@@ -298,10 +298,10 @@ export function RefusalPanel({
 
   return (
     <div
-      className={cn("rounded-xl border border-danger/30 bg-danger/5", className)}
+      className={cn("rounded-xl border border-danger/30 bg-red-50", className)}
     >
       <div className="flex items-start gap-3 p-5">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-danger/10">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-50">
           <ShieldOff className="size-5 text-danger" />
         </div>
         <div className="min-w-0 flex-1">

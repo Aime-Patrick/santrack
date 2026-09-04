@@ -85,7 +85,7 @@ export default function RolesPage() {
 
   if (error || !catalogue) {
     return (
-      <div className="rounded-lg border border-danger/30 bg-danger/5 p-4 text-sm text-danger">
+      <div className="rounded-lg border border-danger/30 bg-red-50 p-4 text-sm text-danger">
         <p className="font-medium">Could not load the permission table</p>
         <p className="mt-1 text-muted-foreground">
           {error instanceof Error ? error.message : "Please try again."}
@@ -121,7 +121,7 @@ export default function RolesPage() {
           Without this note the role grid looks wrong: nobody appears to hold
           OVERSEE_INDUSTRIES, yet a regulator's auditor does. */}
       {catalogue.standing.length > 0 && (
-        <Card className="border-primary/30 bg-primary/5">
+        <Card className="border-primary/30 bg-primary-light">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Landmark className="size-4 text-primary" />
@@ -208,7 +208,7 @@ export default function RolesPage() {
                         >
                           {humanise(capability)}
                           {byStanding && (
-                            <span className="ml-1 text-faint">(by standing)</span>
+                            <span className="ml-1 text-faint">("by standing")</span>
                           )}
                         </span>
                       </div>

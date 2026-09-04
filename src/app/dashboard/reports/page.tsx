@@ -58,7 +58,7 @@ function ReportCard({
       onClick={onSelect}
       className={`flex items-start gap-3 rounded-xl border p-4 text-left transition-all ${
         isActive
-          ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
+          ? "border-primary bg-primary-light shadow-sm ring-1 ring-primary/20"
           : "border-border/60 hover:border-primary/40 hover:bg-muted/30 hover:shadow-xs"
       }`}
     >

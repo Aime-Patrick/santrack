@@ -175,7 +175,7 @@ export function JournalEntryDialog({
             </div>
 
             {chart.length === 0 ? (
-              <div className="rounded-lg border border-warning/30 bg-warning/5 px-3 py-2.5 text-xs leading-relaxed text-warning-foreground">
+              <div className="rounded-lg border border-warning/30 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-warning-foreground">
                 There are no accounts yet. Build the chart of accounts first —
                 an entry has to post against something.
               </div>
@@ -190,7 +190,7 @@ export function JournalEntryDialog({
                       key={line.key}
                       className={cn(
                         "grid grid-cols-[1fr_130px_110px_110px_auto] items-end gap-2 rounded-lg border p-2",
-                        clash ? "border-danger/40 bg-danger/5" : "border-border",
+                        clash ? "border-danger/40 bg-red-50" : "border-border",
                       )}
                     >
                       <div className="min-w-0 space-y-1">
@@ -295,8 +295,8 @@ export function JournalEntryDialog({
                 usable.length === 0
                   ? "border-border bg-muted/40 text-muted-foreground"
                   : balanced
-                    ? "border-success/30 bg-success/5 text-success"
-                    : "border-warning/30 bg-warning/5 text-warning-foreground",
+                    ? "border-success/30 bg-emerald-50 text-success"
+                    : "border-warning/30 bg-amber-50 text-warning-foreground",
               )}
             >
               <Scale className="size-4 shrink-0" />
@@ -344,7 +344,7 @@ export function JournalEntryDialog({
 
 function Problem({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-danger/20 bg-danger/5 px-3 py-2 text-xs leading-relaxed text-danger">
+    <div className="flex items-start gap-2 rounded-lg border border-danger/20 bg-red-50 px-3 py-2 text-xs leading-relaxed text-danger">
       <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
       <span>{children}</span>
     </div>

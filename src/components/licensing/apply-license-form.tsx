@@ -151,7 +151,7 @@ export function ApplyLicenseForm({
                         "rounded-lg border p-3 text-left transition-all",
                         "hover:border-primary/50 hover:bg-primary/5",
                         selectedCategoryId === category.id
-                          ? "border-primary bg-primary/5 ring-1 ring-primary"
+                          ? "border-primary bg-primary-light ring-1 ring-primary"
                           : "border-border bg-card",
                       )}
                     >
@@ -200,7 +200,7 @@ export function ApplyLicenseForm({
             </div>
 
             {applyMutation.isError && (
-              <div className="rounded-md bg-danger/5 p-3 text-sm text-danger">
+              <div className="rounded-md bg-red-50 p-3 text-sm text-danger">
                 {getApiErrorMessage(applyMutation.error)}
               </div>
             )}
@@ -243,7 +243,7 @@ export function ApplyLicenseForm({
             </div>
 
             {submitError && (
-              <div className="rounded-md bg-danger/5 p-3 text-sm text-danger">
+              <div className="rounded-md bg-red-50 p-3 text-sm text-danger">
                 {submitError}
               </div>
             )}
