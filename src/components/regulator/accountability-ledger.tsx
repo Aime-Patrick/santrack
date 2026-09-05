@@ -2,15 +2,12 @@
 
 import { motion } from "framer-motion";
 import {
-  Building2,
   ClipboardCheck,
   Clock,
   FileBadge,
   Megaphone,
   Package,
   ShieldAlert,
-  ShieldCheck,
-  Truck,
   AlertTriangle,
   MapPin,
 } from "lucide-react";
@@ -53,6 +50,9 @@ const TYPE_COLORS: Record<string, string> = {
   COMPLAINT_RECEIVED: "bg-rose-600",
   PROMOTED: "bg-orange-600",
   DISMISSED: "bg-slate-500",
+  PASS: "bg-emerald-600",
+  CONDITIONAL: "bg-amber-500",
+  FAIL: "bg-danger",
 };
 
 const stagger = {
@@ -77,8 +77,8 @@ export function AccountabilityLedger({
 }: AccountabilityLedgerProps) {
   if (entries.length === 0) {
     return (
-      <div className="py-12 text-center">
-        <Clock className="mx-auto mb-3 size-8 text-border" />
+      <div className="py-10 text-center">
+        <Clock className="mx-auto mb-3 size-7 text-border" />
         <p className="text-sm text-muted-foreground">No events recorded yet.</p>
       </div>
     );
@@ -86,10 +86,12 @@ export function AccountabilityLedger({
 
   return (
     <div>
-      <div className="mb-4">
-        <h3 className="text-base font-semibold">{title}</h3>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
+      {title || description ? (
+        <div className="mb-4">
+          {title ? <h3 className="text-base font-semibold">{title}</h3> : null}
+          {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
+        </div>
+      ) : null}
 
       <div className="relative pl-5 sm:pl-6">
         {/* Vertical line */}

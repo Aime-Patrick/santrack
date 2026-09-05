@@ -20,7 +20,13 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && typeof window !== "undefined") {
+    // A 401 on a request that presented a token means the session expired —
+    // clear it and send the user back to login. A 401 on an anonymous request
+    // (e.g. wrong password on /api/auth/login) is a form error, not a dead
+    // session: redirecting there would hard-reload the page and wipe the
+    // inline error the caller is about to render.
+    const hadToken = Boolean(error.config?.headers?.Authorization);
+    if (error.response?.status === 401 && hadToken && typeof window !== "undefined") {
       clearAuthToken();
       window.location.href = "/login";
     }
@@ -132,7 +138,9 @@ export type Capability =
   | "MANAGE_USERS"
   | "OVERSEE_INDUSTRIES"
   | "DECIDE_LICENCES"
-  | "ADMINISTER_PLATFORM";
+  | "ADMINISTER_PLATFORM"
+  | "MANAGE_INDUSTRIES"
+  | "READ_AUDIT";
 
 /** The reference table behind the Roles screen, served by the API. */
 export interface CapabilityCatalogue {
@@ -163,6 +171,12 @@ export interface UserResponse {
    * their organization's standing. The only thing the UI should gate on.
    */
   capabilities: Capability[];
+  /**
+   * Capabilities the platform operator granted this individual user on top of
+   * role and standing (e.g. MANAGE_INDUSTRIES). Only present on user records,
+   * not on the /me payload.
+   */
+  extraCapabilities?: Capability[];
 }
 
 export interface AuthResponse {
@@ -243,6 +257,10 @@ export interface UpdateUserInput {
 
 export interface ResetPasswordInput {
   password: string;
+}
+
+export interface SetUserCapabilitiesInput {
+  capabilities: Capability[];
 }
 
 export interface ChangePasswordInput {

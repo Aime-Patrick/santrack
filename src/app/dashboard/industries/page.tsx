@@ -93,7 +93,10 @@ function StatusBadge({ status }: { status: Industry["status"] }) {
 export default function IndustriesPage() {
   const router = useRouter();
   const permissions = useCapabilities();
-  const mayAdminister = permissions.can("ADMINISTER_PLATFORM");
+  // Registering businesses in the registry: operator-only by default, but
+  // grantable to a specific officer (MANAGE_INDUSTRIES is the dynamically
+  // assignable capability). Editing a registry record is the same write.
+  const mayManage = permissions.can("MANAGE_INDUSTRIES");
 
   const { data: orgs, isLoading } = useIndustryRegistry();
   const [editOrg, setEditOrg] = useState<OrganizationResponse | null>(null);
@@ -165,8 +168,9 @@ export default function IndustriesPage() {
                 <Eye className="mr-2 size-4" /> View Details
               </DropdownMenuItem>
               {/* Supervising a business and editing the record of who it is
-                  are different jobs. A regulator does the first. */}
-              {mayAdminister && (
+                  are different jobs. A regulator does the first; the registry
+                  write stays with the operator or a granted officer. */}
+              {mayManage && (
                 <DropdownMenuItem
                   onClick={() => {
                     setEditOrg(org ?? null);
@@ -200,7 +204,7 @@ export default function IndustriesPage() {
             </p>
           </div>
         </div>
-        {mayAdminister && (
+        {mayManage && (
           <Link href="/dashboard/industries/new">
             <Button><Plus className="mr-2 size-4" /> Add Industry</Button>
           </Link>

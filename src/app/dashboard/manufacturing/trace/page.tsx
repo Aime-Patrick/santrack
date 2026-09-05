@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { BatchJourneyView } from "@/components/trace/batch-journey-view";
 import { useBatches } from "@/hooks/batches";
+import { useCapabilities } from "@/hooks/permissions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -198,6 +199,11 @@ export default function ItemConsolePage() {
   }, [error, activeCode]);
   const refresh = useRefreshTrace(activeCode);
 
+  // Opening a product's label pools is a producer's job (REGISTER_IDENTITY).
+  // Other roles — a regulator scanning during an inspection — get the same
+  // explanation without the shortcut into Label Studio.
+  const canOpenLabelPools = useCapabilities().can("REGISTER_IDENTITY");
+
   const pack = usePackItems();
   const openSeal = useOpenPackage();
   const removeUnit = useRemoveUnit();
@@ -265,8 +271,12 @@ export default function ItemConsolePage() {
         setScanNote({
           title: "That is a product catalogue SKU, not a unit or lot identity",
           detail: `${resolved.describes}. Trace needs a serialized unit QR or a production lot code.`,
-          href: `/dashboard/products/${resolved.productId}?tab=labels`,
-          hrefLabel: "Open product label pools",
+          ...(canOpenLabelPools
+            ? {
+                href: `/dashboard/products/${resolved.productId}?tab=labels`,
+                hrefLabel: "Open product label pools",
+              }
+            : {}),
         });
         return;
       }

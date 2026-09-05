@@ -125,6 +125,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
           className="w-full max-w-[440px] z-10 min-h-0 overflow-y-auto relative"
+          style={{ overflowX: "clip" }}
         >
           {children}
         </motion.div>

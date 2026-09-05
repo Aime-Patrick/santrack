@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, LoaderCircle } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/api";
 import { useChangePassword, useMe } from "@/hooks/auth";
+import { AuthPrimaryButton } from "@/components/auth/auth-primary-button";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { getAuthToken } from "@/lib/auth";
 import { useEffect } from "react";
@@ -178,17 +179,13 @@ export default function ChangePasswordPage() {
             </p>
           ) : null}
 
-          <button
-            type="submit"
+          <AuthPrimaryButton
             disabled={changePassword.isPending}
-            className="flex w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60"
+            loading={changePassword.isPending}
+            loadingLabel="Saving…"
           >
-            {changePassword.isPending ? (
-              <LoaderCircle className="size-4 animate-spin" />
-            ) : (
-              "Save and continue"
-            )}
-          </button>
+            Save and continue
+          </AuthPrimaryButton>
         </form>
       </div>
     </AuthShell>

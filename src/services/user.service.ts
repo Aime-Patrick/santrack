@@ -1,4 +1,4 @@
-import { api, type UserResponse, type CreateUserInput, type CreateUserResponse, type UpdateUserInput, type ResetPasswordInput } from "@/lib/api";
+import { api, type UserResponse, type CreateUserInput, type CreateUserResponse, type UpdateUserInput, type ResetPasswordInput, type SetUserCapabilitiesInput } from "@/lib/api";
 
 export const userService = {
   list(organizationId?: number): Promise<UserResponse[]> {
@@ -32,5 +32,15 @@ export const userService = {
 
   remove(userId: number): Promise<void> {
     return api.delete(`/api/users/${userId}`).then(() => undefined);
+  },
+
+  /** Operator-only: grant or revoke a user's individually assigned capabilities. */
+  setCapabilities(
+    userId: number,
+    input: SetUserCapabilitiesInput,
+  ): Promise<UserResponse> {
+    return api
+      .patch<UserResponse>(`/api/users/${userId}/capabilities`, input)
+      .then((r) => r.data);
   },
 };

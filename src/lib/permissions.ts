@@ -58,15 +58,24 @@ export function permissionsOf(
 export const ROUTE_CAPABILITIES: { prefix: string; requires: Capability[] }[] = [
   // Supervisory — the register of businesses on the platform.
   { prefix: "/dashboard/industries", requires: ["OVERSEE_INDUSTRIES"] },
-  { prefix: "/dashboard/industries/new", requires: ["ADMINISTER_PLATFORM"] },
+  // Registering a business in the registry is operator-only by default but
+  // can be granted to a specific officer (MANAGE_INDUSTRIES is the one
+  // dynamically grantable capability).
+  { prefix: "/dashboard/industries/new", requires: ["MANAGE_INDUSTRIES"] },
   { prefix: "/dashboard/regulators", requires: ["ADMINISTER_PLATFORM"] },
   { prefix: "/dashboard/regulator", requires: ["DECIDE_LICENCES"] },
-  { prefix: "/dashboard/audit", requires: ["ADMINISTER_PLATFORM"] },
+  // The platform-wide audit log: the operator and licensing authorities read
+  // it (READ_AUDIT is conferred on REGULATOR organizations).
+  { prefix: "/dashboard/audit", requires: ["READ_AUDIT"] },
   // Industry-wide findings (not org Sites overview). Overseers only.
   { prefix: "/dashboard/compliance/findings", requires: ["OVERSEE_INDUSTRIES"] },
 
   // Manufacturing.
   { prefix: "/dashboard/products/new", requires: ["MANAGE_CATALOG"] },
+  // Label Studio mints identity codes onto labels. Reading a label for an
+  // item already in hand is the scan screen's per-item dialog, which stays
+  // open to VIEW_OPERATIONS; minting whole pools is a producer's job.
+  { prefix: "/dashboard/labels", requires: ["REGISTER_IDENTITY"] },
   { prefix: "/dashboard/manufacturing/register-units", requires: ["REGISTER_IDENTITY"] },
   { prefix: "/dashboard/manufacturing/register-package", requires: ["REGISTER_IDENTITY"] },
   { prefix: "/dashboard/manufacturing/pack", requires: ["HANDLE_PACKAGING"] },

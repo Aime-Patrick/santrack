@@ -260,7 +260,7 @@ export function AppSidebar() {
       title: t("auditLogs"),
       href: "/dashboard/audit",
       icon: ClipboardList,
-      requires: ["ADMINISTER_PLATFORM"],
+      requires: ["READ_AUDIT"],
     },
   ];
 

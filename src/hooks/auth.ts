@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authService } from "@/services/auth.service";
+import type { ResetPasswordInput } from "@/services/auth.service";
 import type {
   RegisterInput,
   LoginInput,
@@ -73,6 +74,23 @@ export function useLogin() {
       setAuthToken(data.token);
       queryClient.setQueryData(authKeys.me, data.user);
     },
+  });
+}
+
+/**
+ * Emails a one-time reset link. Always resolves the same way whether the
+ * account exists, so the form never leaks which emails are registered.
+ */
+export function useRequestPasswordReset() {
+  return useMutation({
+    mutationFn: (email: string) => authService.requestPasswordReset(email),
+  });
+}
+
+/** Sets a new password with the token from the emailed link. */
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: (input: ResetPasswordInput) => authService.resetPassword(input),
   });
 }
 

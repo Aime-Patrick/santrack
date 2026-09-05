@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import {
-  KeyRound, Mail, MoreHorizontal, Plus, Shield, UserMinus, Users,
+  Building2, KeyRound, Mail, MoreHorizontal, Plus, Shield, UserMinus, Users,
 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,7 @@ import { AddUserDialog } from "@/components/dashboard/add-user-dialog";
 import { EditRoleDialog } from "@/components/dashboard/edit-role-dialog";
 import { ResetPasswordDialog } from "@/components/dashboard/reset-password-dialog";
 import { DeactivateUserDialog } from "@/components/dashboard/deactivate-user-dialog";
+import { GrantAccessDialog } from "@/components/dashboard/grant-access-dialog";
 import type { UserResponse } from "@/lib/api";
 import { ROLE_COLORS, ROLE_LABELS } from "@/lib/user-roles";
 
@@ -49,9 +50,11 @@ export function TeamMembersPanel({
   const [editOpen, setEditOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [grantOpen, setGrantOpen] = useState(false);
 
   const canAdd = me?.role === "SYSTEM_ADMIN" || !!orgId;
   const showOrgColumn = me?.role === "SYSTEM_ADMIN";
+  const isPlatformOperator = me?.role === "SYSTEM_ADMIN";
 
   const columns = useMemo((): ColumnDef<TableFeatures, UserResponse>[] => {
     const cols: ColumnDef<TableFeatures, UserResponse>[] = [
@@ -140,6 +143,17 @@ export function TeamMembersPanel({
                   <KeyRound className="size-4" />
                   Reset password
                 </DropdownMenuItem>
+                {isPlatformOperator && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setActiveUser(user);
+                      setGrantOpen(true);
+                    }}
+                  >
+                    <Building2 className="size-4" />
+                    Manage individual access
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   variant="destructive"
                   disabled={isSelf}
@@ -159,7 +173,7 @@ export function TeamMembersPanel({
       },
     ];
     return cols;
-  }, [me?.id, showOrgColumn]);
+  }, [me?.id, showOrgColumn, isPlatformOperator]);
 
   const caption =
     description ??
@@ -225,6 +239,12 @@ export function TeamMembersPanel({
       <DeactivateUserDialog
         open={deactivateOpen}
         onOpenChange={setDeactivateOpen}
+        user={activeUser}
+      />
+      <GrantAccessDialog
+        key={activeUser?.id ?? "none"}
+        open={grantOpen}
+        onOpenChange={setGrantOpen}
         user={activeUser}
       />
     </>

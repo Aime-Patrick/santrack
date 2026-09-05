@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { userService } from "@/services/user.service";
-import type { CreateUserInput, UpdateUserInput, ResetPasswordInput } from "@/lib/api";
+import type {
+  CreateUserInput,
+  UpdateUserInput,
+  ResetPasswordInput,
+  SetUserCapabilitiesInput,
+} from "@/lib/api";
 
 export const userKeys = {
   all: ["users"] as const,
@@ -67,6 +72,20 @@ export function useRemoveUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (userId: number) => userService.remove(userId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: userKeys.all }),
+  });
+}
+
+export function useSetUserCapabilities() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      input,
+    }: {
+      userId: number;
+      input: SetUserCapabilitiesInput;
+    }) => userService.setCapabilities(userId, input),
     onSuccess: () => qc.invalidateQueries({ queryKey: userKeys.all }),
   });
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, CheckCircle2, CircleDotDashed, Download, FileDown, LoaderCircle, UserRound, ArrowRightLeft } from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, CircleDotDashed, Download, Factory, FileBadge, FileDown, LoaderCircle, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +18,19 @@ import { regulatoryCaseService, type RegulatoryCase, type RegulatoryCaseStatus, 
 import { cn } from "@/lib/utils";
 import { useMyRegulatoryAuthority, useRegulatoryAuthorities } from "@/hooks/regulatory-authorities";
 import { useReferRegulatoryCase } from "@/hooks/regulatory-referrals";
+import { AccountabilityLedger } from "@/components/regulator/accountability-ledger";
+import { useBatchTimeline, useCaseTimeline, useFacilityTimeline, useLicenceTimeline, useOrganizationTimeline } from "@/hooks/accountability";
+
+/** Subject of the linked-records timeline shown inside a case sheet. */
+type LedgerSubject = "case" | "organisation" | "facility" | "licence" | "batch";
+
+const SUBJECT_ICON: Record<LedgerSubject, React.ComponentType<{ className?: string }>> = {
+  case: CircleDotDashed,
+  organisation: Building2,
+  facility: Factory,
+  licence: FileBadge,
+  batch: Package,
+};
 
 const STATUS_LABEL: Record<RegulatoryCaseStatus, string> = {
   OPEN: "New", IN_PROGRESS: "In progress", AWAITING_BUSINESS: "Waiting on business",
@@ -120,6 +133,35 @@ function CaseDetailSheet({ caseId, onOpenChange }: { caseId: number | null; onOp
   const [inspectionNotes, setInspectionNotes] = useState("");
   const nextStatus = caseRecord?.status === "RESOLVED" ? "CLOSED" : "RESOLVED";
 
+  // Linked-records timeline: one merged ledger per subject the case touches.
+  const [ledgerSubject, setLedgerSubject] = useState<LedgerSubject>("case");
+  const caseEntriesQuery = useCaseTimeline(caseRecord?.id ?? 0, 40);
+  const organisationEntriesQuery = useOrganizationTimeline(caseRecord?.organization.id ?? 0, 40);
+  const facilityEntriesQuery = useFacilityTimeline(caseRecord?.facility?.id ?? 0, 40);
+  const licenceEntriesQuery = useLicenceTimeline(caseRecord?.license?.id ?? 0, 40);
+  const batchEntriesQuery = useBatchTimeline(caseRecord?.batch?.id ?? 0, 40);
+
+  const linkedSubjects: { key: LedgerSubject; label: string }[] = [
+    { key: "case", label: "Case" },
+    { key: "organisation", label: "Organisation" },
+    ...(caseRecord?.facility ? [{ key: "facility" as const, label: "Facility" }] : []),
+    ...(caseRecord?.license ? [{ key: "licence" as const, label: "Licence" }] : []),
+    ...(caseRecord?.batch ? [{ key: "batch" as const, label: "Batch" }] : []),
+  ];
+  const activeSubject = linkedSubjects.some((s) => s.key === ledgerSubject)
+    ? ledgerSubject
+    : "case";
+  const activeEntriesQuery =
+    activeSubject === "organisation"
+      ? organisationEntriesQuery
+      : activeSubject === "facility"
+        ? facilityEntriesQuery
+        : activeSubject === "licence"
+          ? licenceEntriesQuery
+          : activeSubject === "batch"
+            ? batchEntriesQuery
+            : caseEntriesQuery;
+
   const submitInspection = (result: RegulatoryInspectionResult) => {
     if (!caseRecord) return;
     recordInspection.mutate(
@@ -142,7 +184,7 @@ function CaseDetailSheet({ caseId, onOpenChange }: { caseId: number | null; onOp
 
   return (
     <Sheet open={caseId !== null} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full gap-0 p-0 sm:max-w-xl">
+      <SheetContent className="w-full gap-0 p-0 data-[side=right]:sm:max-w-3xl">
         {isLoading || !caseRecord ? (
           <div className="flex flex-1 items-center justify-center"><LoaderCircle className="size-5 animate-spin text-muted-foreground" /></div>
         ) : (
@@ -201,16 +243,40 @@ function CaseDetailSheet({ caseId, onOpenChange }: { caseId: number | null; onOp
                 </div>
               )}
               <div className="mt-6">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Accountability ledger</p>
-                <ol className="space-y-4 border-l border-border pl-4">
-                  {caseRecord.events.map((event) => (
-                    <li key={event.id} className="relative">
-                      <span className="absolute -left-[21px] top-1.5 size-2 rounded-full bg-primary" />
-                      <p className="text-sm font-medium">{event.summary}</p>
-                      <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><UserRound className="size-3" /> {event.actor} · {new Date(event.recordedAt).toLocaleString()}</p>
-                    </li>
-                  ))}
-                </ol>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Accountability ledger</p>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  One timeline per linked record — case events, licence decisions, inspections, findings, complaints, and product events.
+                </p>
+                <div className="mb-4 flex flex-wrap gap-1.5">
+                  {linkedSubjects.map((subject) => {
+                    const SubjectIcon = SUBJECT_ICON[subject.key];
+                    const active = subject.key === activeSubject;
+                    return (
+                      <button
+                        key={subject.key}
+                        type="button"
+                        onClick={() => setLedgerSubject(subject.key)}
+                        aria-pressed={active}
+                        className={cn(
+                          "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors",
+                          active
+                            ? "border-transparent bg-primary text-white"
+                            : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+                        )}
+                      >
+                        <SubjectIcon className="size-3.5" />
+                        {subject.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {activeEntriesQuery.isLoading ? (
+                  <div className="flex justify-center py-8">
+                    <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <AccountabilityLedger entries={activeEntriesQuery.data ?? []} />
+                )}
               </div>
               {caseRecord.status !== "CLOSED" && (
                 <div className="mt-6 rounded-lg border border-border p-3">

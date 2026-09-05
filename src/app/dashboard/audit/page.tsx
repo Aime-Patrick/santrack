@@ -32,7 +32,7 @@ import { DataTable, type TableFeatures } from "@/components/ui/data-table";
 import { MetricCard } from "@/components/dashboard/stat-card";
 import { useAuditLog } from "@/hooks/audit";
 import { useIndustryRegistry } from "@/hooks/organizations";
-import { useCurrentUser } from "@/hooks/use-current-user";
+import { useCapabilities } from "@/hooks/permissions";
 import type { AuditEntry } from "@/services/audit.service";
 import { cn } from "@/lib/utils";
 
@@ -66,8 +66,11 @@ function truncate(text: string, max = 64): string {
 
 export default function AuditPage() {
   const router = useRouter();
-  const { data: me } = useCurrentUser();
-  const isPlatform = me?.role === "SYSTEM_ADMIN";
+  const permissions = useCapabilities();
+  // The platform-wide log is read by the operator and licensing authorities
+  // (READ_AUDIT), not by a job title - an auditor at an authority sees the
+  // whole platform's footprint just like the operator does.
+  const isPlatform = permissions.can("READ_AUDIT");
   const [orgFilter, setOrgFilter] = useState<string>("all");
   const organizationId =
     isPlatform && orgFilter !== "all" ? Number(orgFilter) : undefined;

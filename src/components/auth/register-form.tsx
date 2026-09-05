@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Check, Eye, EyeOff, LoaderCircle } from "lucide-react";
+import { Check, Eye, EyeOff } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/api";
 import { useRegister } from "@/hooks/auth";
+import { AuthPrimaryButton } from "@/components/auth/auth-primary-button";
 
 const DESIGN_MODE = process.env.NEXT_PUBLIC_DESIGN_MODE === "true";
 
@@ -66,13 +67,13 @@ export function RegisterForm() {
               DESIGN MODE — REGISTRATION SIMULATED
             </p>
           ) : null}
-          <button
+          <AuthPrimaryButton
             type="button"
-            className="mt-6 w-full h-11 sm:h-12 rounded-lg font-semibold text-white text-sm sm:text-base tracking-wide bg-gradient-to-r from-[#0066d6] via-[#10b981] via-60% to-[#eab308] hover:opacity-95 hover:shadow-lg transition-all duration-200 cursor-pointer"
             onClick={() => router.push("/onboarding")}
+            className="mt-6"
           >
             Start business registration
-          </button>
+          </AuthPrimaryButton>
         </div>
       </div>
     );
@@ -173,20 +174,14 @@ export function RegisterForm() {
           </div>
         ) : null}
 
-        <button
-          type="submit"
+        <AuthPrimaryButton
           disabled={register.isPending}
-          className="w-full h-11 sm:h-12 mt-2 rounded-lg font-semibold text-white text-sm sm:text-base tracking-wide bg-gradient-to-r from-[#0066d6] via-[#10b981] via-60% to-[#eab308] hover:opacity-95 hover:shadow-lg transition-all duration-200 flex items-center justify-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+          loading={register.isPending}
+          loadingLabel="Creating account…"
+          className="mt-2"
         >
-          {register.isPending ? (
-            <>
-              <LoaderCircle className="mr-2 size-4 animate-spin text-white" />
-              Creating account…
-            </>
-          ) : (
-            "Create account"
-          )}
-        </button>
+          Create account
+        </AuthPrimaryButton>
       </form>
 
       <p className="mt-5 text-center text-xs text-slate-500">

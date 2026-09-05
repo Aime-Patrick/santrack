@@ -30,6 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useBatchJourney } from "@/hooks/batch-journey";
+import { useCapabilities } from "@/hooks/permissions";
 import { cn } from "@/lib/utils";
 
 interface BatchJourneyViewProps {
@@ -40,6 +41,12 @@ interface BatchJourneyViewProps {
 export function BatchJourneyView({ batchId, batchSelector }: BatchJourneyViewProps) {
   const { data: journey, isLoading, isError, error, refetch, isFetching } =
     useBatchJourney(batchId);
+
+  // The journey itself is readable by every role — a regulator investigating a
+  // batch needs the same timeline a producer does. Minting/printing whole
+  // identity pools is a producer's job (REGISTER_IDENTITY), so those two
+  // shortcuts are only offered to roles that can actually use Label Studio.
+  const canMint = useCapabilities().can("REGISTER_IDENTITY");
 
   // Keep track of which timeline step is expanded for deep drill-down
   const [expandedSteps, setExpandedSteps] = useState<Record<string, boolean>>({
@@ -144,15 +151,17 @@ export function BatchJourneyView({ batchId, batchSelector }: BatchJourneyViewPro
             <span className="hidden sm:inline">Sync</span>
           </Button>
 
-          <Button
-            size="sm"
-            className="h-8 gap-1.5 text-xs bg-rwanda-green hover:bg-emerald-700 text-white font-medium"
-            nativeButton={false}
-            render={<Link href="/dashboard/labels/print?template=unit" />}
-          >
-            <Printer className="size-3" />
-            Print Labels
-          </Button>
+          {canMint && (
+            <Button
+              size="sm"
+              className="h-8 gap-1.5 text-xs bg-rwanda-green hover:bg-emerald-700 text-white font-medium"
+              nativeButton={false}
+              render={<Link href="/dashboard/labels/print?template=unit" />}
+            >
+              <Printer className="size-3" />
+              Print Labels
+            </Button>
+          )}
         </div>
       </div>
 
@@ -225,7 +234,7 @@ export function BatchJourneyView({ batchId, batchSelector }: BatchJourneyViewPro
                 ) : (
                   <div className="flex items-center justify-between py-1 text-muted-foreground">
                     <span>No production work order attached.</span>
-                    {!hasMintedUnits && (
+                    {!hasMintedUnits && canMint && (
                       <Button
                         size="sm"
                         variant="outline"
