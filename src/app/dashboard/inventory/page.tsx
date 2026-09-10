@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StockPositionsPanel } from "@/components/inventory/stock-positions-panel";
 import { InventoryItemsPanel } from "@/components/inventory/inventory-items-panel";
+import { useCapabilities } from "@/hooks/permissions";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 /**
  * One place for stock.
@@ -32,6 +34,12 @@ function InventoryWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState(() => searchParams.get("tab") ?? "positions");
+  const permissions = useCapabilities();
+  const { data: me } = useCurrentUser();
+  const orgType = me?.organization?.type;
+  // RETAILER and SHOP receive stock via Stock In and never register identities
+  // or perform manual packaging operations.
+  const isAutomaticStockInOrg = orgType === "RETAILER" || orgType === "SHOP";
 
   useEffect(() => {
     const wanted = searchParams.get("tab");
@@ -65,30 +73,46 @@ function InventoryWorkspace() {
           not something to squeeze into a dialog.
         */}
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href="/dashboard/manufacturing/register-package" />}
-          >
-            <PackagePlus className="mr-2 size-4" /> Register package
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href="/dashboard/manufacturing/pack" />}
-          >
-            <PackageCheck className="mr-2 size-4" /> Pack items
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<Link href="/dashboard/manufacturing/stock-transfer" />}
-          >
-            <Truck className="mr-2 size-4" /> Transfer stock
-          </Button>
+          {permissions.can("REGISTER_IDENTITY") && (
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/dashboard/manufacturing/register-package" />}
+            >
+              <PackagePlus className="mr-2 size-4" /> Register package
+            </Button>
+          )}
+          {permissions.can("HANDLE_PACKAGING") && !isAutomaticStockInOrg && (
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/dashboard/manufacturing/pack" />}
+            >
+              <PackageCheck className="mr-2 size-4" /> Pack items
+            </Button>
+          )}
+          {permissions.can("MOVE_STOCK") && isAutomaticStockInOrg && (
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/dashboard/inventory/stock-in" />}
+            >
+              <PackagePlus className="mr-2 size-4" /> Receive stock
+            </Button>
+          )}
+          {permissions.can("MOVE_STOCK") && !isAutomaticStockInOrg && (
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/dashboard/manufacturing/stock-transfer" />}
+            >
+              <Truck className="mr-2 size-4" /> Transfer stock
+            </Button>
+          )}
         </div>
       </div>
 

@@ -461,14 +461,19 @@ function AssignPoolDialog({
       ? Math.min(poolCodes, planned)
       : poolCodes || planned || 0;
 
-  useEffect(() => {
-    if (!poolId || !selectedPool) {
+  const onPoolChange = (value: string) => {
+    setPoolId(value);
+    if (!value) {
       setCount("");
       return;
     }
+    const pool = pools.find((p) => String(p.id) === value);
+    const codes = pool?.requestedCount ?? 0;
     // Prefill from the smaller of planned target and pool size; still editable.
-    setCount(suggestedClaim > 0 ? String(suggestedClaim) : "");
-  }, [poolId, selectedPool?.id, suggestedClaim]);
+    const next =
+      codes > 0 && planned > 0 ? Math.min(codes, planned) : codes || planned || 0;
+    setCount(next > 0 ? String(next) : "");
+  };
 
   const claimNum = count === "" ? suggestedClaim : Number(count);
   const overPool = count !== "" && Number(count) > poolCodes;
@@ -528,7 +533,7 @@ function AssignPoolDialog({
                 </Label>
                 <SearchableSelect
                   value={poolId}
-                  onValueChange={setPoolId}
+                  onValueChange={onPoolChange}
                   placeholder="Choose a ready pool…"
                   searchPlaceholder="Search pools by run ID, code count…"
                   items={pools.map((p) => ({
@@ -849,16 +854,24 @@ function NewOrderDialog({
     [poolsData],
   );
 
-  // When the product changes, suggest target = sum of ready pool codes.
-  useEffect(() => {
-    if (!productId) return;
-    if (qtyTouched) return;
-    if (readyPoolCodes > 0) {
-      setQuantity(String(readyPoolCodes));
-    } else {
-      setQuantity("");
-    }
-  }, [productId, readyPoolCodes, qtyTouched]);
+  // When the selected product's ready-pool total changes — product switched or
+  // pools finished generating — suggest that total as the target quantity, but
+  // only while the user has not typed their own. Done as a render-time state
+  // adjustment for a changed input (the React-recommended replacement for an
+  // effect that watched for the pool data to arrive).
+  const [seenQuantityHint, setSeenQuantityHint] = useState<{
+    productId: string;
+    readyPoolCodes: number;
+  }>({ productId, readyPoolCodes });
+  if (
+    !qtyTouched &&
+    productId &&
+    (productId !== seenQuantityHint.productId ||
+      readyPoolCodes !== seenQuantityHint.readyPoolCodes)
+  ) {
+    setSeenQuantityHint({ productId, readyPoolCodes });
+    setQuantity(readyPoolCodes > 0 ? String(readyPoolCodes) : "");
+  }
 
   const matchingBoms = (boms ?? []).filter(
     (bom) => !productId || String(bom.productId) === productId,
@@ -900,6 +913,7 @@ function NewOrderDialog({
               onValueChange={(v) => {
                 setProductId(v ?? "");
                 setQtyTouched(false);
+                setQuantity("");
                 setBomId("");
               }}
             >

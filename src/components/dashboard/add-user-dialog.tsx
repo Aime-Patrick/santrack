@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Check, Copy, RefreshCw, Eye, EyeOff } from "lucide-react";
 import {
   Dialog,
@@ -62,21 +62,29 @@ export function AddUserDialog({
   const [createdSecret, setCreatedSecret] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
-    const nextRole = assignableRoles(me?.role).includes("QUALITY_OFFICER")
-      ? "QUALITY_OFFICER"
-      : (assignableRoles(me?.role)[0] ?? "ORG_ADMIN");
-    setFullName("");
-    setEmail("");
-    setAutoPassword(true);
-    setShowAutoPassword(true);
-    setPassword(generatePassword());
-    setRole(nextRole);
-    setOrganizationId(lockedOrganizationId ? String(lockedOrganizationId) : "");
-    setCreatedSecret(null);
-    setCopied(false);
-  }, [open, lockedOrganizationId, me?.role]);
+  // A fresh form on every open, done as a render-time state adjustment on the
+  // open/closed transition rather than an effect watching `open`: the dialog
+  // stays mounted and must not carry a previous submission into the next one.
+  const [wasOpen, setWasOpen] = useState(false);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      const nextRole = assignableRoles(me?.role).includes("QUALITY_OFFICER")
+        ? "QUALITY_OFFICER"
+        : (assignableRoles(me?.role)[0] ?? "ORG_ADMIN");
+      setFullName("");
+      setEmail("");
+      setAutoPassword(true);
+      setShowAutoPassword(true);
+      setPassword(generatePassword());
+      setRole(nextRole);
+      setOrganizationId(
+        lockedOrganizationId ? String(lockedOrganizationId) : "",
+      );
+      setCreatedSecret(null);
+      setCopied(false);
+    }
+  }
 
   const resolvedOrgId = lockedOrganizationId ?? Number(organizationId);
   const canSubmit =

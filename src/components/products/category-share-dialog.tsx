@@ -54,16 +54,23 @@ export function CategoryShareDialog({
 
   const url = share?.url ?? initialShareUrl ?? "";
 
-  useEffect(() => {
-    if (!open || !categoryId) {
+  // Transient UI state (copied flash, rotate confirmation, downloaded preview)
+  // is cleared as the dialog closes, so no effect needs to watch `open` to
+  // reset it.
+  const close = (next: boolean) => {
+    if (!next) {
       setPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return null;
       });
       setConfirmRotate(false);
       setCopied(false);
-      return;
     }
+    onOpenChange(next);
+  };
+
+  useEffect(() => {
+    if (!open || !categoryId) return;
 
     let cancelled = false;
     let objectUrl: string | null = null;
@@ -125,7 +132,7 @@ export function CategoryShareDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={close}>
       <DialogPopup className="max-w-md">
         <DialogTitle>Share category QR</DialogTitle>
         <DialogDescription>
@@ -237,7 +244,7 @@ export function CategoryShareDialog({
         </div>
 
         <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => close(false)}>
             Close
           </Button>
         </DialogFooter>

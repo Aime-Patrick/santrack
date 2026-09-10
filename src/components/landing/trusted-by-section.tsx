@@ -2,8 +2,11 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 export function TrustedBySection() {
+  const t = useTranslations("landing");
+
   return (
     <section className="bg-white border-y border-slate-100 py-5 sm:py-7 overflow-hidden">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -11,7 +14,7 @@ export function TrustedBySection() {
           {/* Left Title */}
           <div className="shrink-0 text-center lg:text-left">
             <p className="text-[11px] sm:text-[12px] font-bold tracking-[0.13em] uppercase text-[#0057b8] max-w-[180px] leading-snug">
-              TRUSTED BY INDUSTRIES ACROSS RWANDA AND BEYOND
+              {t("trustedBy")}
             </p>
           </div>
 

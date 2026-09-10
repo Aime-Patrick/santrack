@@ -17,12 +17,13 @@ import {
 import { MetricCard } from "@/components/dashboard/stat-card";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useExecutiveSummary } from "@/hooks/analytics";
+import type { ExecutiveSummary } from "@/services/analytics.service";
 import type { OrganizationType, UserRole } from "@/lib/api";
 
 type KPIDefinition = {
   title: string;
-  getValue: (summary: any) => string | number;
-  getCaption: (summary: any) => string;
+  getValue: (summary: ExecutiveSummary | undefined) => string | number;
+  getCaption: (summary: ExecutiveSummary | undefined) => string;
   icon: React.ReactNode;
   iconBg: string;
 };
@@ -279,11 +280,43 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
   ],
 };
 
+const REGULATOR_KPIS: KPIDefinition[] = [
+  {
+    title: "Pending Applications",
+    getValue: (s) => s?.compliance?.pendingReviews ?? 0,
+    getCaption: () => "Awaiting review",
+    icon: <ClipboardCheck className="size-4" />,
+    iconBg: "bg-primary",
+  },
+  {
+    title: "Active Licences",
+    getValue: (s) => s?.compliance?.activeLicenses ?? 0,
+    getCaption: () => "In force",
+    icon: <ShieldCheck className="size-4" />,
+    iconBg: "bg-success",
+  },
+  {
+    title: "Recalled Items",
+    getValue: (s) => s?.compliance?.recalledItems ?? 0,
+    getCaption: () => "Active recalls",
+    icon: <RotateCcw className="size-4" />,
+    iconBg: "bg-danger",
+  },
+  {
+    title: "Expired Licences",
+    getValue: (s) => s?.compliance?.expiredLicenses ?? 0,
+    getCaption: () => "Need renewal",
+    icon: <AlertTriangle className="size-4" />,
+    iconBg: "bg-warning-foreground",
+  },
+];
+
 /** Prefer the organization's work over a job title that was copied from another sector. */
 function kpisFor(
   role: UserRole,
   orgType: OrganizationType | null | undefined,
 ): KPIDefinition[] {
+  if (orgType === "REGULATOR") return REGULATOR_KPIS;
   if (orgType === "WAREHOUSE") return WAREHOUSE_KPIS;
   if (orgType === "RETAILER") return RETAILER_KPIS;
   if (orgType === "DISTRIBUTOR") {

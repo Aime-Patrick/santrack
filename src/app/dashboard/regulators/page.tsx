@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Shield, ShieldOff, ShieldPlus, MoreHorizontal, CheckCircle2, RefreshCw, Copy, Check, Eye, EyeOff, Users, AlertCircle } from "lucide-react";
+import { Shield, ShieldOff, ShieldPlus, MoreHorizontal, CheckCircle2, RefreshCw, Copy, Check, Eye, EyeOff, Users, AlertCircle, Tag, Trash2, UserMinus, Loader2 } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { TableFeatures } from "@/components/ui/data-table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,8 +40,9 @@ import {
   useOrganizations,
   useGrantStanding,
   useRevokeStanding,
+  usePurgeOrganization,
 } from "@/hooks/organizations";
-import { useUsers, useCreateUser, useResendOrgAdminInvite } from "@/hooks/users";
+import { useUsers, useCreateUser, useResendOrgAdminInvite, useRemoveUser } from "@/hooks/users";
 import { TRADE_TYPES, type RegulatorResponse } from "@/services/organization.service";
 import { getApiErrorMessage, type OrganizationType, type UserRole } from "@/lib/api";
 import { toast } from "sonner";
@@ -84,6 +85,7 @@ export default function RegulatorsPage() {
 
   const grantStanding = useGrantStanding();
   const revokeStanding = useRevokeStanding();
+  const purgeOrg = usePurgeOrganization();
   const resendAdminInvite = useResendOrgAdminInvite();
 
   const [onboardOpen, setOnboardOpen] = useState(false);
@@ -91,11 +93,20 @@ export default function RegulatorsPage() {
   const [onboardSuccess, setOnboardSuccess] = useState<{ orgName: string; code: string; email: string; password?: string; alreadyExisted?: boolean } | null>(null);
   const [grantOpen, setGrantOpen] = useState(false);
   const [revokeFor, setRevokeFor] = useState<RegulatorResponse | null>(null);
+  const [purgeFor, setPurgeFor] = useState<RegulatorResponse | null>(null);
 
   const rows = regulators ?? [];
   const staffed = rows.filter((r) => r.staff > 0).length;
 
-  const authoritiesByOrganization = new Map(authorities.filter((authority) => authority.operatingOrganization).map((authority) => [authority.operatingOrganization!.id, authority]));
+  const authoritiesByOrganization = useMemo(
+    () =>
+      new Map(
+        authorities
+          .filter((authority) => authority.operatingOrganization)
+          .map((authority) => [authority.operatingOrganization!.id, authority]),
+      ),
+    [authorities],
+  );
   const columns: ColumnDef<TableFeatures, RegulatorResponse>[] = useMemo(
     () => [
       {
@@ -120,6 +131,47 @@ export default function RegulatorsPage() {
             </div>
           </div>
         ),
+      },
+      {
+        id: "mandates",
+        header: "Sector mandates",
+        cell: ({ row }) => {
+          const authority = authoritiesByOrganization.get(row.original.id);
+          if (!authority) return <span className="text-xs text-muted-foreground">—</span>;
+          if (authority.mandates.length === 0) return <span className="text-xs text-muted-foreground">None set</span>;
+          // Abbreviate long mandate lists — show first 3 then "+N more"
+          const SECTOR_LABELS: Record<string, string> = {
+            FOOD_AND_BEVERAGE: "Food & Bev.",
+            PHARMACEUTICALS: "Pharma",
+            COSMETICS: "Cosmetics",
+            MINING_AND_MINERALS: "Mining",
+            AGRICULTURE_AND_EXPORTS: "Agriculture",
+            GENERAL_MANUFACTURING: "Manufacturing",
+            DISTRIBUTION: "Distribution",
+            RETAIL: "Retail",
+            OTHER: "Other",
+          };
+          const visible = authority.mandates.slice(0, 3);
+          const overflow = authority.mandates.length - visible.length;
+          return (
+            <div className="flex flex-wrap gap-1">
+              {visible.map((m) => (
+                <span
+                  key={m}
+                  className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/8 px-2 py-0.5 text-[10px] font-semibold text-primary"
+                >
+                  <Tag className="size-2.5" />
+                  {SECTOR_LABELS[m] ?? m}
+                </span>
+              ))}
+              {overflow > 0 && (
+                <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  +{overflow} more
+                </span>
+              )}
+            </div>
+          );
+        },
       },
       {
         accessorKey: "staff",
@@ -187,13 +239,19 @@ export default function RegulatorsPage() {
                 <DropdownMenuItem onClick={() => setRevokeFor(row.original)}>
                   <ShieldOff className="mr-2 size-4" /> Withdraw standing
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setPurgeFor(row.original)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 size-4" /> Delete permanently
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           );
         },
       },
     ],
-    [authoritiesByOrganization, resendAdminInvite],
+    [authoritiesByOrganization, resendAdminInvite, setPurgeFor],
   );
 
   return (
@@ -339,6 +397,19 @@ export default function RegulatorsPage() {
         pending={revokeStanding.isPending}
       />
 
+      <PurgeDialog
+        regulator={purgeFor}
+        onOpenChange={(open) => !open && setPurgeFor(null)}
+        onConfirm={() =>
+          purgeFor &&
+          purgeOrg.mutate(
+            { id: purgeFor.id, name: purgeFor.name },
+            { onSuccess: () => setPurgeFor(null) },
+          )
+        }
+        pending={purgeOrg.isPending}
+      />
+
     </div>
   );
 }
@@ -375,19 +446,32 @@ function UnifiedOnboardDialog({
 
   const hasExistingStaff = !!regulator && regulator.staff > 0;
 
-  useEffect(() => {
-    if (regulator) {
-      setName(regulator.name);
-      setCode(regulator.name.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 8));
-    } else {
-      setName("");
-      setCode("");
+  // Reset the form on every open (render-time adjustment on the open/closed
+  // transition) instead of an effect watching `open`: name/code derive from
+  // the regulator being onboarded, and a generated password must be fresh
+  // each time rather than reused from a previous open.
+  const [wasOpen, setWasOpen] = useState(false);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      if (regulator) {
+        setName(regulator.name);
+        setCode(
+          regulator.name
+            .replace(/[^A-Za-z0-9]/g, "")
+            .toUpperCase()
+            .slice(0, 8),
+        );
+      } else {
+        setName("");
+        setCode("");
+      }
+      setAdminEmail("");
+      setAdminPassword(hasExistingStaff ? "" : generatePassword());
+      setShowPassword(true);
+      setError(null);
     }
-    setAdminEmail("");
-    setAdminPassword(hasExistingStaff ? "" : generatePassword());
-    setShowPassword(true);
-    setError(null);
-  }, [regulator, open, hasExistingStaff]);
+  }
 
   const canSubmit = hasExistingStaff
     ? name.trim().length >= 2 && /^[A-Z0-9_]{2,32}$/.test(code)
@@ -763,3 +847,118 @@ function RevokeDialog({
   );
 }
 
+
+/**
+ * Two-step delete dialog.
+ *
+ * Step 1 — blockers: if the org has staff, list them with individual Remove
+ *   buttons so the operator can clear them without leaving this page.
+ *   Also surfaces product / authority blockers as read-only notes.
+ *
+ * Step 2 — confirm: once the user list is empty, show the irreversible
+ *   confirm prompt and the Delete button.
+ */
+function PurgeDialog({
+  regulator,
+  onOpenChange,
+  onConfirm,
+  pending,
+}: {
+  regulator: RegulatorResponse | null;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  pending: boolean;
+}) {
+  const orgId = regulator?.id ?? 0;
+  const { data: users = [], isLoading: loadingUsers } = useUsers(orgId, {
+    enabled: !!regulator,
+  });
+  const removeUser = useRemoveUser();
+
+  const hasUsers = users.length > 0;
+
+  return (
+    <Dialog open={!!regulator} onOpenChange={onOpenChange}>
+      <DialogPopup className="w-[calc(100vw-2rem)] sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-destructive">
+            <Trash2 className="size-4" /> Delete {regulator?.name}?
+          </DialogTitle>
+          <DialogDescription>
+            Permanently removes the organization, its registration documents,
+            declared owners, and facilities. This cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* ── Step 1: clear staff ── */}
+        {hasUsers || loadingUsers ? (
+          <div className="space-y-3">
+            <p className="text-sm font-medium">
+              Remove all staff members before deleting
+            </p>
+
+            {loadingUsers ? (
+              <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" /> Loading staff…
+              </div>
+            ) : (
+              <ul className="divide-y divide-border rounded-md border">
+                {users.map((u) => (
+                  <li
+                    key={u.id}
+                    className="flex items-center justify-between gap-3 px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">
+                        {u.fullName ?? u.email}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {u.fullName ? u.email : u.role}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="shrink-0 text-destructive hover:text-destructive"
+                      disabled={removeUser.isPending}
+                      onClick={() =>
+                        removeUser.mutate(u.id)
+                      }
+                    >
+                      <UserMinus className="mr-1.5 size-3.5" />
+                      Remove
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              If this org also has products or a linked authority workspace,
+              those must be removed separately before deletion will succeed.
+            </p>
+          </div>
+        ) : (
+          /* ── Step 2: confirm ── */
+          <div className="flex items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+            <AlertCircle className="size-4 shrink-0 text-amber-500" />
+            <p>No staff remaining — ready to delete.</p>
+          </div>
+        )}
+
+        <DialogFooter className="gap-2 pt-2 sm:gap-0">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            className="bg-destructive text-white hover:bg-red disabled:opacity-100 disabled:bg-red-300 dark:disabled:bg-red-900"
+            disabled={pending || hasUsers || loadingUsers}
+            onClick={onConfirm}
+          >
+            {pending ? "Deleting…" : "Delete permanently"}
+          </Button>
+        </DialogFooter>
+      </DialogPopup>
+    </Dialog>
+  );
+}

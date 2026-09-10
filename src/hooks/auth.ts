@@ -153,6 +153,17 @@ export function useMe({
   });
 }
 
+/** Updates the caller's own display name. Refreshes the /me cache. */
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: { fullName?: string }) => authService.updateProfile(dto),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(authKeys.me, updated);
+    },
+  });
+}
+
 /** Clears the token, drops the cached user, and redirects to login. */
 export function useLogout() {
   const queryClient = useQueryClient();

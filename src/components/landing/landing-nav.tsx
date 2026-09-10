@@ -4,20 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { useLocale } from "next-intl";
-import { useRouter, usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Menu, X, Globe, Check, ShieldCheck, QrCode } from "lucide-react";
+import { ChevronDown, Menu, X, Globe, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { locales, localeNames, type Locale } from "@/i18n/config";
-
-const NAV_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/about", label: "About" },
-  { href: "/updates", label: "Updates" },
-  { href: "/verify", label: "Verify" },
-  { href: "/contact", label: "Contact" },
-];
 
 export function LandingNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -25,7 +17,7 @@ export function LandingNav() {
   const langRef = useRef<HTMLDivElement>(null);
 
   const locale = useLocale();
-  const router = useRouter();
+  const t = useTranslations("nav");
   const pathname = usePathname();
 
   // Close dropdown on outside click
@@ -40,20 +32,20 @@ export function LandingNav() {
   }, []);
 
   function switchLocale(newLocale: Locale) {
-    let newPath = pathname;
-    for (const loc of locales) {
-      if (pathname.startsWith(`/${loc}/`) || pathname === `/${loc}`) {
-        newPath = pathname.slice(`/${loc}`.length) || "/";
-        break;
-      }
-    }
-    if (newLocale === "en") {
-      router.push(newPath);
-    } else {
-      router.push(`/${newLocale}${newPath === "/" ? "" : newPath}`);
-    }
+    // Locale is stored in a cookie and read server-side in i18n/request.ts.
+    // No URL prefix is used — a full reload picks up the new cookie value.
+    document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+    window.location.href = pathname;
     setLangOpen(false);
   }
+
+  const NAV_LINKS = [
+    { href: "/", label: t("home") },
+    { href: "/about", label: t("about") },
+    { href: "/updates", label: t("updates") },
+    { href: "/verify", label: t("verify") },
+    { href: "/contact", label: t("contact") },
+  ];
 
   const LANGUAGES = locales.map((code) => ({
     code,
@@ -148,13 +140,13 @@ export function LandingNav() {
 
             <Link href="/login">
               <Button variant="ghost" size="sm" className="text-slate-700 hover:text-rwanda-blue font-[600] uppercase tracking-wider text-[12px]">
-                Sign In
+                {t("signIn")}
               </Button>
             </Link>
 
             <Link href="/register">
               <Button size="sm" className="bg-rwanda-blue hover:bg-blue-700 text-white font-[600] uppercase tracking-wider text-[12px] px-4 rounded-full shadow-xs">
-                Get Started
+                {t("getStarted")}
               </Button>
             </Link>
           </div>
@@ -198,7 +190,7 @@ export function LandingNav() {
           })}
 
           <div className="flex items-center justify-between border-t border-slate-100 pt-3 mt-2 px-3">
-            <span className="text-xs font-[600] uppercase tracking-wider text-slate-500">Language:</span>
+            <span className="text-xs font-[600] uppercase tracking-wider text-slate-500">{t("language")}:</span>
             <div className="flex gap-1">
               {LANGUAGES.map((lang) => (
                 <button
@@ -220,12 +212,12 @@ export function LandingNav() {
           <div className="grid grid-cols-2 gap-2 pt-3">
             <Link href="/login" onClick={() => setMobileOpen(false)}>
               <Button variant="outline" size="sm" className="w-full font-[600] uppercase tracking-wider text-xs">
-                Sign In
+                {t("signIn")}
               </Button>
             </Link>
             <Link href="/register" onClick={() => setMobileOpen(false)}>
               <Button size="sm" className="w-full bg-rwanda-blue hover:bg-blue-700 text-white font-[600] uppercase tracking-wider text-xs">
-                Get Started
+                {t("getStarted")}
               </Button>
             </Link>
           </div>

@@ -62,24 +62,24 @@ export function BarcodePreview({
   showText = true,
   className,
 }: BarcodePreviewProps) {
+  // loading/error are derived from whether the current request key has
+  // resolved, so the effect below only ever writes state asynchronously — no
+  // synchronous setState inside it.
+  const requestKey = `${symbology}|${value ?? ""}|${scale}|${showText}`;
   const [url, setUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [readyKey, setReadyKey] = useState<string | null>(null);
+  const [errorKey, setErrorKey] = useState<string | null>(null);
   const urlRef = useRef<string | null>(null);
+
+  const loading = readyKey !== requestKey && errorKey !== requestKey;
+  const error = errorKey === requestKey;
 
   useEffect(() => {
     let cancelled = false;
 
-    // Revoke the previous blob URL to avoid memory leaks
-    if (urlRef.current) {
-      URL.revokeObjectURL(urlRef.current);
-      urlRef.current = null;
-    }
-
     const fallback = getDefaultExample(symbology);
     const displayValue = value?.trim() || fallback;
 
-    setLoading(true);
     barcodeService
       .render({
         symbology,
@@ -89,27 +89,34 @@ export function BarcodePreview({
         format: "svg",
       })
       .then((blobUrl) => {
-        if (!cancelled) {
-          urlRef.current = blobUrl;
-          setUrl(blobUrl);
-          setError(false);
-        } else {
+        if (cancelled) {
           URL.revokeObjectURL(blobUrl);
+          return;
         }
+        if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+        urlRef.current = blobUrl;
+        setUrl(blobUrl);
+        setReadyKey(requestKey);
       })
       .catch(() => {
-        if (!cancelled) {
-          setError(true);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setErrorKey(requestKey);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [symbology, value, scale, showText]);
+  }, [requestKey, symbology, value, scale, showText]);
+
+  // Revoke the last blob URL when the preview unmounts.
+  useEffect(
+    () => () => {
+      if (urlRef.current) {
+        URL.revokeObjectURL(urlRef.current);
+        urlRef.current = null;
+      }
+    },
+    [],
+  );
 
   if (loading) {
     return (

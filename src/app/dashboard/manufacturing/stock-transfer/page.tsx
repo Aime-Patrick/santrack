@@ -16,6 +16,7 @@ import { useItem } from "@/hooks/items";
 import { useLocations } from "@/hooks/locations";
 import { useOrganizations } from "@/hooks/organizations";
 import { useResolveCode } from "@/hooks/scan";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { cn } from "@/lib/utils";
 import type { ScanResult } from "@/services/scan.service";
 import type { Transfer } from "@/services/transfer.service";
@@ -123,6 +124,10 @@ interface ScanOutcome {
 }
 
 export default function StockTransferPage() {
+  const { data: me } = useCurrentUser();
+  const orgType = me?.organization?.type;
+  const isAutomaticStockInOrg = orgType === "RETAILER" || orgType === "SHOP";
+
   const [childCodes, setChildCodes] = useState<string[]>([]);
   const [destOrgId, setDestOrgId] = useState("");
   const [destLocId, setDestLocId] = useState("");
@@ -255,9 +260,11 @@ export default function StockTransferPage() {
           <TabsTrigger value="outgoing" className="gap-2">
             <ArrowUpRight className="size-4" /> Outgoing
           </TabsTrigger>
-          <TabsTrigger value="incoming" className="gap-2">
-            <ArrowDownLeft className="size-4" /> Incoming
-          </TabsTrigger>
+          {!isAutomaticStockInOrg && (
+            <TabsTrigger value="incoming" className="gap-2">
+              <ArrowDownLeft className="size-4" /> Incoming
+            </TabsTrigger>
+          )}
           <TabsTrigger value="new" className="gap-2">
             <Plus className="size-4" /> New Transfer
           </TabsTrigger>
@@ -279,6 +286,7 @@ export default function StockTransferPage() {
           </Card>
         </TabsContent>
 
+        {!isAutomaticStockInOrg && (
         <TabsContent value="incoming">
           <Card>
             <CardHeader>
@@ -294,6 +302,7 @@ export default function StockTransferPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        )}
 
         <TabsContent value="new">
           <Card>

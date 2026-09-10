@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -89,10 +89,15 @@ export default function ProductDetailPage() {
   const initialTab = searchParams.get("tab") || "details";
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  useEffect(() => {
-    const tab = searchParams.get("tab");
-    if (tab) setActiveTab(tab);
-  }, [searchParams]);
+  // Keep the tab in sync when the URL changes (deep link, back/forward) via a
+  // render-time adjustment keyed on the URL value, so no effect watches
+  // searchParams. Local tab clicks that do not touch the URL are unaffected.
+  const urlTab = searchParams.get("tab");
+  const [seenUrlTab, setSeenUrlTab] = useState(urlTab);
+  if (urlTab !== seenUrlTab) {
+    setSeenUrlTab(urlTab);
+    if (urlTab) setActiveTab(urlTab);
+  }
 
   const { data: product, isLoading: productLoading } = useProduct(productId);
   const { data: batches = [], isLoading: batchesLoading } = useBatches(productId);
@@ -311,13 +316,23 @@ function ProductDetailsCard({
     product.unitsPerPack != null ? String(product.unitsPerPack) : "",
   );
 
-  useEffect(() => {
-    if (!editOpen) {
+  // While the dialog is closed the draft fields mirror the product record, so
+  // a fresh open always starts from saved values and a product refresh is
+  // picked up. Tracked as a render-time adjustment over the previous
+  // open/product snapshot instead of an effect.
+  const [snapshot, setSnapshot] = useState({ open: editOpen, product });
+  if (snapshot.open !== editOpen || snapshot.product !== product) {
+    const wasOpen = snapshot.open;
+    const productChanged = snapshot.product !== product;
+    setSnapshot({ open: editOpen, product });
+    if (!editOpen && (wasOpen || productChanged)) {
       setBaseUnit(product.baseUnit ?? "");
       setPackUnit(product.packUnit ?? "");
-      setUnitsPerPack(product.unitsPerPack != null ? String(product.unitsPerPack) : "");
+      setUnitsPerPack(
+        product.unitsPerPack != null ? String(product.unitsPerPack) : "",
+      );
     }
-  }, [product, editOpen]);
+  }
 
   return (
     <>
@@ -460,11 +475,17 @@ const batchColumns: ColumnDef<TableFeatures, Batch>[] = [
   {
     accessorKey: "facilityName",
     header: "Facility",
-    cell: ({ row }) => (
-      <span className="text-sm">
-        {(row.original as any).facilityName || (row.original as any).facility?.name || "—"}
-      </span>
-    ),
+    cell: ({ row }) => {
+      const batch = row.original as Batch & {
+        facilityName?: string | null;
+        facility?: { name?: string } | null;
+      };
+      return (
+        <span className="text-sm">
+          {batch.facilityName || batch.facility?.name || "—"}
+        </span>
+      );
+    },
   },
   {
     accessorKey: "manufacturedOn",

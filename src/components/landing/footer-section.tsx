@@ -1,29 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
+import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Mail, MapPin, Phone } from "lucide-react";
-
-const PLATFORM_LINKS = [
-  { label: "Inventory", href: "#features" },
-  { label: "Manufacturing", href: "#features" },
-  { label: "Logistics & Distribution", href: "#features" },
-  { label: "Finance", href: "#features" },
-  { label: "Payroll & HR", href: "#features" },
-  { label: "Product Traceability", href: "#features" },
-];
-
-const COMPANY_LINKS = [
-  { label: "Home", href: "/" },
-  { label: "About Us", href: "/about" },
-  { label: "Updates & News", href: "/updates" },
-  { label: "Verify Product", href: "/verify" },
-  { label: "Contact Support", href: "/contact" },
-];
-
-const LEGAL_LINKS = [
-  { label: "Privacy Policy", href: "#privacy" },
-  { label: "Terms of Service", href: "#terms" },
-];
 
 const CONTACT = {
   address: "KG 548 St, Kigali, Rwanda",
@@ -54,8 +33,31 @@ const SOCIALS = [
   },
 ];
 
-export function FooterSection() {
+export async function FooterSection() {
+  const t = await getTranslations("landing.footer");
   const year = new Date().getFullYear();
+
+  const PLATFORM_LINKS = [
+    { label: t("links.inventory"), href: "#features" },
+    { label: t("links.manufacturing"), href: "#features" },
+    { label: t("links.logistics"), href: "#features" },
+    { label: t("links.finance"), href: "#features" },
+    { label: t("links.payroll"), href: "#features" },
+    { label: t("links.traceability"), href: "#features" },
+  ];
+
+  const COMPANY_LINKS = [
+    { label: t("links.home"), href: "/" },
+    { label: t("links.aboutUs"), href: "/about" },
+    { label: t("links.updatesNews"), href: "/updates" },
+    { label: t("links.verifyProduct"), href: "/verify" },
+    { label: t("links.contactSupport"), href: "/contact" },
+  ];
+
+  const LEGAL_LINKS = [
+    { label: t("privacyPolicy"), href: "#privacy" },
+    { label: t("termsOfService"), href: "#terms" },
+  ];
 
   return (
     <footer id="contact" className="relative bg-[#00397a] text-white overflow-hidden">
@@ -88,9 +90,7 @@ export function FooterSection() {
             </Link>
 
             <p className="text-lg text-white/70 leading-relaxed max-w-sm">
-              The all-in-one management platform for modern businesses: traceability,
-              inventory, manufacturing, logistics, finance and HR, from industry to
-              final consumption.
+              {t("tagline")}
             </p>
 
             <div className="flex items-center gap-2.5">
@@ -112,15 +112,12 @@ export function FooterSection() {
           {/* Platform */}
           <div className="lg:col-span-2">
             <h3 className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#fac600] mb-4">
-              Platform
+              {t("platform")}
             </h3>
             <ul className="flex flex-col gap-2.5">
               {PLATFORM_LINKS.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-white/70 hover:text-white transition-colors"
-                  >
+                <li key={link.href + link.label}>
+                  <Link href={link.href} className="text-sm text-white/70 hover:text-white transition-colors">
                     {link.label}
                   </Link>
                 </li>
@@ -131,15 +128,12 @@ export function FooterSection() {
           {/* Company */}
           <div className="lg:col-span-2">
             <h3 className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#fac600] mb-4">
-              Company
+              {t("company")}
             </h3>
             <ul className="flex flex-col gap-2.5">
               {COMPANY_LINKS.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-white/70 hover:text-white transition-colors"
-                  >
+                <li key={link.href + link.label}>
+                  <Link href={link.href} className="text-sm text-white/70 hover:text-white transition-colors">
                     {link.label}
                   </Link>
                 </li>
@@ -150,7 +144,7 @@ export function FooterSection() {
           {/* Contact + CTA */}
           <div className="lg:col-span-4 flex flex-col gap-4">
             <h3 className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#fac600]">
-              Get in Touch
+              {t("getInTouch")}
             </h3>
             <ul className="flex flex-col gap-3">
               <li className="flex items-start gap-2.5 text-sm text-white/70">
@@ -165,10 +159,7 @@ export function FooterSection() {
               </li>
               <li className="flex items-start gap-2.5 text-sm text-white/70">
                 <Phone className="size-4 mt-0.5 shrink-0 text-[#fac600]" />
-                <a
-                  href={`tel:${CONTACT.phone.replace(/\s/g, "")}`}
-                  className="hover:text-white transition-colors"
-                >
+                <a href={`tel:${CONTACT.phone.replace(/\s/g, "")}`} className="hover:text-white transition-colors">
                   {CONTACT.phone}
                 </a>
               </li>
@@ -176,11 +167,8 @@ export function FooterSection() {
 
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <Link href="/register">
-                <Button
-                  size="sm"
-                  className="bg-[#fac600] hover:bg-[#e0b200] text-[#00397a] font-semibold px-5 rounded-full gap-2"
-                >
-                  Get Started <ArrowRight className="size-4" />
+                <Button size="sm" className="bg-[#fac600] hover:bg-[#e0b200] text-[#00397a] font-semibold px-5 rounded-full gap-2">
+                  {t("getStarted")} <ArrowRight className="size-4" />
                 </Button>
               </Link>
             </div>
@@ -188,28 +176,22 @@ export function FooterSection() {
         </div>
       </div>
 
-      
-
       {/* Bottom bar */}
       <div className="relative border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
             <p className="text-xs text-white/50">
-              &copy; {year} SAN TECH Ltd. All rights reserved.
+              &copy; {year} SAN TECH Ltd. {t("allRightsReserved")}
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
               {LEGAL_LINKS.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="text-xs text-white/50 hover:text-white transition-colors"
-                >
+                <Link key={link.href} href={link.href} className="text-xs text-white/50 hover:text-white transition-colors">
                   {link.label}
                 </Link>
               ))}
               <p className="text-xs text-white/60">
-                Developed by{" "}
+                {t("developedBy")}{" "}
                 <span className="font-semibold text-rwanda-yellow">SAN TECH</span>
               </p>
             </div>

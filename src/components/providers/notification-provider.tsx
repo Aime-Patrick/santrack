@@ -25,7 +25,6 @@ interface Notification {
 }
 
 interface SocketContextValue {
-  socket: Socket | null;
   connected: boolean;
   unreadCount: number;
   notifications: Notification[];
@@ -34,7 +33,6 @@ interface SocketContextValue {
 }
 
 const SocketContext = createContext<SocketContextValue>({
-  socket: null,
   connected: false,
   unreadCount: 0,
   notifications: [],
@@ -147,7 +145,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   return (
     <SocketContext.Provider
       value={{
-        socket: socketRef.current,
         connected,
         unreadCount,
         notifications,

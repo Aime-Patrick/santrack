@@ -64,10 +64,6 @@ export function RegistrationGate({
         </DialogHeader>
 
         <div className="py-2">
-          {/* Icon */}
-          <div className="mb-5 flex size-12 items-center justify-center rounded-xl bg-primary-light">
-            <Sparkles className="size-6 text-primary" />
-          </div>
 
           {/* Requirements list */}
           <ul className="space-y-4">

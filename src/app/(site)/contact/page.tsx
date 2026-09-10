@@ -7,14 +7,12 @@ import {
   MapPin,
   Clock,
   Send,
-  CheckCircle2,
-  Building,
   HelpCircle,
-  ShieldCheck,
   Loader2,
   ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,30 +21,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PageHeroHeader } from "@/components/landing/page-hero-header";
 import { cn } from "@/lib/utils";
 
-const FAQS = [
-  {
-    question: "How do I onboard my factory to SANTRACK?",
-    answer:
-      "You can register an organization account, submit your business registration and RSB license, and start generating GS1 digital serialization codes in minutes.",
-  },
-  {
-    question: "Can consumers scan with any phone?",
-    answer:
-      "Yes. Any standard iPhone or Android camera app instantly reads the GS1 QR code and opens the verification certificate in the browser without installing any special app.",
-  },
-  {
-    question: "Does it integrate with Rwanda FDA / RSB?",
-    answer:
-      "Yes. SANTRACK provides direct audit trail interfaces for regulators to verify product certificates, batch inspection status, and targeted recalls in real time.",
-  },
-  {
-    question: "What hardware is required at the factory?",
-    answer:
-      "SANTRACK works with any standard thermal label or inkjet/laser printer, as well as USB/Bluetooth barcode scanner guns or mobile tablet cameras.",
-  },
-];
-
 export default function ContactPage() {
+  const t = useTranslations("contact");
+
+  const FAQS = [
+    { question: t("faq1Q"), answer: t("faq1A") },
+    { question: t("faq2Q"), answer: t("faq2A") },
+    { question: t("faq3Q"), answer: t("faq3A") },
+    { question: t("faq4Q"), answer: t("faq4A") },
+  ];
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -59,15 +43,15 @@ export default function ContactPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !message) {
-      toast.error("Please fill in all required fields.");
+      toast.error(t("requiredFields"));
       return;
     }
 
     setSending(true);
     setTimeout(() => {
       setSending(false);
-      toast.success("Thank you for reaching out!", {
-        description: "Our compliance and supply chain team will contact you within 24 hours.",
+      toast.success(t("successTitle"), {
+        description: t("successDesc"),
       });
       setName("");
       setEmail("");
@@ -81,9 +65,9 @@ export default function ContactPage() {
     <div className="pb-24">
       {/* ── Header ── */}
       <PageHeroHeader
-        kicker="CONTACT SAN TRACK"
-        title="Contact Our National Traceability Team"
-        description="Have questions about GS1 serialization, manufacturer onboarding, or regulatory auditing? We are here to help."
+        kicker={t("kicker")}
+        title={t("title")}
+        description={t("description")}
       />
 
       {/* ── Main Content: Form & Direct Info ── */}
@@ -94,14 +78,12 @@ export default function ContactPage() {
             <Card className="border-border/80 shadow-xs">
               <CardContent className="p-6 sm:p-8">
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <h2 className="text-xl font-bold text-slate-900">Send an Inquiry or Request a Demo</h2>
-                  <p className="text-xs text-slate-500 pb-2">
-                    Fill out the form below and an integration specialist will follow up promptly.
-                  </p>
+                  <h2 className="text-xl font-bold text-slate-900">{t("formTitle")}</h2>
+                  <p className="text-xs text-slate-500 pb-2">{t("formSubtitle")}</p>
 
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <Label htmlFor="name" className="text-xs font-medium">Your Full Name *</Label>
+                      <Label htmlFor="name" className="text-xs font-medium">{t("fieldName")} *</Label>
                       <Input
                         id="name"
                         placeholder="e.g. Jean Paul Habimana"
@@ -113,7 +95,7 @@ export default function ContactPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label htmlFor="email" className="text-xs font-medium">Work Email Address *</Label>
+                      <Label htmlFor="email" className="text-xs font-medium">{t("fieldEmail")} *</Label>
                       <Input
                         id="email"
                         type="email"
@@ -128,7 +110,7 @@ export default function ContactPage() {
 
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <Label htmlFor="phone" className="text-xs font-medium">Phone Number</Label>
+                      <Label htmlFor="phone" className="text-xs font-medium">{t("fieldPhone")}</Label>
                       <Input
                         id="phone"
                         type="tel"
@@ -140,7 +122,7 @@ export default function ContactPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label htmlFor="org" className="text-xs font-medium">Company / Organization</Label>
+                      <Label htmlFor="org" className="text-xs font-medium">{t("fieldOrg")}</Label>
                       <Input
                         id="org"
                         placeholder="e.g. Inyange Industries"
@@ -152,29 +134,29 @@ export default function ContactPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="industry" className="text-xs font-medium">Industry Sector</Label>
+                    <Label htmlFor="industry" className="text-xs font-medium">{t("fieldIndustry")}</Label>
                     <select
                       id="industry"
                       value={industry}
                       onChange={(e) => setIndustry(e.target.value)}
                       className="w-full h-10 rounded-md border border-border bg-card px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     >
-                      <option value="Food & Beverage">Food &amp; Beverage Processing</option>
-                      <option value="Pharmaceuticals">Pharmaceuticals &amp; Health</option>
-                      <option value="Agriculture">Agriculture &amp; Export Commodities</option>
-                      <option value="Cosmetics & Personal Care">Cosmetics &amp; Personal Care</option>
-                      <option value="Manufacturing & Hardware">Industrial &amp; Building Materials</option>
-                      <option value="Government & Regulatory">Government &amp; Regulatory Inspection</option>
-                      <option value="Other">Other Supply Chain</option>
+                      <option value="Food & Beverage">{t("industryFood")}</option>
+                      <option value="Pharmaceuticals">{t("industryPharma")}</option>
+                      <option value="Agriculture">{t("industryAgriculture")}</option>
+                      <option value="Cosmetics & Personal Care">{t("industryCosmetics")}</option>
+                      <option value="Manufacturing & Hardware">{t("industryManufacturing")}</option>
+                      <option value="Government & Regulatory">{t("industryGov")}</option>
+                      <option value="Other">{t("industryOther")}</option>
                     </select>
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="message" className="text-xs font-medium">Your Message / Requirements *</Label>
+                    <Label htmlFor="message" className="text-xs font-medium">{t("fieldMessage")} *</Label>
                     <Textarea
                       id="message"
                       rows={4}
-                      placeholder="Tell us about your production volumes, products, or traceability requirements..."
+                      placeholder={t("msgPlaceholder")}
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       className="text-xs"
@@ -189,11 +171,11 @@ export default function ContactPage() {
                   >
                     {sending ? (
                       <>
-                        <Loader2 className="mr-2 size-4 animate-spin" /> Submitting...
+                        <Loader2 className="mr-2 size-4 animate-spin" /> {t("submitting")}
                       </>
                     ) : (
                       <>
-                        <Send className="mr-2 size-4" /> Send Message
+                        <Send className="mr-2 size-4" /> {t("sendMessage")}
                       </>
                     )}
                   </Button>
@@ -205,13 +187,13 @@ export default function ContactPage() {
           {/* Right: Contact Details & Quick FAQs */}
           <div className="lg:col-span-5 space-y-6">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-5">
-              <h3 className="font-bold text-slate-900 text-base">Office &amp; Headquarters</h3>
+              <h3 className="font-bold text-slate-900 text-base">{t("officeTitle")}</h3>
 
               <div className="space-y-4 text-xs text-slate-600">
                 <div className="flex items-start gap-3">
                   <MapPin className="size-4 shrink-0 text-rwanda-blue mt-0.5" />
                   <div>
-                    <span className="font-semibold text-slate-900 block">Kigali Innovation Hub</span>
+                    <span className="font-semibold text-slate-900 block">{t("officeAddress")}</span>
                     <span>KG 548 St, Kigali, Rwanda</span>
                   </div>
                 </div>
@@ -219,7 +201,7 @@ export default function ContactPage() {
                 <div className="flex items-start gap-3">
                   <Mail className="size-4 shrink-0 text-rwanda-blue mt-0.5" />
                   <div>
-                    <span className="font-semibold text-slate-900 block">Email Support</span>
+                    <span className="font-semibold text-slate-900 block">{t("emailSupportLabel")}</span>
                     <a href="mailto:support@santrack.rw" className="text-rwanda-blue underline">support@santrack.rw</a>
                   </div>
                 </div>
@@ -227,7 +209,7 @@ export default function ContactPage() {
                 <div className="flex items-start gap-3">
                   <Phone className="size-4 shrink-0 text-rwanda-blue mt-0.5" />
                   <div>
-                    <span className="font-semibold text-slate-900 block">Direct Line</span>
+                    <span className="font-semibold text-slate-900 block">{t("directLineLabel")}</span>
                     <span>+250 788 123 456 / +250 252 500 000</span>
                   </div>
                 </div>
@@ -235,8 +217,8 @@ export default function ContactPage() {
                 <div className="flex items-start gap-3">
                   <Clock className="size-4 shrink-0 text-rwanda-blue mt-0.5" />
                   <div>
-                    <span className="font-semibold text-slate-900 block">Operating Hours</span>
-                    <span>Monday – Friday: 8:00 AM – 5:00 PM (CAT)</span>
+                    <span className="font-semibold text-slate-900 block">{t("hoursLabel")}</span>
+                    <span>{t("hoursValue")}</span>
                   </div>
                 </div>
               </div>
@@ -246,7 +228,7 @@ export default function ContactPage() {
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-3">
               <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
                 <HelpCircle className="size-4 text-rwanda-blue" />
-                <span>Frequently Asked Questions</span>
+                <span>{t("faqTitle")}</span>
               </div>
 
               <div className="divide-y divide-slate-100 text-xs">

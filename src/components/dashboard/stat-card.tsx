@@ -76,14 +76,21 @@ export function MetricCard({
   );
 }
 
-export function StatCard(props: any) {
+interface StatCardProps {
+  title?: string;
+  value?: string | number;
+  change?: string;
+  changeType?: "positive" | "negative" | "neutral";
+}
+
+export function StatCard({ title, value, change, changeType }: StatCardProps) {
   return (
     <MetricCard
-      title={props.title}
-      value={props.value}
-      badge={props.change}
-      badgeType={props.changeType}
-      trendText={props.change}
+      title={title ?? ""}
+      value={value ?? "—"}
+      badge={change}
+      badgeType={changeType}
+      trendText={change}
     />
   );
 }

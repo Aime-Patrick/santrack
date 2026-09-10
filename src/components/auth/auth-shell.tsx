@@ -2,8 +2,10 @@
 
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { SanTrackBrand, SanTrackLogoMark } from "@/components/auth/san-track-logo";
+import { ArrowLeft } from "lucide-react";
+import { SanTrackBrand } from "@/components/auth/san-track-logo";
 
 /**
  * Rwandan Flag Wave Ribbon — uses the processed ribbon-full.png asset.
@@ -109,15 +111,35 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           aria-hidden="true"
         />
 
-        {/* Mobile Logo — matches landing nav (emblem only) */}
+        {/* Mobile Logo — matches landing nav exactly */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
           className="mb-5 flex flex-col items-center gap-2 lg:hidden shrink-0 relative z-10"
         >
-          <SanTrackLogoMark className="size-12" />
+          <Link href="/" className="flex items-center gap-2.5">
+            <Image src="/images/logo-symbol.png" alt="SANTRACK" width={36} height={36} className="size-9" />
+            <div className="flex flex-col leading-none">
+              <div className="flex items-baseline gap-1">
+                <span className="text-[17px] font-extrabold tracking-tight text-rwanda-blue">SAN</span>
+                <span className="text-[17px] font-extrabold tracking-tight text-rwanda-yellow">TRACK</span>
+              </div>
+              <span className="text-[7px] font-bold tracking-[0.18em] text-slate-400 uppercase">
+                Product Traceability &amp; GS1 Rwanda
+              </span>
+            </div>
+          </Link>
         </motion.div>
+
+        {/* Back to home — desktop only (mobile has the logo link above) */}
+        <Link
+          href="/"
+          className="hidden lg:flex absolute top-5 left-6 items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors z-10"
+        >
+          <ArrowLeft className="size-3.5" />
+          Back to home
+        </Link>
 
         {/* Form Container */}
         <motion.div

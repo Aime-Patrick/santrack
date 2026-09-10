@@ -78,7 +78,7 @@ function LabelStudioLauncher() {
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            Select a minted identity pool to design labels, "verify QR payloads", and download print-ready batch PDFs.
+            Select a minted identity pool to design labels, &quot;verify QR payloads&quot;, and download print-ready batch PDFs.
           </p>
         </div>
 

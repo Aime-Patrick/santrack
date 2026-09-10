@@ -18,8 +18,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { MetricCard } from "@/components/dashboard/stat-card";
-import { useIndustryRegistry } from "@/hooks/organizations";
 import { useComplianceFindings, useRegulatorQueue } from "@/hooks/licensing";
+import { useRegulatoryCommand } from "@/hooks/regulatory-command";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { RecentActivities } from "@/components/dashboard/recent-activities";
 
@@ -29,11 +29,10 @@ import { RecentActivities } from "@/components/dashboard/recent-activities";
  */
 export function RegulatorDashboard() {
   const { data: me } = useCurrentUser();
-  const { data: registry, isLoading: registryLoading } = useIndustryRegistry();
+  const { data: command, isLoading: commandLoading } = useRegulatoryCommand();
   const { data: findings } = useComplianceFindings();
   const { data: queue, isLoading: queueLoading } = useRegulatorQueue();
 
-  const industries = (registry ?? []).filter((o) => o.type !== "REGULATOR");
   const findingCount = findings?.findings?.length ?? 0;
   const pending = queue?.length ?? 0;
 
@@ -58,11 +57,11 @@ export function RegulatorDashboard() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
-          title="Industries"
-          value={registryLoading ? "—" : industries.length}
+          title="Supervised"
+          value={commandLoading ? "—" : (command?.supervisedBusinesses ?? 0)}
           icon={<Building2 className="size-4" />}
           iconBg="bg-primary"
-          caption="Businesses under supervision"
+          caption="Businesses licensed by us"
         />
         <MetricCard
           title="Licence queue"

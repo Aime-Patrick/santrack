@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -13,11 +14,13 @@ import {
   Mail,
   MailCheck,
   MapPin,
+  Plus,
   ShieldCheck,
   Upload,
   X,
 } from "lucide-react";
-import { getApiErrorMessage, type OrganizationResponse } from "@/lib/api";
+import { Provinces, Districts, Sectors, Cells, Villages } from "rwanda";
+import { getApiErrorMessage, type OrganizationResponse, type IndustrySector } from "@/lib/api";
 import { useCreateOrganization, useMe } from "@/hooks/auth";
 import { onboardingService } from "@/services/onboarding.service";
 import { cn } from "@/lib/utils";
@@ -30,6 +33,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { RegistrationGate } from "@/components/onboarding/registration-gate";
 
 const DESIGN_MODE = process.env.NEXT_PUBLIC_DESIGN_MODE === "true";
 
@@ -40,59 +44,64 @@ type OrgType =
   | "RETAILER"
   | "SHOP";
 
-const ORG_TYPES: { value: OrgType; label: string; hint: string }[] = [
-  {
-    value: "MANUFACTURER",
-    label: "Manufacturer",
-    hint: "Make the products and register new batches.",
-  },
-  {
-    value: "WAREHOUSE",
-    label: "Warehouse",
-    hint: "Receive, hold and dispatch sealed packages.",
-  },
-  {
-    value: "DISTRIBUTOR",
-    label: "Distributor",
-    hint: "Move goods between businesses.",
-  },
-  {
-    value: "RETAILER",
-    label: "Retailer",
-    hint: "Buy stock and pass it down the chain.",
-  },
-  {
-    value: "SHOP",
-    label: "Shop",
-    hint: "Receive, open and sell to the final customer.",
-  },
+const ORG_TYPES: { value: OrgType; label: string; hint: string; icon: string }[] = [
+  { value: "MANUFACTURER", label: "Manufacturer",  hint: "Make products and register new batches.",     icon: "🏭" },
+  { value: "WAREHOUSE",    label: "Warehouse",     hint: "Receive, hold and dispatch sealed packages.", icon: "🏪" },
+  { value: "DISTRIBUTOR",  label: "Distributor",   hint: "Move goods between businesses.",              icon: "🚚" },
+  { value: "RETAILER",     label: "Retailer",      hint: "Buy stock and pass it down the chain.",       icon: "🛒" },
+  { value: "SHOP",         label: "Shop",          hint: "Receive, open and sell to final customers.",  icon: "🏬" },
 ];
 
-const RWANDA_PROVINCES = [
-  "Kigali City",
-  "Northern Province",
-  "Southern Province",
-  "Eastern Province",
-  "Western Province",
+const INDUSTRY_SECTORS: { value: IndustrySector; label: string; hint: string }[] = [
+  { value: "FOOD_AND_BEVERAGE",       label: "Food & Beverage",       hint: "Food processing, drinks, dairy, water." },
+  { value: "PHARMACEUTICALS",         label: "Pharmaceuticals",       hint: "Medicines, vaccines, medical devices." },
+  { value: "COSMETICS",               label: "Cosmetics",             hint: "Beauty, personal care, medicated cosmetics." },
+  { value: "MINING_AND_MINERALS",     label: "Mining & Minerals",     hint: "3Ts, gold, petroleum, gas." },
+  { value: "AGRICULTURE_AND_EXPORTS", label: "Agriculture & Exports", hint: "Coffee, tea, horticulture, pyrethrum." },
+  { value: "GENERAL_MANUFACTURING",   label: "General Manufacturing", hint: "Construction materials, textiles, electronics." },
+  { value: "DISTRIBUTION",            label: "Distribution",          hint: "Logistics, wholesale, import/export." },
+  { value: "RETAIL",                  label: "Retail",                hint: "Shops, supermarkets, pharmacies." },
+  { value: "OTHER",                   label: "Other",                 hint: "Any sector not listed above." },
 ];
 
-const CERTIFICATES = [
-  { type: "RDB_CERTIFICATE", label: "RDB Certificate" },
-  { type: "FDA_PREMISE", label: "Rwanda FDA Premise Certificate" },
-  { type: "IMPORT_LICENSE", label: "Import License" },
-];
+// ── Document entry (runtime state per active upload field) ────────────────────
 
-/** Shared input style so every field matches the registration page. */
+interface DocEntry {
+  type: string;
+  label: string;
+  required: boolean;
+  file: File | null;
+}
+
+const DESC_MAX_WORDS = 160;
+
 const INPUT_CLASS =
   "w-full h-11 px-3.5 text-sm text-slate-900 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg outline-none transition-all duration-150 focus:border-[#067eda] focus:ring-3 focus:ring-[#067eda]/15 hover:border-slate-300";
 const LABEL_CLASS = "block text-xs font-semibold text-slate-700";
+const SELECT_CLASS =
+  "w-full h-11 px-3.5 text-sm text-slate-900 bg-white border border-slate-200 rounded-lg outline-none transition-all duration-150 focus:border-[#067eda] focus:ring-3 focus:ring-[#067eda]/15 hover:border-slate-300 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
 
-interface CertificateDraft {
-  type: string;
-  label: string;
-  number: string;
-  expiryDate: string;
-  file: File | null;
+/** Count whitespace-separated words, treating empty/whitespace-only as 0. */
+function countWords(text: string): number {
+  return text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
+}
+
+/**
+ * Truncate `text` so it contains at most `maxWords` words.
+ * Preserves the original whitespace up to the cut point.
+ */
+function truncateToWords(text: string, maxWords: number): string {
+  if (countWords(text) <= maxWords) return text;
+  // Walk character-by-character, counting word boundaries
+  let words = 0;
+  let inWord = false;
+  for (let i = 0; i < text.length; i++) {
+    const isSpace = /\s/.test(text[i]);
+    if (!isSpace && !inWord) { inWord = true; words++; }
+    else if (isSpace && inWord) { inWord = false; }
+    if (words > maxWords) return text.slice(0, i);
+  }
+  return text;
 }
 
 interface OwnerDraft {
@@ -103,9 +112,34 @@ interface OwnerDraft {
   idNumber: string;
 }
 
-export function OnboardingForm() {
+// ── Step metadata ─────────────────────────────────────────────────────────────
+
+const STEPS = [
+  { label: "Identity",     shortLabel: "Identity"  },
+  { label: "Business type",shortLabel: "Type"      },
+  { label: "Location",     shortLabel: "Location"  },
+  { label: "Documents",    shortLabel: "Documents" },
+] as const;
+
+const TOTAL_STEPS = STEPS.length;
+
+// ── Slide transition variants ──────────────────────────────────────────────────
+
+function slideVariants(direction: 1 | -1) {
+  return {
+    initial: { opacity: 0, x: direction * 20 },
+    animate: { opacity: 1, x: 0 },
+    exit:    { opacity: 0, x: direction * -20 },
+  };
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
+export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
   const router = useRouter();
+  const [gateOpen, setGateOpen] = useState(true);
   const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -113,56 +147,125 @@ export function OnboardingForm() {
   const createOrganization = useCreateOrganization();
   const { data: me } = useMe({ enabled: !DESIGN_MODE });
 
-  // Step 1 — tax & business
+  // Step 0 — identity
   const [tin, setTin] = useState("");
   const [name, setName] = useState("");
-  const [type, setType] = useState<OrgType | null>(null);
-  const [registrationNumber, setRegistrationNumber] = useState("");
   const [dateIncorporated, setDateIncorporated] = useState("");
+
+  // Step 1 — business type
+  const [type, setType] = useState<OrgType | null>(null);
+  const [industrySector, setIndustrySector] = useState<IndustrySector | null>(null);
+
+  // Step 2 — contact & location
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [description, setDescription] = useState("");
-
-  // Step 2 — address & documents
   const [province, setProvince] = useState("");
   const [district, setDistrict] = useState("");
   const [sector, setSector] = useState("");
   const [cell, setCell] = useState("");
   const [village, setVillage] = useState("");
-  const [certificates, setCertificates] = useState<CertificateDraft[]>(
-    CERTIFICATES.map((c) => ({
-      type: c.type,
-      label: c.label,
-      number: "",
-      expiryDate: "",
-      file: null,
-    })),
+
+  // Cascading location lists from the rwanda package
+  const rwandaProvinces = useMemo(() => Provinces() ?? [], []);
+  const rwandaDistricts = useMemo(
+    () => (province ? (Districts(province) ?? []) : []),
+    [province],
   );
+  const rwandaSectors = useMemo(
+    () => (province && district ? (Sectors(province, district) ?? []) : []),
+    [province, district],
+  );
+  const rwandaCells = useMemo(
+    () => (province && district && sector ? (Cells(province, district, sector) ?? []) : []),
+    [province, district, sector],
+  );
+  const rwandaVillages = useMemo(
+    () => (province && district && sector && cell ? (Villages(province, district, sector, cell) ?? []) : []),
+    [province, district, sector, cell],
+  );
+
+  // Description word count + focus state
+  const [descFocused, setDescFocused] = useState(false);
+  const descWordCount = useMemo(() => countWords(description), [description]);
+  const descFraction = Math.min(descWordCount / DESC_MAX_WORDS, 1);
+  // Accent color that drives both border and ring — shifts slate→amber→red as word count rises,
+  // and falls back to the standard blue (#067eda) only when there are no words yet.
+  const descAccent =
+    descFraction >= 1
+      ? "#ef4444"
+      : descFraction > 0.7
+        ? `color-mix(in srgb, #ef4444 ${Math.round(((descFraction - 0.7) / 0.3) * 100)}%, #f59e0b)`
+        : descFraction > 0
+          ? "#f59e0b"
+          : "#067eda";
+  // Border uses the accent at all times; ring only activates while focused.
+  const descBorderColor = descFraction === 0 && !descFocused ? "#e2e8f0" : descAccent;
+  const descRingShadow = descFocused
+    ? `0 0 0 3px ${descAccent}26`  // 26 hex ≈ 15% opacity, matching focus:ring-3 / ring/15
+    : "none";
+
+  // Step 3 — documents & ownership
+  // docs always starts with the mandatory RDB entry; optional entries are user-added
+  const [docs, setDocs] = useState<DocEntry[]>([
+    { type: "RDB_CERTIFICATE", label: "RDB Registration Certificate", required: true, file: null },
+  ]);
   const [owners, setOwners] = useState<OwnerDraft[]>([]);
   const [ownershipOpen, setOwnershipOpen] = useState(false);
 
-  // Anyone who already acts for an organization has no business here - a
-  // second application would fail anyway, and a pending/rejected one is shown
-  // its status from the dashboard guard.
+  // Inline "add document" UI state
+  const [addingDoc, setAddingDoc] = useState(false);
+  const [newDocLabel, setNewDocLabel] = useState("");
+
+  // Labels already in use (case-insensitive) for duplicate guard
+  const activeDocLabels = useMemo(
+    () => new Set(docs.map((d) => d.label.trim().toLowerCase())),
+    [docs],
+  );
+
+  function commitAddDoc() {
+    const label = newDocLabel.trim();
+    if (!label) return;
+    // Use the label itself as the documentType string — the backend stores it verbatim
+    const type = label;
+    if (activeDocLabels.has(label.toLowerCase())) return; // duplicate
+    setDocs((prev) => [...prev, { type, label, required: false, file: null }]);
+    setNewDocLabel("");
+    setAddingDoc(false);
+  }
+
+  function removeDoc(type: string) {
+    setDocs((prev) => prev.filter((d) => d.type !== type));
+  }
+
+  function setDocFile(type: string, file: File | null) {
+    setDocs((prev) => prev.map((d) => (d.type === type ? { ...d, file } : d)));
+  }
+
   useEffect(() => {
     if (DESIGN_MODE) return;
-    if (me?.organization) {
-      router.replace("/dashboard");
-    }
+    if (me?.organization) router.replace("/dashboard");
   }, [me, router]);
 
-  const step1Valid =
-    tin.trim().length >= 5 && name.trim().length >= 2 && type !== null;
-  const step2Valid = province.trim() !== "" && district.trim() !== "";
+  // Per-step validation
+  // Step 3: RDB file is now required
+  const rdbHasFile = docs.find((d) => d.type === "RDB_CERTIFICATE")?.file != null;
+  const stepValid = [
+    tin.trim().length >= 5 && name.trim().length >= 2,  // 0
+    type !== null,                                         // 1
+    province.trim() !== "" && district.trim() !== "",     // 2
+    rdbHasFile,                                            // 3 — RDB upload required
+  ];
 
-  const updateCertificate = (
-    i: number,
-    patch: Partial<CertificateDraft>,
-  ) => {
-    setCertificates((prev) =>
-      prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)),
-    );
-  };
+  function navigate(next: number) {
+    setDirection(next > step ? 1 : -1);
+    setStep(next);
+  }
+
+  function handleProceed() {
+    setGateOpen(false);
+    onStart?.();
+  }
 
   const submit = async () => {
     if (!type) return;
@@ -175,7 +278,6 @@ export function OnboardingForm() {
             name,
             type,
             tin,
-            registrationNumber: registrationNumber.trim() || undefined,
             email: email.trim() || undefined,
             phone: phone.trim() || undefined,
             licenseType: ORG_TYPES.find((t) => t.value === type)?.label,
@@ -186,6 +288,7 @@ export function OnboardingForm() {
             sector: sector.trim() || undefined,
             cell: cell.trim() || undefined,
             village: village.trim() || undefined,
+            industrySector: industrySector ?? undefined,
             ownership: owners.map((o) => ({
               name: o.name,
               email: o.email.trim() || undefined,
@@ -196,20 +299,10 @@ export function OnboardingForm() {
           });
 
       if (!DESIGN_MODE) {
-        // Files ride along after the application exists; a failed upload must
-        // not fail the application itself, so each is best-effort.
         await Promise.allSettled(
-          certificates
-            .filter((c) => c.file)
-            .map((c) =>
-              onboardingService.uploadDocument(
-                organization.id,
-                c.file as File,
-                c.type,
-                c.number,
-                c.expiryDate,
-              ),
-            ),
+          docs
+            .filter((d) => d.file)
+            .map((d) => onboardingService.uploadDocument(organization.id, d.file as File, d.type, "", "")),
         );
       }
       setDone(true);
@@ -220,496 +313,700 @@ export function OnboardingForm() {
     }
   };
 
+  // ── Success screen ────────────────────────────────────────────────────────────
+
   if (done) {
     return (
-      <div className="w-full rounded-2xl bg-white p-7 sm:p-9 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-100/90 animate-in fade-in duration-300">
+      <div className="w-full rounded-2xl bg-white p-7 sm:p-9 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-100/90">
         <div className="flex flex-col items-center text-center">
-          <div className="flex size-16 items-center justify-center rounded-full bg-sky-50 ring-1 ring-sky-200 animate-in zoom-in duration-300">
+          <div className="flex size-16 items-center justify-center rounded-full bg-sky-50 ring-1 ring-sky-200">
             <MailCheck className="size-8 text-[#067eda]" strokeWidth={2.2} />
           </div>
           <h1 className="mt-6 text-2xl font-bold tracking-tight text-slate-900">
             Application submitted for review
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            <span className="font-semibold text-slate-700">{name}</span> is
-            registered and waiting for the regulator to review it. You&apos;ll
-            receive an email as soon as a decision is made.
+            <span className="font-semibold text-slate-700">{name}</span> is registered
+            and waiting for the regulator to review it. You&apos;ll receive an email once
+            a decision is made.
           </p>
-
-          <div className="mt-6 w-full space-y-2 rounded-xl border border-slate-200 bg-slate-100 p-4 text-left">
+          <div className="mt-6 w-full space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
             <div className="flex items-start gap-3">
               <Clock3 className="mt-0.5 size-4 shrink-0 text-[#067eda]" />
               <div>
-                <p className="text-xs font-semibold text-slate-900">
-                  What happens next
-                </p>
+                <p className="text-xs font-semibold text-slate-900">What happens next</p>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
-                  A regulator reviews your application and documents. Once
-                  approved, your operating licence is activated and you can
-                  sign in and start working.
+                  A regulator reviews your application and documents. Once approved, your
+                  operating licence is activated.
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#067eda]" />
               <div>
-                <p className="text-xs font-semibold text-slate-900">
-                  Track your status
-                </p>
+                <p className="text-xs font-semibold text-slate-900">Track your status</p>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
-                  Sign in any time — until a decision is made you&apos;ll see
-                  your application status here.
+                  Your account is active — head to your dashboard at any time to
+                  check the application status while the review is in progress.
                 </p>
               </div>
             </div>
           </div>
-
-          {DESIGN_MODE ? (
-            <p className="mt-3 font-mono text-xs text-amber-600">
-              DESIGN MODE — REGISTRATION SIMULATED
-            </p>
-          ) : null}
-
+          {DESIGN_MODE && (
+            <p className="mt-3 font-mono text-xs text-amber-600">DESIGN MODE — REGISTRATION SIMULATED</p>
+          )}
           <button
             type="button"
-            className="mt-6 w-full h-11 sm:h-12 rounded-lg font-semibold text-white text-sm sm:text-base tracking-wide bg-gradient-to-r from-[#0066d6] via-[#10b981] via-60% to-[#eab308] hover:opacity-95 hover:shadow-lg transition-all duration-200 cursor-pointer"
-            onClick={() => router.push("/login")}
+            className="mt-6 w-full h-11 rounded-lg font-semibold text-white text-sm bg-gradient-to-r from-[#0066d6] via-[#10b981] via-60% to-[#eab308] hover:opacity-95 transition-opacity cursor-pointer"
+            onClick={() => router.replace("/dashboard")}
           >
-            Go to sign in
+            Go to my dashboard
           </button>
         </div>
       </div>
     );
   }
 
+  // ── Step content ──────────────────────────────────────────────────────────────
+
+  const vars = slideVariants(direction);
+
   return (
-    <div className="w-full rounded-2xl bg-white p-7 sm:p-9 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-100/90 transition-all duration-300">
-      {/* Step indicator */}
-      <div className="mb-5 flex items-center gap-3">
-        {[0, 1].map((s) => (
-          <div key={s} className="flex flex-1 items-center gap-2">
-            <div
-              className={cn(
-                "flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-all",
-                s < step
-                  ? "bg-emerald-500 text-white"
-                  : s === step
-                    ? "bg-[#067eda] text-white ring-4 ring-[#067eda]/15"
-                    : "bg-slate-100 text-slate-400",
-              )}
-            >
-              {s < step ? <Check className="size-3.5" /> : s + 1}
-            </div>
-            <div
-              className={cn(
-                "hidden h-1 flex-1 rounded-full sm:block",
-                s < step ? "bg-emerald-400" : "bg-slate-100",
-              )}
-            />
-          </div>
-        ))}
-      </div>
+    <>
+      <RegistrationGate open={gateOpen} onOpenChange={setGateOpen} onProceed={handleProceed} />
 
-      <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900">
-        {step === 0 ? "Tell us about your business" : "Address & certificates"}
-      </h1>
-      <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
-        {step === 0
-          ? "Your details are validated against the registry before approval."
-          : "Location, ownership and supporting documents for the regulator."}
-      </p>
+      <div className="w-full rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-100/90 overflow-hidden">
 
-      {step === 0 ? (
-        <div className="mt-6 space-y-5">
-          {/* Tax & identity */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <label htmlFor="tin" className={LABEL_CLASS}>
-                Tax Identification Number (TIN){" "}
-                <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="tin"
-                placeholder="e.g. 102345678"
-                autoComplete="off"
-                value={tin}
-                onChange={(e) => setTin(e.target.value)}
-                className={cn(INPUT_CLASS, "font-mono")}
-              />
-              <p className="text-[11px] text-slate-400">
-                Enter your TIN so the regulator can validate your business.
-              </p>
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="organizationName" className={LABEL_CLASS}>
-                Company name <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="organizationName"
-                placeholder="e.g. Sunrise Dairy Ltd"
-                autoFocus
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={INPUT_CLASS}
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <label htmlFor="registrationNumber" className={LABEL_CLASS}>
-                Registration number
-              </label>
-              <input
-                id="registrationNumber"
-                placeholder="Company / RDB number"
-                autoComplete="off"
-                value={registrationNumber}
-                onChange={(e) => setRegistrationNumber(e.target.value)}
-                className={INPUT_CLASS}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="dateIncorporated" className={LABEL_CLASS}>
-                Date of incorporation
-              </label>
-              <input
-                id="dateIncorporated"
-                type="date"
-                value={dateIncorporated}
-                onChange={(e) => setDateIncorporated(e.target.value)}
-                className={INPUT_CLASS}
-              />
-            </div>
-          </div>
-
-          {/* Business type */}
-          <div className="space-y-2">
-            <label className={LABEL_CLASS}>
-              Business type <span className="text-red-500">*</span>
-            </label>
-            <div
-              role="radiogroup"
-              aria-label="Business type"
-              className="grid grid-cols-1 gap-2 sm:grid-cols-2"
-            >
-              {ORG_TYPES.map((t) => {
-                const selected = type === t.value;
-                return (
-                  <button
-                    key={t.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    onClick={() => setType(t.value)}
-                    className={cn(
-                      "relative rounded-lg border p-3 text-left transition-all cursor-pointer",
-                      selected
-                        ? "border-[#067eda] bg-primary-light ring-1 ring-[#067eda] shadow-xs"
-                        : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs",
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-semibold text-slate-900">
-                        {t.label}
-                      </span>
-                      {selected ? (
-                        <Check
-                          className="size-4 shrink-0 text-[#067eda]"
-                          strokeWidth={2.5}
-                        />
-                      ) : null}
-                    </div>
-                    <span className="mt-1 block text-[11px] leading-relaxed text-slate-500">
-                      {t.hint}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Contact */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <label htmlFor="email" className={LABEL_CLASS}>
-                Company email
-              </label>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="info@company.rw"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={cn(INPUT_CLASS, "pl-10")}
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="phone" className={LABEL_CLASS}>
-                Phone number
-              </label>
-              <div className="flex">
-                <span className="flex items-center rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-500">
-                  +250
-                </span>
-                <input
-                  id="phone"
-                  type="tel"
-                  placeholder="7XX XXX XXX"
-                  autoComplete="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className={cn(INPUT_CLASS, "rounded-l-none")}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="description" className={LABEL_CLASS}>
-              Business description
-            </label>
-            <textarea
-              id="description"
-              rows={2}
-              placeholder="What does your business do?"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg outline-none transition-all duration-150 focus:border-[#067eda] focus:ring-3 focus:ring-[#067eda]/15 hover:border-slate-300 resize-none"
-            />
-          </div>
+        {/* ── Progress bar ── */}
+        <div className="h-1 bg-slate-100">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-[#067eda] to-[#10b981]"
+            animate={{ width: `${((step + 1) / TOTAL_STEPS) * 100}%` }}
+            transition={{ duration: 0.4, ease: [0.32, 0, 0.18, 1] }}
+          />
         </div>
-      ) : (
-        <div className="mt-6 space-y-5">
-          {/* Address */}
-          <div className="flex items-center gap-2">
-            <MapPin className="size-4 text-[#067eda]" />
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Business address
-            </h2>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <label htmlFor="province" className={LABEL_CLASS}>
-                Province <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="province"
-                value={province}
-                onChange={(e) => setProvince(e.target.value)}
-                className={cn(INPUT_CLASS, "appearance-none cursor-pointer")}
-              >
-                <option value="">Select province</option>
-                {RWANDA_PROVINCES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="district" className={LABEL_CLASS}>
-                District <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="district"
-                placeholder="e.g. Gasabo"
-                value={district}
-                onChange={(e) => setDistrict(e.target.value)}
-                className={INPUT_CLASS}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-1.5">
-              <label htmlFor="sector" className={LABEL_CLASS}>
-                Sector
-              </label>
-              <input
-                id="sector"
-                placeholder="Sector"
-                value={sector}
-                onChange={(e) => setSector(e.target.value)}
-                className={INPUT_CLASS}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="cell" className={LABEL_CLASS}>
-                Cell
-              </label>
-              <input
-                id="cell"
-                placeholder="Cell"
-                value={cell}
-                onChange={(e) => setCell(e.target.value)}
-                className={INPUT_CLASS}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="village" className={LABEL_CLASS}>
-                Village
-              </label>
-              <input
-                id="village"
-                placeholder="Village"
-                value={village}
-                onChange={(e) => setVillage(e.target.value)}
-                className={INPUT_CLASS}
-              />
-            </div>
-          </div>
 
-          {/* Certificates */}
-          <div className="flex items-center gap-2 pt-1">
-            <Landmark className="size-4 text-[#067eda]" />
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              Certificates &amp; licences
-            </h2>
-          </div>
-          <div className="space-y-3">
-            {certificates.map((cert, i) => (
-              <div
-                key={cert.type}
-                className="rounded-xl border border-slate-200 bg-slate-100 p-4"
-              >
-                <div className="flex items-center gap-2">
-                  <FileText className="size-4 text-slate-400" />
-                  <span className="text-xs font-semibold text-slate-700">
-                    {cert.label}
-                  </span>
+        {/* ── Step indicator ── */}
+        <div className="px-7 sm:px-9 pt-6 pb-0">
+          <div className="flex items-center">
+            {STEPS.map((s, i) => (
+              <div key={i} className="flex items-center flex-1 last:flex-none">
+                {/* Dot */}
+                <div
+                  className={cn(
+                    "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-all duration-300",
+                    i < step
+                      ? "bg-emerald-500 text-white"
+                      : i === step
+                        ? "bg-[#067eda] text-white shadow-[0_0_0_4px_rgba(6,126,218,0.15)]"
+                        : "bg-slate-100 text-slate-400",
+                  )}
+                >
+                  {i < step ? <Check className="size-3.5" /> : i + 1}
                 </div>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <input
-                    placeholder="Certificate / licence number"
-                    value={cert.number}
-                    onChange={(e) =>
-                      updateCertificate(i, { number: e.target.value })
-                    }
-                    className={INPUT_CLASS}
-                  />
-                  <input
-                    type="date"
-                    value={cert.expiryDate}
-                    onChange={(e) =>
-                      updateCertificate(i, { expiryDate: e.target.value })
-                    }
-                    className={INPUT_CLASS}
-                  />
-                </div>
-                <label className="mt-3 flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 bg-white px-3.5 py-2.5 text-xs text-slate-500 transition-colors hover:border-[#067eda]/50 hover:bg-sky-50/40">
-                  <Upload className="size-3.5" />
-                  <span className="truncate">
-                    {cert.file
-                      ? cert.file.name
-                      : "Upload certificate copy (jpg, png, pdf — max 5MB)"}
-                  </span>
-                  <input
-                    type="file"
-                    className="sr-only"
-                    accept=".jpg,.jpeg,.png,.doc,.pdf"
-                    onChange={(e) =>
-                      updateCertificate(i, {
-                        file: e.target.files?.[0] ?? null,
-                      })
-                    }
-                  />
-                </label>
+                {/* Label — hidden on mobile */}
+                <span className={cn(
+                  "ml-2 text-[11px] font-semibold hidden sm:block whitespace-nowrap transition-colors",
+                  i === step ? "text-slate-800" : i < step ? "text-emerald-600" : "text-slate-400",
+                )}>
+                  {s.label}
+                </span>
+                {/* Connector */}
+                {i < TOTAL_STEPS - 1 && (
+                  <div className="flex-1 mx-2 sm:mx-3 h-px bg-slate-200 overflow-hidden">
+                    <motion.div
+                      className="h-full bg-emerald-400"
+                      animate={{ width: i < step ? "100%" : "0%" }}
+                      transition={{ duration: 0.4, ease: [0.32, 0, 0.18, 1] }}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
 
-          {/* Ownership */}
-          <button
-            type="button"
-            onClick={() => setOwnershipOpen(true)}
-            className="flex w-full items-center justify-between rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3.5 text-left transition-colors hover:border-[#067eda]/50 hover:bg-sky-50/40 cursor-pointer"
-          >
-            <div className="flex items-center gap-2.5">
-              <ShieldCheck className="size-4 text-slate-400" />
-              <div>
-                <p className="text-xs font-semibold text-slate-700">
-                  Ownership information
+          {/* Step headline */}
+          <div className="mt-5">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={`title-${step}`}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2 }}
+              >
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+                  {step === 0 && "Your business identity"}
+                  {step === 1 && "What kind of business are you?"}
+                  {step === 2 && "Contact & location"}
+                  {step === 3 && "Documents & ownership"}
+                </h1>
+                <p className="mt-1 text-xs sm:text-sm text-slate-500">
+                  {step === 0 && "Basic registration details — validated against the national registry."}
+                  {step === 1 && "Choose your business type and industry sector."}
+                  {step === 2 && "How the regulator reaches you and where you operate."}
+                  {step === 3 && "Supporting certificates and ownership structure for compliance."}
                 </p>
-                <p className="text-[11px] text-slate-400">
-                  {owners.length > 0
-                    ? `${owners.length} owner${owners.length !== 1 ? "s" : ""} added`
-                    : "Record who owns this business (required for compliance)"}
-                </p>
-              </div>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setOwnershipOpen(true)}
-            >
-              {owners.length > 0 ? "Manage" : "Add"}
-            </Button>
-          </button>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
-      )}
 
-      {formError ? (
-        <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
-          {formError}
-        </div>
-      ) : null}
+        {/* ── Form body ── */}
+        <div className="px-7 sm:px-9 pt-5 pb-7 sm:pb-8">
+          <AnimatePresence mode="wait" initial={false}>
 
-      {/* Navigation */}
-      <div className="mt-7 flex items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => setStep(0)}
-          disabled={step === 0 || submitting}
-          className={cn(
-            "flex h-11 items-center gap-1.5 rounded-lg px-4 text-sm font-semibold text-slate-500 transition-colors",
-            step === 0 || submitting
-              ? "cursor-not-allowed opacity-40"
-              : "hover:bg-slate-100 cursor-pointer",
-          )}
-        >
-          <ArrowLeft className="size-4" />
-          Back
-        </button>
-
-        <span className="font-mono text-xs uppercase tracking-wider text-slate-400">
-          Step {step + 1} of 2
-        </span>
-
-        {step === 0 ? (
-          <button
-            type="button"
-            disabled={!step1Valid || submitting}
-            onClick={() => setStep(1)}
-            className="flex h-11 items-center gap-1.5 rounded-lg bg-[#067eda] px-5 text-sm font-semibold text-white transition-all hover:bg-[#005ba6] hover:shadow-md cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Continue
-            <ArrowRight className="size-4" />
-          </button>
-        ) : (
-          <button
-            type="button"
-            disabled={!step2Valid || submitting}
-            onClick={() => void submit()}
-            className="flex h-11 items-center gap-2 rounded-lg bg-gradient-to-r from-[#0066d6] via-[#10b981] via-60% to-[#eab308] px-5 text-sm font-semibold text-white transition-all hover:opacity-95 hover:shadow-lg cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {submitting ? (
-              <>
-                <LoaderCircle className="size-4 animate-spin" />
-                Submitting…
-              </>
-            ) : (
-              <>
-                <ShieldCheck className="size-4" />
-                Submit for approval
-              </>
+            {/* ─ Step 0: Identity ─ */}
+            {step === 0 && (
+              <motion.div key="s0" {...vars} transition={{ duration: 0.25, ease: "easeOut" }} className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label htmlFor="organizationName" className={LABEL_CLASS}>
+                      Company name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="organizationName"
+                      placeholder="e.g. Sunrise Dairy Ltd"
+                      autoFocus
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className={INPUT_CLASS}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label htmlFor="tin" className={LABEL_CLASS}>
+                      RDB Registration Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="tin"
+                      placeholder="e.g. 102345678"
+                      autoComplete="off"
+                      value={tin}
+                      onChange={(e) => setTin(e.target.value)}
+                      className={cn(INPUT_CLASS, "font-mono")}
+                    />
+                    <p className="text-[11px] text-slate-400">Used by the regulator to validate your business.</p>
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label htmlFor="dateIncorporated" className={LABEL_CLASS}>
+                      Date of incorporation
+                    </label>
+                    <input
+                      id="dateIncorporated"
+                      type="date"
+                      value={dateIncorporated}
+                      onChange={(e) => setDateIncorporated(e.target.value)}
+                      className={INPUT_CLASS}
+                    />
+                  </div>
+                </div>
+              </motion.div>
             )}
-          </button>
-        )}
+
+            {/* ─ Step 1: Business type ─ */}
+            {step === 1 && (
+              <motion.div key="s1" {...vars} transition={{ duration: 0.25, ease: "easeOut" }} className="space-y-5">
+                <div className="space-y-2">
+                  <label className={LABEL_CLASS}>
+                    Business type <span className="text-red-500">*</span>
+                  </label>
+                  <div role="radiogroup" className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {ORG_TYPES.map((t) => {
+                      const selected = type === t.value;
+                      return (
+                        <button
+                          key={t.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => setType(t.value)}
+                          className={cn(
+                            "relative rounded-xl border p-3.5 text-left transition-all cursor-pointer",
+                            selected
+                              ? "border-[#067eda] bg-[#f0f8ff] ring-1 ring-[#067eda] shadow-sm"
+                              : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm",
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-lg leading-none">{t.icon}</span>
+                            {selected && <Check className="size-3.5 shrink-0 text-[#067eda] mt-0.5" strokeWidth={2.5} />}
+                          </div>
+                          <p className="mt-2 text-xs font-semibold text-slate-900">{t.label}</p>
+                          <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">{t.hint}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className={LABEL_CLASS}>
+                    Industry sector
+                    <span className="ml-1 text-[11px] font-normal text-slate-400">— routes your application to the right regulator</span>
+                  </label>
+                  <div role="radiogroup" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {INDUSTRY_SECTORS.map((s) => {
+                      const selected = industrySector === s.value;
+                      return (
+                        <button
+                          key={s.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => setIndustrySector(s.value)}
+                          className={cn(
+                            "relative rounded-lg border p-2.5 text-left transition-all cursor-pointer",
+                            selected
+                              ? "border-[#067eda] bg-[#f0f8ff] ring-1 ring-[#067eda] shadow-xs"
+                              : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs",
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-1">
+                            <span className="text-xs font-semibold text-slate-900 leading-snug">{s.label}</span>
+                            {selected && <Check className="size-3 shrink-0 text-[#067eda] mt-0.5" strokeWidth={2.5} />}
+                          </div>
+                          <span className="mt-0.5 block text-[10px] leading-relaxed text-slate-500">{s.hint}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ─ Step 2: Contact & location ─ */}
+            {step === 2 && (
+              <motion.div key="s2" {...vars} transition={{ duration: 0.25, ease: "easeOut" }} className="space-y-5">
+                {/* Contact */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label htmlFor="email" className={LABEL_CLASS}>Company email</label>
+                    <div className="relative">
+                      <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                      <input
+                        id="email"
+                        type="email"
+                        placeholder="info@company.rw"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className={cn(INPUT_CLASS, "pl-10")}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label htmlFor="phone" className={LABEL_CLASS}>Phone number</label>
+                    <div className="flex">
+                      <span className="flex items-center rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-500">+250</span>
+                      <input
+                        id="phone"
+                        type="tel"
+                        placeholder="7XX XXX XXX"
+                        autoComplete="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className={cn(INPUT_CLASS, "rounded-l-none")}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description with live word count and animated border */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="description" className={LABEL_CLASS}>Business description</label>
+                    <span className={cn(
+                      "text-[11px] font-mono tabular-nums transition-colors duration-300",
+                      descWordCount >= DESC_MAX_WORDS
+                        ? "text-red-500 font-semibold"
+                        : descWordCount >= Math.round(DESC_MAX_WORDS * 0.7)
+                          ? "text-amber-500"
+                          : "text-slate-400",
+                    )}>
+                      {descWordCount} / {DESC_MAX_WORDS} words
+                    </span>
+                  </div>
+                  <textarea
+                    id="description"
+                    rows={4}
+                    placeholder="What does your business do? Describe your products, services, and operations."
+                    value={description}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      // For regular keystroke input: block additions that exceed the limit
+                      if (countWords(next) > DESC_MAX_WORDS && next.length > description.length) return;
+                      setDescription(next);
+                    }}
+                    onFocus={() => setDescFocused(true)}
+                    onBlur={() => setDescFocused(false)}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pasted = e.clipboardData.getData("text");
+                      // Merge current value with pasted text at the cursor position
+                      const el = e.currentTarget;
+                      const merged =
+                        description.slice(0, el.selectionStart ?? description.length) +
+                        pasted +
+                        description.slice(el.selectionEnd ?? description.length);
+                      setDescription(truncateToWords(merged, DESC_MAX_WORDS));
+                    }}
+                    style={{ borderColor: descBorderColor, boxShadow: descRingShadow }}
+                    className="w-full px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 bg-white border rounded-lg outline-none transition-[border-color,box-shadow] duration-300 hover:border-slate-300 resize-y"
+                  />
+                </div>
+
+                {/* Divider */}
+                <div className="flex items-center gap-2 pt-1">
+                  <MapPin className="size-4 text-[#067eda] shrink-0" />
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Business address</span>
+                  <div className="flex-1 h-px bg-slate-100" />
+                </div>
+
+                {/* Province → District (cascading) */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label htmlFor="province" className={LABEL_CLASS}>Province <span className="text-red-500">*</span></label>
+                    <select
+                      id="province"
+                      value={province}
+                      onChange={(e) => {
+                        setProvince(e.target.value);
+                        setDistrict("");
+                        setSector("");
+                        setCell("");
+                        setVillage("");
+                      }}
+                      className={SELECT_CLASS}
+                    >
+                      <option value="">Select province</option>
+                      {rwandaProvinces.map((p) => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label htmlFor="district" className={LABEL_CLASS}>District <span className="text-red-500">*</span></label>
+                    <select
+                      id="district"
+                      value={district}
+                      disabled={!province}
+                      onChange={(e) => {
+                        setDistrict(e.target.value);
+                        setSector("");
+                        setCell("");
+                        setVillage("");
+                      }}
+                      className={SELECT_CLASS}
+                    >
+                      <option value="">{province ? "Select district" : "Select province first"}</option>
+                      {rwandaDistricts.map((d) => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Sector → Cell → Village (cascading) */}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <label htmlFor="sector" className={LABEL_CLASS}>Sector</label>
+                    <select
+                      id="sector"
+                      value={sector}
+                      disabled={!district}
+                      onChange={(e) => {
+                        setSector(e.target.value);
+                        setCell("");
+                        setVillage("");
+                      }}
+                      className={SELECT_CLASS}
+                    >
+                      <option value="">{district ? "Select sector" : "Select district first"}</option>
+                      {rwandaSectors.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label htmlFor="cell" className={LABEL_CLASS}>Cell</label>
+                    <select
+                      id="cell"
+                      value={cell}
+                      disabled={!sector}
+                      onChange={(e) => {
+                        setCell(e.target.value);
+                        setVillage("");
+                      }}
+                      className={SELECT_CLASS}
+                    >
+                      <option value="">{sector ? "Select cell" : "Select sector first"}</option>
+                      {rwandaCells.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label htmlFor="village" className={LABEL_CLASS}>Village</label>
+                    <select
+                      id="village"
+                      value={village}
+                      disabled={!cell}
+                      onChange={(e) => setVillage(e.target.value)}
+                      className={SELECT_CLASS}
+                    >
+                      <option value="">{cell ? "Select village" : "Select cell first"}</option>
+                      {rwandaVillages.map((v) => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ─ Step 3: Documents & ownership ─ */}
+            {step === 3 && (
+              <motion.div key="s3" {...vars} transition={{ duration: 0.25, ease: "easeOut" }} className="space-y-5">
+
+                {/* ── Certificates section header ── */}
+                <div className="flex items-center gap-2">
+                  <Landmark className="size-4 text-[#067eda] shrink-0" />
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Certificates &amp; licences</span>
+                  <div className="flex-1 h-px bg-slate-100" />
+                </div>
+
+                {/*
+                  Animated layout container — expands to a 2-column grid when 2+ docs are active.
+                  motion.div with layout="position" lets each card animate its own position
+                  while the grid reflows. The maxWidth animation widens the card shell (inherited
+                  from the outer motion.div in page.tsx) via the parent; here we just let the grid
+                  grow naturally and let Framer handle reflows.
+                */}
+                <motion.div
+                  layout
+                  className={cn(
+                    "gap-3",
+                    docs.length >= 2
+                      ? "grid sm:grid-cols-2"
+                      : "flex flex-col",
+                  )}
+                  transition={{ duration: 0.35, ease: [0.32, 0, 0.18, 1] }}
+                >
+                  <AnimatePresence initial={false}>
+                    {docs.map((doc) => (
+                      <motion.div
+                        key={doc.type}
+                        layout="position"
+                        initial={{ opacity: 0, scale: 0.96, y: 8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.94, y: -6 }}
+                        transition={{ duration: 0.22, ease: "easeOut" }}
+                        className={cn(
+                          "rounded-xl border bg-slate-50 p-4",
+                          doc.required
+                            ? "border-[#067eda]/30 ring-1 ring-[#067eda]/10"
+                            : "border-slate-200",
+                        )}
+                      >
+                        {/* Card header */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <FileText className="size-4 shrink-0 text-slate-400" />
+                          <span className="text-xs font-semibold text-slate-700 leading-tight">{doc.label}</span>
+                          {doc.required ? (
+                            <span className="ml-auto rounded-full bg-[#067eda]/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#067eda]">
+                              required
+                            </span>
+                          ) : (
+                            <>
+                              <span className="ml-auto text-[10px] text-slate-400">optional</span>
+                              <button
+                                type="button"
+                                aria-label={`Remove ${doc.label}`}
+                                onClick={() => removeDoc(doc.type)}
+                                className="ml-1 flex size-5 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 cursor-pointer"
+                              >
+                                <X className="size-3" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+
+                        {/* File upload row */}
+                        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 bg-white px-3.5 py-2.5 text-xs text-slate-500 transition-colors hover:border-[#067eda]/50 hover:bg-sky-50/40">
+                          <Upload className="size-3.5 shrink-0" />
+                          <span className="min-w-0 flex-1 truncate">
+                            {doc.file ? doc.file.name : "Upload copy (jpg, png, pdf — max 5 MB)"}
+                          </span>
+                          {doc.file && (
+                            <button
+                              type="button"
+                              aria-label="Clear file"
+                              onClick={(e) => { e.preventDefault(); setDocFile(doc.type, null); }}
+                              className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 cursor-pointer"
+                            >
+                              <X className="size-3" />
+                            </button>
+                          )}
+                          <input
+                            type="file"
+                            className="sr-only"
+                            accept=".jpg,.jpeg,.png,.doc,.pdf"
+                            onChange={(e) => setDocFile(doc.type, e.target.files?.[0] ?? null)}
+                          />
+                        </label>
+
+                        {/* Required hint when file is missing */}
+                        {doc.required && !doc.file && (
+                          <p className="mt-1.5 text-[11px] text-slate-400">
+                            Upload required to submit your application.
+                          </p>
+                        )}
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </motion.div>
+
+                {/* Add Document — inline free-text input, animates open/closed */}
+                <AnimatePresence initial={false}>
+                  {addingDoc ? (
+                    <motion.div
+                      key="add-doc-input"
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.18, ease: "easeOut" }}
+                      className="flex items-center gap-2"
+                    >
+                      <input
+                        autoFocus
+                        type="text"
+                        value={newDocLabel}
+                        onChange={(e) => setNewDocLabel(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") { e.preventDefault(); commitAddDoc(); }
+                          if (e.key === "Escape") { setAddingDoc(false); setNewDocLabel(""); }
+                        }}
+                        placeholder="Certificate or document name…"
+                        className={cn(
+                          INPUT_CLASS,
+                          "flex-1 text-xs h-9",
+                          activeDocLabels.has(newDocLabel.trim().toLowerCase()) && newDocLabel.trim()
+                            ? "border-amber-400 focus:border-amber-400 focus:ring-amber-400/15"
+                            : "",
+                        )}
+                      />
+                      <button
+                        type="button"
+                        disabled={
+                          !newDocLabel.trim() ||
+                          activeDocLabels.has(newDocLabel.trim().toLowerCase())
+                        }
+                        onClick={commitAddDoc}
+                        className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-[#067eda] px-3 text-xs font-semibold text-white transition-all hover:bg-[#005ba6] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                      >
+                        <Check className="size-3" /> Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setAddingDoc(false); setNewDocLabel(""); }}
+                        className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
+                        aria-label="Cancel"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="add-doc-button"
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 4 }}
+                      transition={{ duration: 0.18, ease: "easeOut" }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setAddingDoc(true)}
+                        className="flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-[#067eda]/60 hover:bg-sky-50/50 hover:text-[#067eda] cursor-pointer"
+                      >
+                        <Plus className="size-3 shrink-0" />
+                        Add document
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <ShieldCheck className="size-4 text-[#067eda] shrink-0" />
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Ownership</span>
+                  <div className="flex-1 h-px bg-slate-100" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setOwnershipOpen(true)}
+                  className="flex w-full items-center justify-between rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3.5 text-left transition-colors hover:border-[#067eda]/50 hover:bg-sky-50/40 cursor-pointer"
+                >
+                  <div>
+                    <p className="text-xs font-semibold text-slate-700">Ownership information</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {owners.length > 0
+                        ? `${owners.length} owner${owners.length !== 1 ? "s" : ""} added`
+                        : "Record who owns this business (required for compliance)"}
+                    </p>
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setOwnershipOpen(true)}>
+                    {owners.length > 0 ? "Manage" : "Add owners"}
+                  </Button>
+                </button>
+              </motion.div>
+            )}
+
+          </AnimatePresence>
+
+          {/* ── Error ── */}
+          {formError && (
+            <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
+              {formError}
+            </div>
+          )}
+
+          {/* ── Navigation ── */}
+          <div className="mt-6 flex items-center justify-between gap-3 border-t border-slate-100 pt-5">
+            <button
+              type="button"
+              onClick={() => navigate(step - 1)}
+              disabled={step === 0 || submitting}
+              className={cn(
+                "flex h-10 items-center gap-1.5 rounded-lg px-4 text-sm font-semibold text-slate-500 transition-colors",
+                step === 0 || submitting ? "opacity-30 cursor-not-allowed" : "hover:bg-slate-100 cursor-pointer",
+              )}
+            >
+              <ArrowLeft className="size-4" />
+              Back
+            </button>
+
+            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
+              {step + 1} / {TOTAL_STEPS}
+            </span>
+
+            {step < TOTAL_STEPS - 1 ? (
+              <button
+                type="button"
+                disabled={!stepValid[step] || submitting}
+                onClick={() => navigate(step + 1)}
+                className="flex h-10 items-center gap-1.5 rounded-lg bg-[#067eda] px-5 text-sm font-semibold text-white transition-all hover:bg-[#005ba6] hover:shadow-md cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Continue
+                <ArrowRight className="size-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={!stepValid[3] || submitting}
+                onClick={() => void submit()}
+                className="flex h-10 items-center gap-2 rounded-lg bg-gradient-to-r from-[#0066d6] via-[#10b981] via-60% to-[#eab308] px-5 text-sm font-semibold text-white hover:opacity-95 hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? (
+                  <><LoaderCircle className="size-4 animate-spin" /> Submitting…</>
+                ) : (
+                  <><ShieldCheck className="size-4" /> Submit for approval</>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       <OwnershipDialog
@@ -718,13 +1015,11 @@ export function OnboardingForm() {
         owners={owners}
         onChange={setOwners}
       />
-    </div>
+    </>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Ownership dialog — matches the Digital Tax Stamp ownership table
-// ---------------------------------------------------------------------------
+// ── Ownership dialog ──────────────────────────────────────────────────────────
 
 function OwnershipDialog({
   open,
@@ -733,184 +1028,140 @@ function OwnershipDialog({
   onChange,
 }: {
   open: boolean;
-  onOpenChange: (v: boolean) => void;
+  onOpenChange: (open: boolean) => void;
   owners: OwnerDraft[];
-  onChange: (v: OwnerDraft[]) => void;
+  onChange: (owners: OwnerDraft[]) => void;
 }) {
   const [form, setForm] = useState<OwnerDraft>({
-    name: "",
-    email: "",
-    phone: "",
-    percentage: "",
-    idNumber: "",
+    name: "", email: "", phone: "", percentage: "", idNumber: "",
   });
 
-  const totalPct = owners.reduce((s, o) => s + (Number(o.percentage) || 0), 0);
-
-  const addOwner = () => {
+  const add = () => {
     if (!form.name.trim() || !form.percentage) return;
-    onChange([...owners, form]);
+    onChange([...owners, { ...form }]);
     setForm({ name: "", email: "", phone: "", percentage: "", idNumber: "" });
   };
 
-  const removeOwner = (i: number) => {
-    onChange(owners.filter((_, idx) => idx !== i));
-  };
+  const remove = (i: number) => onChange(owners.filter((_, idx) => idx !== i));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogPopup className="max-w-2xl">
+      <DialogPopup className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add ownership information</DialogTitle>
+          <DialogTitle>Ownership information</DialogTitle>
           <DialogDescription>
-            Record the owners of this business. This information is required for
-            regulatory compliance.
+            Add the owners or shareholders of this business. This is required for compliance.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-3 py-2 sm:grid-cols-2">
-          <Field label="Ownership name">
-            <input
-              placeholder="Full name"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className={INPUT_CLASS}
-            />
-          </Field>
-          <Field label="Email address">
-            <input
-              type="email"
-              placeholder="email@example.com"
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              className={INPUT_CLASS}
-            />
-          </Field>
-          <Field label="Phone number">
-            <div className="flex">
-              <span className="flex items-center rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-500">
-                +250
-              </span>
-              <input
-                placeholder="7XX XXX XXX"
-                value={form.phone}
-                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                className={cn(INPUT_CLASS, "rounded-l-none")}
-              />
-            </div>
-          </Field>
-          <Field label="Percentage of ownership">
-            <div className="flex">
-              <input
-                type="number"
-                min={0}
-                max={100}
-                placeholder="0"
-                value={form.percentage}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, percentage: e.target.value }))
-                }
-                className={INPUT_CLASS}
-              />
-              <span className="flex items-center rounded-r-lg border border-l-0 border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-500">
-                %
-              </span>
-            </div>
-          </Field>
-          <Field label="Passport / National ID" className="sm:col-span-2">
-            <input
-              placeholder="ID number"
-              value={form.idNumber}
-              onChange={(e) => setForm((f) => ({ ...f, idNumber: e.target.value }))}
-              className={INPUT_CLASS}
-            />
-          </Field>
-        </div>
+        <div className="space-y-4 py-2">
+          {/* Owner list */}
+          {owners.length > 0 && (
+            <ul className="space-y-2">
+              {owners.map((o, i) => (
+                <li key={i} className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
+                  <div>
+                    <p className="font-semibold text-slate-900">{o.name}</p>
+                    <p className="text-slate-500">{o.percentage}% ownership{o.email ? ` · ${o.email}` : ""}</p>
+                  </div>
+                  <button type="button" onClick={() => remove(i)} className="ml-2 text-slate-400 hover:text-red-500 transition-colors cursor-pointer">✕</button>
+                </li>
+              ))}
+            </ul>
+          )}
 
-        <DialogFooter className="gap-2 sm:justify-between">
-          <span className="text-xs text-slate-500">
-            {owners.length} owner{owners.length !== 1 ? "s" : ""} added · total{" "}
-            <span
-              className={cn(
-                "font-mono font-semibold",
-                totalPct === 100 ? "text-emerald-600" : "text-amber-600",
-              )}
-            >
-              {totalPct}%
-            </span>{" "}
-            {totalPct === 100 ? "✓" : "(aim for 100%)"}
-          </span>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Done
-            </Button>
+          {/* Add form */}
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+            <p className="text-xs font-semibold text-slate-700">Add owner</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className={LABEL_CLASS}>Full name <span className="text-red-500">*</span></label>
+                <input
+                  placeholder="Owner full name"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className={LABEL_CLASS}>Ownership % <span className="text-red-500">*</span></label>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  placeholder="e.g. 51"
+                  value={form.percentage}
+                  onChange={(e) => setForm((f) => ({ ...f, percentage: e.target.value }))}
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className={LABEL_CLASS}>Email</label>
+                <input
+                  type="email"
+                  placeholder="owner@email.com"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className={LABEL_CLASS}>Phone</label>
+                <input
+                  type="tel"
+                  placeholder="07X XXX XXX"
+                  value={form.phone}
+                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div className="sm:col-span-2 space-y-1.5">
+                <label className={LABEL_CLASS}>National ID / Passport</label>
+                <input
+                  placeholder="ID or passport number"
+                  value={form.idNumber}
+                  onChange={(e) => setForm((f) => ({ ...f, idNumber: e.target.value }))}
+                  className={INPUT_CLASS}
+                />
+              </div>
+            </div>
             <Button
-              onClick={addOwner}
+              type="button"
+              size="sm"
               disabled={!form.name.trim() || !form.percentage}
+              onClick={add}
             >
               Add owner
             </Button>
           </div>
-        </DialogFooter>
+        </div>
 
-        {owners.length > 0 && (
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
-            <table className="w-full text-xs">
-              <thead className="bg-slate-50 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                <tr>
-                  <th className="px-3 py-2 text-left">Name</th>
-                  <th className="px-3 py-2 text-left">Email</th>
-                  <th className="px-3 py-2 text-right">%</th>
-                  <th className="px-3 py-2 text-center">ID</th>
-                  <th className="px-3 py-2 text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {owners.map((o, i) => (
-                  <tr key={i}>
-                    <td className="px-3 py-2 font-medium text-slate-700">
-                      {o.name}
-                    </td>
-                    <td className="px-3 py-2 text-slate-500">{o.email || "—"}</td>
-                    <td className="px-3 py-2 text-right font-mono text-slate-600">
-                      {o.percentage}%
-                    </td>
-                    <td className="px-3 py-2 text-center font-mono text-slate-500">
-                      {o.idNumber || "—"}
-                    </td>
-                    <td className="px-3 py-2 text-center">
-                      <button
-                        type="button"
-                        onClick={() => removeOwner(i)}
-                        aria-label={`Remove ${o.name}`}
-                        className="text-slate-400 transition-colors hover:text-red-500 cursor-pointer"
-                      >
-                        <X className="size-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Done</Button>
+        </DialogFooter>
       </DialogPopup>
     </Dialog>
   );
 }
 
+// ── Field helper (kept for potential future use) ──────────────────────────────
+
 function Field({
+  id,
   label,
+  required,
   children,
-  className,
 }: {
+  id?: string;
   label: string;
+  required?: boolean;
   children: React.ReactNode;
-  className?: string;
 }) {
   return (
-    <div className={cn("space-y-1.5", className)}>
-      <label className={LABEL_CLASS}>{label}</label>
+    <div className="space-y-1.5">
+      <label htmlFor={id} className={LABEL_CLASS}>
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
       {children}
     </div>
   );

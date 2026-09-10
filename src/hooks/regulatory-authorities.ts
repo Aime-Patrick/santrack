@@ -7,7 +7,16 @@ export const regulatoryAuthoritiesKey = ["regulatory-authorities"] as const;
 export function useRegulatoryAuthorities() { return useQuery({ queryKey: regulatoryAuthoritiesKey, queryFn: regulatoryAuthorityService.list }); }
 
 export function useMyRegulatoryAuthority(enabled: boolean) {
-  return useQuery({ queryKey: regulatoryAuthorityKeys.mine, queryFn: regulatoryAuthorityService.mine, enabled });
+  return useQuery({
+    queryKey: regulatoryAuthorityKeys.mine,
+    queryFn: regulatoryAuthorityService.mine,
+    enabled,
+    // A 404/409 means the org has no authority row yet — not an error worth
+    // retrying or surfacing as a toast. The consumer renders a "not configured"
+    // state when data is null/undefined.
+    retry: false,
+    throwOnError: false,
+  });
 }
 
 export function useConfigureMyRegulatoryAuthority() {

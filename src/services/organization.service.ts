@@ -121,4 +121,14 @@ export const organizationService = {
       )
       .then((r) => r.data);
   },
+
+  /**
+   * Permanently removes an organization. SYSTEM_ADMIN only.
+   * The API returns 204 No Content on success.
+   */
+  purge(organizationId: number): Promise<void> {
+    return api
+      .delete(`/api/organizations/${organizationId}`)
+      .then(() => undefined);
+  },
 };

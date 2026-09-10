@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogPopup,
@@ -35,13 +35,19 @@ export function EditRoleDialog({ open, onOpenChange, user }: EditRoleDialogProps
   const [selectedRole, setSelectedRole] = useState<UserRole>("ORG_ADMIN");
   const updateUser = useUpdateUser();
 
-  useEffect(() => {
-    if (!open || !user) return;
+  // Seed the dropdown for whichever user the dialog is editing. Done as a
+  // render-time state adjustment keyed on the user id (with a reset when the
+  // dialog closes) so no effect needs to watch `open`/`user`.
+  const [seenUserId, setSeenUserId] = useState<string | null>(null);
+  if (open && user && seenUserId !== String(user.id)) {
+    setSeenUserId(String(user.id));
     const allowed = assignableRoles(me?.role);
     setSelectedRole(
       allowed.includes(user.role) ? user.role : (allowed[0] ?? "ORG_ADMIN"),
     );
-  }, [open, user, me?.role]);
+  } else if (!open && seenUserId !== null) {
+    setSeenUserId(null);
+  }
 
   const handleSave = () => {
     if (!user) return;

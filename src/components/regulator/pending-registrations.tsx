@@ -1,32 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  AlertCircle,
   Building2,
   CheckCircle2,
+  CheckSquare,
   Clock3,
+  Download,
   Eye,
+  ExternalLink,
   FileText,
   LoaderCircle,
   Mail,
   MapPin,
+  MessageSquare,
   Phone,
+  Plus,
   ShieldCheck,
   X,
+  XSquare,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { api, getApiErrorMessage, type OrganizationDocument } from "@/lib/api";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { api, getApiErrorMessage, type OrganizationDocument, type RegistrationConsultation } from "@/lib/api";
 import {
   useDecideRegistration,
   usePendingRegistrations,
   useRegistrationDocuments,
+  useConsultations,
+  useOpenConsultation,
+  useCancelConsultation,
 } from "@/hooks/organizations";
+import {
+  useMyRegulatoryAuthority,
+  useRegulatoryAuthorities,
+} from "@/hooks/regulatory-authorities";
 import { cn } from "@/lib/utils";
 import type { PendingRegistration } from "@/lib/api";
+
+type DecisionType = "APPROVE" | "REQUEST_CHANGES" | "REJECT";
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return "—";
@@ -41,11 +58,43 @@ function typeLabel(type: string): string {
     .join(" ");
 }
 
+function sectorLabel(sector: string | null | undefined): string {
+  if (!sector) return "Not specified";
+  return sector
+    .replace(/_AND_/g, " & ")
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/^\w/, (c) => c.toUpperCase());
+}
+
+const VERDICT_CONFIG = {
+  APPROVED: {
+    label: "Approved",
+    icon: <CheckCircle2 className="size-3.5" />,
+    className: "bg-green-50 border-green-200 text-green-700",
+  },
+  CONCERNS: {
+    label: "Concerns noted",
+    icon: <AlertCircle className="size-3.5" />,
+    className: "bg-amber-50 border-amber-200 text-amber-700",
+  },
+  OBJECTION: {
+    label: "Objection",
+    icon: <XSquare className="size-3.5" />,
+    className: "bg-red-50 border-red-200 text-red-700",
+  },
+} as const;
+
+const STATUS_CONFIG = {
+  PENDING: { label: "Pending", className: "border-sky-200 text-sky-700 bg-sky-50" },
+  RESPONDED: { label: "Responded", className: "border-green-200 text-green-700 bg-green-50" },
+  CANCELLED: { label: "Cancelled", className: "border-slate-200 text-slate-500 bg-slate-50" },
+  OVERDUE: { label: "Overdue", className: "border-red-200 text-red-700 bg-red-50" },
+} as const;
+
 /**
- * Self-registered businesses awaiting the regulator's decision (Digital Tax
- * Stamp flow: submit application -> government review -> approval issues the
- * operating licence). Hidden entirely when the queue is empty so the review
- * workspace only surfaces work that actually needs an officer.
+ * Self-registered businesses awaiting the regulator's decision. Shows both
+ * PENDING and CHANGES_REQUESTED applications. Hidden when the queue is empty.
  */
 export function PendingRegistrations() {
   const { data = [], isLoading } = usePendingRegistrations();
@@ -53,17 +102,32 @@ export function PendingRegistrations() {
 
   if (!isLoading && data.length === 0) return null;
 
+  const pendingCount = data.filter((o) => o.onboardingStatus === "PENDING").length;
+  const changesCount = data.filter((o) => o.onboardingStatus === "CHANGES_REQUESTED").length;
+  const consultCount = data.filter((o) => o.onboardingStatus === "UNDER_CONSULTATION").length;
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="flex-row items-center justify-between space-y-0 border-b border-border/70 py-4">
         <div>
           <CardTitle className="text-base">Registration review</CardTitle>
           <p className="mt-1 text-sm text-muted-foreground">
-            Approve a registration to activate the business and issue its
-            operating licence.
+            Approve a registration to activate the business and issue its operating licence.
           </p>
         </div>
-        <Badge variant="outline">{data.length}</Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          {pendingCount > 0 && <Badge variant="outline">{pendingCount} pending</Badge>}
+          {changesCount > 0 && (
+            <Badge variant="outline" className="border-amber-300 text-amber-700">
+              {changesCount} awaiting resubmission
+            </Badge>
+          )}
+          {consultCount > 0 && (
+            <Badge variant="outline" className="border-sky-300 text-sky-700">
+              {consultCount} under consultation
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="divide-y divide-border/70 p-0">
         {isLoading ? (
@@ -78,13 +142,43 @@ export function PendingRegistrations() {
               className="flex flex-wrap items-center justify-between gap-3 p-5"
             >
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-                  <Clock3 className="size-4" />
+                <div
+                  className={cn(
+                    "flex size-9 shrink-0 items-center justify-center rounded-lg",
+                    org.onboardingStatus === "CHANGES_REQUESTED"
+                      ? "bg-amber-100 text-amber-700"
+                      : org.onboardingStatus === "UNDER_CONSULTATION"
+                      ? "bg-sky-100 text-sky-700"
+                      : "bg-slate-100 text-slate-600",
+                  )}
+                >
+                  {org.onboardingStatus === "CHANGES_REQUESTED" ? (
+                    <AlertCircle className="size-4" />
+                  ) : org.onboardingStatus === "UNDER_CONSULTATION" ? (
+                    <MessageSquare className="size-4" />
+                  ) : (
+                    <Clock3 className="size-4" />
+                  )}
                 </div>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-medium">{org.name}</p>
                     <Badge variant="secondary">{typeLabel(org.type)}</Badge>
+                    {org.industrySector && (
+                      <Badge variant="outline" className="border-primary/30 text-primary text-[10px]">
+                        {sectorLabel(org.industrySector)}
+                      </Badge>
+                    )}
+                    {org.onboardingStatus === "CHANGES_REQUESTED" && (
+                      <Badge variant="outline" className="border-amber-300 text-amber-700 text-[10px]">
+                        Changes requested
+                      </Badge>
+                    )}
+                    {org.onboardingStatus === "UNDER_CONSULTATION" && (
+                      <Badge variant="outline" className="border-sky-300 text-sky-700 text-[10px]">
+                        Under consultation
+                      </Badge>
+                    )}
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {org.tin ? `TIN ${org.tin}` : "No TIN"} · submitted{" "}
@@ -94,11 +188,7 @@ export function PendingRegistrations() {
                   </p>
                 </div>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setSelected(org)}
-              >
+              <Button size="sm" variant="outline" onClick={() => setSelected(org)}>
                 <Eye className="mr-1.5 size-3.5" />
                 Review
               </Button>
@@ -106,7 +196,6 @@ export function PendingRegistrations() {
           ))
         )}
       </CardContent>
-
       {selected && (
         <RegistrationReviewDialog
           key={selected.id}
@@ -130,13 +219,29 @@ function RegistrationReviewDialog({
   onClose: () => void;
 }) {
   const decide = useDecideRegistration();
-  const { data: documents, isLoading: docsLoading } = useRegistrationDocuments(
-    org.id,
-  );
-  const [decision, setDecision] = useState<"APPROVE" | "REJECT" | null>(null);
+  const { data: documents, isLoading: docsLoading, error: docsError } = useRegistrationDocuments(org.id);
+  const { data: consultations = [], isLoading: consultsLoading } = useConsultations(org.id);
+  const { data: myAuthority } = useMyRegulatoryAuthority(true);
+
+  const [decision, setDecision] = useState<DecisionType | null>(null);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [openDoc, setOpenDoc] = useState<OrganizationDocument | null>(null);
+  const [showSendConsultation, setShowSendConsultation] = useState(false);
+
+  const reasonRequired = decision === "REJECT" || decision === "REQUEST_CHANGES";
+  const reasonLabel =
+    decision === "REJECT"
+      ? "Rejection reason *"
+      : "What needs to be provided or corrected? *";
+  const reasonPlaceholder =
+    decision === "REJECT"
+      ? "What needs to be corrected before they reapply…"
+      : "e.g. Please upload your Rwanda FDA Premise Certificate and resubmit.";
+
+  const openConsultations = consultations.filter(
+    (c) => c.status === "PENDING" || c.status === "OVERDUE",
+  );
 
   const handleDecide = async () => {
     if (!decision) return;
@@ -144,7 +249,7 @@ function RegistrationReviewDialog({
     try {
       await decide.mutateAsync({
         orgId: org.id,
-        decision: { decision, reason: reason || undefined },
+        decision: { decision, reason: reason.trim() || undefined },
       });
       onClose();
     } catch (err) {
@@ -155,6 +260,12 @@ function RegistrationReviewDialog({
   const address = [org.province, org.district, org.sector, org.cell, org.village]
     .filter(Boolean)
     .join(", ");
+
+  const confirmLabel = {
+    APPROVE: `Approve & activate ${org.name}`,
+    REQUEST_CHANGES: "Send changes request",
+    REJECT: "Reject registration",
+  } as const;
 
   return (
     <div
@@ -174,8 +285,19 @@ function RegistrationReviewDialog({
             <div>
               <h2 className="text-lg font-bold">{org.name}</h2>
               <p className="text-sm text-muted-foreground">
-                {typeLabel(org.type)} registration · submitted{" "}
-                {formatDate(org.createdAt)}
+                {typeLabel(org.type)} registration · submitted {formatDate(org.createdAt)}
+                {org.onboardingStatus === "CHANGES_REQUESTED" && (
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                    <AlertCircle className="size-3" />
+                    Changes requested
+                  </span>
+                )}
+                {org.onboardingStatus === "UNDER_CONSULTATION" && (
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-700">
+                    <MessageSquare className="size-3" />
+                    Under consultation
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -186,6 +308,20 @@ function RegistrationReviewDialog({
 
         {/* Body */}
         <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-6">
+
+          {/* Previous review note */}
+          {org.onboardingStatus === "CHANGES_REQUESTED" && org.reviewNote && (
+            <section className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-start gap-2">
+                <MessageSquare className="mt-0.5 size-4 shrink-0 text-amber-600" />
+                <div>
+                  <p className="text-xs font-semibold text-amber-800">Previously requested changes</p>
+                  <p className="mt-1 text-sm text-amber-700">{org.reviewNote}</p>
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* Business details */}
           <section>
             <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -193,19 +329,9 @@ function RegistrationReviewDialog({
             </h3>
             <dl className="grid gap-x-6 gap-y-2.5 rounded-xl bg-muted/40 p-4 text-sm sm:grid-cols-2">
               <Detail label="TIN" value={org.tin} mono />
-              <Detail
-                label="Registration number"
-                value={org.registrationNumber}
-                mono
-              />
-              <Detail
-                label="License type"
-                value={org.licenseType ?? typeLabel(org.type)}
-              />
-              <Detail
-                label="Incorporated"
-                value={formatDate(org.dateIncorporated)}
-              />
+              <Detail label="Registration number" value={org.registrationNumber} mono />
+              <Detail label="License type" value={org.licenseType ?? typeLabel(org.type)} />
+              <Detail label="Incorporated" value={formatDate(org.dateIncorporated)} />
               <div className="flex items-start gap-2">
                 <Mail className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
                 <div>
@@ -217,9 +343,7 @@ function RegistrationReviewDialog({
                 <Phone className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
                 <div>
                   <dt className="text-xs text-muted-foreground">Phone</dt>
-                  <dd className="font-medium">
-                    {org.phone ? `+250 ${org.phone}` : "—"}
-                  </dd>
+                  <dd className="font-medium">{org.phone ? `+250 ${org.phone}` : "—"}</dd>
                 </div>
               </div>
               <div className="flex items-start gap-2 sm:col-span-2">
@@ -229,14 +353,22 @@ function RegistrationReviewDialog({
                   <dd className="font-medium">{address || "—"}</dd>
                 </div>
               </div>
+              <div className="sm:col-span-2">
+                <dt className="text-xs text-muted-foreground">Industry sector</dt>
+                <dd className="mt-0.5 font-medium">
+                  {org.industrySector ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary-light px-2.5 py-0.5 text-xs font-semibold text-primary">
+                      {sectorLabel(org.industrySector)}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">Not specified</span>
+                  )}
+                </dd>
+              </div>
               {org.description ? (
                 <div className="sm:col-span-2">
-                  <dt className="text-xs text-muted-foreground">
-                    Description
-                  </dt>
-                  <dd className="text-sm text-foreground/80">
-                    {org.description}
-                  </dd>
+                  <dt className="text-xs text-muted-foreground">Description</dt>
+                  <dd className="text-sm text-foreground/80">{org.description}</dd>
                 </div>
               ) : null}
             </dl>
@@ -249,9 +381,7 @@ function RegistrationReviewDialog({
               Ownership
             </h3>
             {!org.ownership || org.ownership.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No owners declared.
-              </p>
+              <p className="text-sm text-muted-foreground">No owners declared.</p>
             ) : (
               <div className="overflow-x-auto rounded-xl border border-border">
                 <table className="w-full text-xs">
@@ -268,27 +398,18 @@ function RegistrationReviewDialog({
                     {org.ownership.map((owner) => (
                       <tr key={owner.id}>
                         <td className="px-3 py-2 font-medium">{owner.name}</td>
-                        <td className="px-3 py-2 text-muted-foreground">
-                          {owner.email || "—"}
-                        </td>
+                        <td className="px-3 py-2 text-muted-foreground">{owner.email || "—"}</td>
                         <td className="px-3 py-2 text-muted-foreground">
                           {owner.phone ? `+250 ${owner.phone}` : "—"}
                         </td>
-                        <td className="px-3 py-2 text-right font-mono">
-                          {owner.percentage}%
-                        </td>
-                        <td className="px-3 py-2 font-mono text-muted-foreground">
-                          {owner.idNumber || "—"}
-                        </td>
+                        <td className="px-3 py-2 text-right font-mono">{owner.percentage}%</td>
+                        <td className="px-3 py-2 font-mono text-muted-foreground">{owner.idNumber || "—"}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr className="bg-muted/20 font-medium">
-                      <td
-                        colSpan={5}
-                        className="px-3 py-2 text-right text-muted-foreground"
-                      >
+                      <td colSpan={5} className="px-3 py-2 text-right text-muted-foreground">
                         Total:{" "}
                         <span className="font-mono text-foreground">
                           {org.ownership.reduce((s, o) => s + o.percentage, 0)}%
@@ -310,6 +431,10 @@ function RegistrationReviewDialog({
               <div className="flex justify-center py-6">
                 <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
               </div>
+            ) : docsError ? (
+              <p className="text-sm text-danger">
+                Could not load documents — {getApiErrorMessage(docsError, "check your connection and try again")}.
+              </p>
             ) : !documents || documents.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No documents uploaded with this application.
@@ -328,15 +453,11 @@ function RegistrationReviewDialog({
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">
                           {docLabel(doc.documentType)}
-                          {doc.certificateNumber
-                            ? ` · ${doc.certificateNumber}`
-                            : ""}
+                          {doc.certificateNumber ? ` · ${doc.certificateNumber}` : ""}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
                           {doc.filename} ·{" "}
-                          {doc.expiryDate
-                            ? `expires ${formatDate(doc.expiryDate)}`
-                            : "no expiry"}
+                          {doc.expiryDate ? `expires ${formatDate(doc.expiryDate)}` : "no expiry"}
                         </p>
                       </div>
                     </div>
@@ -346,21 +467,79 @@ function RegistrationReviewDialog({
               </div>
             )}
           </section>
+
+          {/* ── CONSULTATIONS ── */}
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Inter-authority consultations
+              </h3>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowSendConsultation(true)}
+                className="h-7 text-xs"
+              >
+                <Plus className="mr-1 size-3" />
+                Send consultation
+              </Button>
+            </div>
+
+            {consultsLoading ? (
+              <div className="flex justify-center py-4">
+                <LoaderCircle className="size-4 animate-spin text-muted-foreground" />
+              </div>
+            ) : consultations.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No consultations sent yet. Use the button above to request input from another regulatory authority.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {consultations.map((c) => (
+                  <ConsultationRow
+                    key={c.id}
+                    consultation={c}
+                    orgId={org.id}
+                  />
+                ))}
+              </div>
+            )}
+
+            {openConsultations.length > 0 && (
+              <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <AlertCircle className="mt-0.5 size-4 shrink-0 text-amber-600" />
+                <p className="text-xs text-amber-700">
+                  {openConsultations.length} consultation
+                  {openConsultations.length !== 1 ? "s" : ""} still pending —
+                  you can still decide below, but consider waiting for responses.
+                </p>
+              </div>
+            )}
+          </section>
         </div>
 
-        {/* Decision */}
+        {/* Decision panel */}
         <div className="border-t border-border p-5">
           <div className="flex gap-2">
             <Button
               variant={decision === "APPROVE" ? "default" : "outline"}
               onClick={() => setDecision("APPROVE")}
-              className={cn(
-                "flex-1",
-                decision === "APPROVE" && "bg-success hover:bg-success/90",
-              )}
+              className={cn("flex-1", decision === "APPROVE" && "bg-success hover:bg-success/90")}
             >
               <CheckCircle2 className="mr-1.5 size-4" />
               Approve
+            </Button>
+            <Button
+              variant={decision === "REQUEST_CHANGES" ? "default" : "outline"}
+              onClick={() => setDecision("REQUEST_CHANGES")}
+              className={cn(
+                "flex-1",
+                decision === "REQUEST_CHANGES" &&
+                  "bg-amber-500 hover:bg-amber-600 text-white border-transparent",
+              )}
+            >
+              <MessageSquare className="mr-1.5 size-4" />
+              Request changes
             </Button>
             <Button
               variant={decision === "REJECT" ? "destructive" : "outline"}
@@ -372,39 +551,38 @@ function RegistrationReviewDialog({
             </Button>
           </div>
 
-          {decision === "REJECT" && (
+          {reasonRequired && (
             <div className="mt-3 space-y-1.5">
-              <Label htmlFor="reject-reason" className="text-xs">
-                Rejection reason *
+              <Label htmlFor="decision-reason" className="text-xs">
+                {reasonLabel}
               </Label>
               <Textarea
-                id="reject-reason"
+                id="decision-reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="What needs to be corrected before they reapply..."
-                className="min-h-[70px] text-sm"
+                placeholder={reasonPlaceholder}
+                className="min-h-[80px] text-sm"
               />
+              {decision === "REQUEST_CHANGES" && (
+                <p className="text-[11px] text-muted-foreground">
+                  The applicant will see this note and can upload missing documents before resubmitting.
+                </p>
+              )}
             </div>
           )}
 
           {decision && (
             <Button
               onClick={() => void handleDecide()}
-              disabled={
-                decide.isPending ||
-                (decision === "REJECT" && !reason.trim())
-              }
+              disabled={decide.isPending || (reasonRequired && !reason.trim())}
               variant={decision === "REJECT" ? "destructive" : "default"}
-              className="mt-3 w-full"
+              className={cn(
+                "mt-3 w-full",
+                decision === "REQUEST_CHANGES" && "bg-amber-500 hover:bg-amber-600 border-transparent",
+              )}
             >
-              {decide.isPending ? (
-                <LoaderCircle className="mr-2 size-4 animate-spin" />
-              ) : null}
-              {decide.isPending
-                ? "Processing…"
-                : decision === "APPROVE"
-                  ? `Approve & activate ${org.name}`
-                  : "Reject registration"}
+              {decide.isPending ? <LoaderCircle className="mr-2 size-4 animate-spin" /> : null}
+              {decide.isPending ? "Processing…" : confirmLabel[decision]}
             </Button>
           )}
 
@@ -416,65 +594,474 @@ function RegistrationReviewDialog({
         </div>
       </div>
 
-      {openDoc && (
-        <DocumentOpener
-          document={openDoc}
-          onClose={() => setOpenDoc(null)}
+      {openDoc && <DocumentViewer document={openDoc} onClose={() => setOpenDoc(null)} />}
+
+      {showSendConsultation && myAuthority && (
+        <SendConsultationDialog
+          orgId={org.id}
+          orgName={org.name}
+          myAuthorityId={myAuthority.id}
+          documents={documents ?? []}
+          onClose={() => setShowSendConsultation(false)}
         />
       )}
     </div>
   );
 }
 
-/** Fetches a filed certificate with the auth header and opens it. */
-function DocumentOpener({
+// ---------------------------------------------------------------------------
+// Consultation row
+// ---------------------------------------------------------------------------
+
+function ConsultationRow({
+  consultation: c,
+  orgId,
+}: {
+  consultation: RegistrationConsultation;
+  orgId: number;
+}) {
+  const cancel = useCancelConsultation(orgId);
+
+  const statusCfg = STATUS_CONFIG[c.status] ?? STATUS_CONFIG.PENDING;
+  const verdictCfg = c.verdict ? VERDICT_CONFIG[c.verdict] : null;
+
+  return (
+    <div className="rounded-lg border border-border bg-white p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium">
+              {c.toAuthority?.name ?? "Unknown authority"}
+            </span>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+                statusCfg.className,
+              )}
+            >
+              {statusCfg.label}
+              {c.status === "OVERDUE" && " ⚠"}
+            </span>
+            {verdictCfg && (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+                  verdictCfg.className,
+                )}
+              >
+                {verdictCfg.icon}
+                {verdictCfg.label}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground line-clamp-1">{c.subject}</p>
+          {c.responseNote && (
+            <p className="mt-1 text-xs text-foreground/80 line-clamp-2 italic">
+              "{c.responseNote}"
+            </p>
+          )}
+          {c.dueDate && c.status === "PENDING" && (
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              Due {formatDate(c.dueDate)}
+            </p>
+          )}
+        </div>
+        {c.status === "PENDING" && (
+          <button
+            type="button"
+            disabled={cancel.isPending}
+            onClick={() => cancel.mutate(c.id)}
+            className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-danger disabled:opacity-50"
+            title="Cancel consultation"
+          >
+            <X className="size-3.5" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Send consultation sub-dialog
+// ---------------------------------------------------------------------------
+
+function SendConsultationDialog({
+  orgId,
+  orgName,
+  myAuthorityId,
+  documents,
+  onClose,
+}: {
+  orgId: number;
+  orgName: string;
+  myAuthorityId: number;
+  documents: OrganizationDocument[];
+  onClose: () => void;
+}) {
+  const { data: allAuthorities = [] } = useRegulatoryAuthorities();
+  const openConsultation = useOpenConsultation(orgId);
+
+  const [toAuthorityId, setToAuthorityId] = useState<number | "">("");
+  const [subject, setSubject] = useState("");
+  const [contextNote, setContextNote] = useState("");
+  const [selectedDocIds, setSelectedDocIds] = useState<number[]>([]);
+  const [dueDate, setDueDate] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  // Exclude own authority from the list
+  const otherAuthorities = allAuthorities.filter((a) => a.id !== myAuthorityId);
+
+  const toggleDoc = (id: number) => {
+    setSelectedDocIds((prev) =>
+      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id],
+    );
+  };
+
+  const handleSend = async () => {
+    if (!toAuthorityId || !subject.trim()) return;
+    setError(null);
+    try {
+      await openConsultation.mutateAsync({
+        toAuthorityId: Number(toAuthorityId),
+        subject: subject.trim(),
+        contextNote: contextNote.trim() || undefined,
+        forwardedDocumentIds: selectedDocIds,
+        dueDate: dueDate || undefined,
+      });
+      onClose();
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg rounded-xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <div>
+            <h3 className="text-base font-bold">Send consultation request</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Ask another authority for their input on{" "}
+              <span className="font-medium">{orgName}</span>'s registration.
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="size-4" />
+          </Button>
+        </div>
+
+        <div className="space-y-4 p-5">
+          {/* Authority picker */}
+          <div className="space-y-1.5">
+            <Label htmlFor="to-authority" className="text-xs font-semibold">
+              Consult authority *
+            </Label>
+            <select
+              id="to-authority"
+              value={toAuthorityId}
+              onChange={(e) => setToAuthorityId(e.target.value === "" ? "" : Number(e.target.value))}
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            >
+              <option value="">Select an authority…</option>
+              {otherAuthorities.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name} ({a.code})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Subject */}
+          <div className="space-y-1.5">
+            <Label htmlFor="consult-subject" className="text-xs font-semibold">
+              Subject *
+            </Label>
+            <input
+              id="consult-subject"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="e.g. Verify FDA Premise Certificate and food safety compliance"
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            />
+          </div>
+
+          {/* Context note — rich text so regulators can structure their brief */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Context note</Label>
+            <RichTextEditor
+              value={contextNote}
+              onChange={setContextNote}
+              placeholder="Background, specific concerns, or documents to check…"
+              minHeight={70}
+            />
+          </div>
+
+          {/* Document selection */}
+          {documents.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">
+                Forward documents (optional)
+              </Label>
+              <div className="space-y-1.5 rounded-lg border border-border p-3 max-h-40 overflow-y-auto">
+                {documents.map((doc) => (
+                  <label
+                    key={doc.id}
+                    className="flex cursor-pointer items-center gap-2.5 rounded-md px-1 py-0.5 hover:bg-muted/30"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedDocIds.includes(doc.id)}
+                      onChange={() => toggleDoc(doc.id)}
+                      className="size-3.5 accent-primary"
+                    />
+                    <span className="flex items-center gap-1.5 text-xs text-foreground">
+                      <FileText className="size-3 shrink-0 text-primary" />
+                      {docLabel(doc.documentType)}
+                      {doc.certificateNumber ? ` · ${doc.certificateNumber}` : ""}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Due date */}
+          <div className="space-y-1.5">
+            <Label htmlFor="consult-due" className="text-xs font-semibold">
+              Response due by (optional)
+            </Label>
+            <input
+              id="consult-due"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            />
+          </div>
+
+          {error && (
+            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-danger">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-border px-5 py-4">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button
+            disabled={!toAuthorityId || !subject.trim() || openConsultation.isPending}
+            onClick={() => void handleSend()}
+          >
+            {openConsultation.isPending ? (
+              <LoaderCircle className="mr-2 size-4 animate-spin" />
+            ) : (
+              <MessageSquare className="mr-1.5 size-4" />
+            )}
+            {openConsultation.isPending ? "Sending…" : "Send consultation"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Document opener
+// ---------------------------------------------------------------------------
+
+/**
+ * Inline document viewer.
+ *
+ * Fetches the document blob, creates an object URL, and renders it inside an
+ * <iframe> so the regulator can read it without leaving the review dialog.
+ * "Open in new tab" and "Download" are available as secondary actions.
+ *
+ * The object URL is revoked only when the component unmounts — not before —
+ * which was the root cause of the blank-tab bug in the previous implementation.
+ */
+function DocumentViewer({
   document: doc,
   onClose,
 }: {
   document: OrganizationDocument;
   onClose: () => void;
 }) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
-    let objectUrl: string | null = null;
     let cancelled = false;
+    setLoading(true);
+    setError(null);
+
     api
-      .get<Blob>(`/api/organizations/documents/${doc.id}`, {
-        responseType: "blob",
-      })
+      .get<Blob>(`/api/organizations/documents/${doc.id}`, { responseType: "blob" })
       .then((response) => {
         if (cancelled) return;
-        objectUrl = URL.createObjectURL(response.data);
-        window.open(objectUrl, "_blank", "noopener,noreferrer");
-        onClose();
+        const url = URL.createObjectURL(response.data);
+        objectUrlRef.current = url;
+        setObjectUrl(url);
+        setLoading(false);
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(getApiErrorMessage(err, "Could not open the document"));
+          setError(getApiErrorMessage(err, "Could not load the document"));
+          setLoading(false);
         }
       });
+
     return () => {
       cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      // Revoke only on unmount, not before — otherwise the iframe goes blank.
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
     };
-  }, [doc.id, onClose]);
+  }, [doc.id]);
+
+  const isPdf =
+    doc.contentType === "application/pdf" ||
+    doc.filename.toLowerCase().endsWith(".pdf");
+
+  const isImage =
+    doc.contentType.startsWith("image/") ||
+    /\.(png|jpe?g|gif|webp|svg)$/i.test(doc.filename);
+
+  function openInNewTab() {
+    if (objectUrl) {
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.click();
+    }
+  }
+
+  function download() {
+    if (objectUrl) {
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = doc.filename;
+      a.click();
+    }
+  }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-2xl">
-        {error ? (
-          <>
-            <p className="text-sm font-medium text-danger">{error}</p>
-            <Button className="mt-4 w-full" onClick={onClose}>
-              Close
-            </Button>
-          </>
-        ) : (
-          <p className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <LoaderCircle className="size-4 animate-spin" />
-            Opening {doc.filename}…
-          </p>
+    <div
+      className="fixed inset-0 z-[60] flex flex-col bg-black/70"
+      onClick={onClose}
+    >
+      {/* ── Toolbar ── */}
+      <div
+        className="flex shrink-0 items-center justify-between gap-3 bg-white px-4 py-3 shadow-sm"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <FileText className="size-4 shrink-0 text-primary" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-foreground">
+              {docLabel(doc.documentType)}
+            </p>
+            <p className="truncate text-[11px] text-muted-foreground">{doc.filename}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {objectUrl && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openInNewTab}
+                className="h-8 gap-1.5 text-xs"
+              >
+                <ExternalLink className="size-3.5" />
+                New tab
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={download}
+                className="h-8 gap-1.5 text-xs"
+              >
+                <Download className="size-3.5" />
+                Download
+              </Button>
+            </>
+          )}
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+            <X className="size-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* ── Viewer body ── */}
+      <div
+        className="flex flex-1 items-center justify-center overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {loading && (
+          <div className="flex flex-col items-center gap-3 text-white">
+            <LoaderCircle className="size-8 animate-spin opacity-70" />
+            <p className="text-sm opacity-70">Loading {doc.filename}…</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="flex flex-col items-center gap-4 rounded-xl bg-white p-8 text-center shadow-xl max-w-sm mx-4">
+            <FileText className="size-10 text-muted-foreground/40" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">Could not load document</p>
+              <p className="mt-1 text-xs text-muted-foreground">{error}</p>
+            </div>
+            <Button onClick={onClose} className="w-full">Close</Button>
+          </div>
+        )}
+
+        {objectUrl && !loading && (
+          isPdf ? (
+            <iframe
+              src={objectUrl}
+              className="h-full w-full border-0"
+              title={doc.filename}
+            />
+          ) : isImage ? (
+            <div className="flex h-full w-full items-center justify-center overflow-auto p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={objectUrl}
+                alt={doc.filename}
+                className="max-h-full max-w-full rounded-lg object-contain shadow-2xl"
+              />
+            </div>
+          ) : (
+            /* Unsupported format — download fallback */
+            <div className="flex flex-col items-center gap-4 rounded-xl bg-white p-8 text-center shadow-xl max-w-sm mx-4">
+              <FileText className="size-10 text-muted-foreground/50" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">Preview not available</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  This file type cannot be previewed in the browser. Use Download to open it.
+                </p>
+              </div>
+              <div className="flex w-full gap-2">
+                <Button variant="outline" className="flex-1" onClick={onClose}>Close</Button>
+                <Button className="flex-1" onClick={download}>
+                  <Download className="mr-1.5 size-3.5" />
+                  Download
+                </Button>
+              </div>
+            </div>
+          )
         )}
       </div>
     </div>
@@ -493,16 +1080,14 @@ function Detail({
   return (
     <div>
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className={cn("font-medium", mono && "font-mono")}>
-        {value || "—"}
-      </dd>
+      <dd className={cn("font-medium", mono && "font-mono")}>{value || "—"}</dd>
     </div>
   );
 }
 
-/** RDB_CERTIFICATE -> RDB certificate */
 function docLabel(documentType: string): string {
-  return documentType.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) =>
-    c.toUpperCase(),
-  );
+  return documentType
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/^\w/, (c) => c.toUpperCase());
 }

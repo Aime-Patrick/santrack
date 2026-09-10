@@ -127,8 +127,8 @@ export function BomFormDialog({
           <DialogTitle>Create a bill of materials</DialogTitle>
           <DialogDescription>
             What one unit of a product consumes. Production orders use this to
-            work out how much to allocate, "so the quantities here are per single
-            unit", not per run.
+            work out how much to allocate, &quot;so the quantities here are per single
+            unit&quot;, not per run.
           </DialogDescription>
         </DialogHeader>
 

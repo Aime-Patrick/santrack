@@ -81,6 +81,29 @@ export interface RegulatoryOfficer {
   role: string;
 }
 
+/** A case as the affected business sees it — its own corrective-action inbox. */
+export interface BusinessRegulatoryCase {
+  id: number;
+  caseNumber: string | null;
+  title: string;
+  description: string | null;
+  priority: RegulatoryCasePriority;
+  status: RegulatoryCaseStatus;
+  caseCategory: string | null;
+  dueOn: string | null;
+  openedAt: string;
+  leadAuthority: { id: number; code: string; name: string } | null;
+  facility: { id: number; name: string } | null;
+  license: { id: number; licenseNumber: string } | null;
+  batch: { id: number; batchCode: string } | null;
+  assignedTo: { id: number; name: string } | null;
+}
+
+export interface BusinessRegulatoryCaseDetail extends BusinessRegulatoryCase {
+  evidence: RegulatoryCaseDetail["evidence"];
+  events: RegulatoryCaseDetail["events"];
+}
+
 export const regulatoryCaseService = {
   open(input: {
     organizationId: number;
@@ -105,6 +128,43 @@ export const regulatoryCaseService = {
 
   one(id: number): Promise<RegulatoryCaseDetail> {
     return api.get<RegulatoryCaseDetail>(`/api/regulator/cases/${id}`).then((response) => response.data);
+  },
+
+  // ── Business-facing (the case's subject organisation) ──
+
+  /** Cases opened against my organisation — what I must respond to. */
+  myCases(status?: RegulatoryCaseStatus): Promise<BusinessRegulatoryCase[]> {
+    return api
+      .get<BusinessRegulatoryCase[]>("/api/cases", { params: status ? { status } : undefined })
+      .then((response) => response.data);
+  },
+
+  myCase(id: number): Promise<BusinessRegulatoryCaseDetail> {
+    return api.get<BusinessRegulatoryCaseDetail>(`/api/cases/${id}`).then((response) => response.data);
+  },
+
+  /** Attach corrective-action proof to a case against my organisation. */
+  submitEvidence(caseId: number, file: File, note?: string): Promise<{ id: number; filename: string }> {
+    const formData = new FormData();
+    if (note?.trim()) formData.append("note", note.trim());
+    formData.append("file", file);
+    return api
+      .post<{ id: number; filename: string }>(`/api/cases/${caseId}/evidence`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((response) => response.data);
+  },
+
+  async downloadMyEvidence(caseId: number, evidenceId: number, filename: string): Promise<void> {
+    const response = await api.get<Blob>(`/api/cases/${caseId}/evidence/${evidenceId}/download`, { responseType: "blob" });
+    const url = URL.createObjectURL(response.data);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename || "evidence";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
   },
 
   changeStatus(id: number, status: RegulatoryCaseStatus, note?: string): Promise<RegulatoryCase> {

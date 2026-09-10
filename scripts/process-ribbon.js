@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- Node CommonJS build utility, run with `node`, not bundled */
 const fs = require('fs');
 const { PNG } = require('pngjs');
 

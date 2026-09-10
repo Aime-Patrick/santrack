@@ -36,7 +36,7 @@ function deriveModule(path: string): string {
 }
 
 function deriveActivity(method: string, path: string): string {
-  const module = deriveModule(path);
+  const activityModule = deriveModule(path);
   const verb: Record<string, string> = {
     POST: "Created",
     PUT: "Updated",
@@ -44,7 +44,7 @@ function deriveActivity(method: string, path: string): string {
     DELETE: "Deleted",
     GET: "Viewed",
   };
-  return `${verb[method] ?? method} ${module}`;
+  return `${verb[method] ?? method} ${activityModule}`;
 }
 
 function formatDate(iso: string): string {

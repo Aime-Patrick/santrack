@@ -17,10 +17,19 @@ import { MetricCard } from "@/components/dashboard/stat-card";
 import { useComplianceFindings } from "@/hooks/licensing";
 import type { ComplianceFindingRow } from "@/services/license.service";
 
-const typeLabel: Record<string, string> = {
-  UNLICENSED_ACTIVITY: "Unlicensed activity",
-  EXPIRED_LICENCE: "Expired licence",
-  SUSPENDED_LICENCE: "Suspended licence",
+const TYPE_CONFIG: Record<string, { label: string; className: string }> = {
+  UNLICENSED_ACTIVITY: {
+    label: "Unlicensed activity",
+    className: "border-red-600 bg-red-600 text-white dark:border-red-700 dark:bg-red-700",
+  },
+  EXPIRED_LICENCE: {
+    label: "Expired licence",
+    className: "border-amber-500 bg-amber-500 text-white dark:border-amber-600 dark:bg-amber-600",
+  },
+  SUSPENDED_LICENCE: {
+    label: "Suspended licence",
+    className: "border-orange-500 bg-orange-500 text-white dark:border-orange-600 dark:bg-orange-600",
+  },
 };
 
 function truncate(text: string, max = 72): string {
@@ -33,7 +42,6 @@ export default function IndustryFindingsPage() {
   const router = useRouter();
   const { data, isLoading } = useComplianceFindings();
   const findings = data?.findings ?? [];
-  const enforcement = data?.enforcement ?? "—";
 
   const byType = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -81,8 +89,11 @@ export default function IndustryFindingsPage() {
         cell: ({ row }) => {
           const type = row.getValue("type") as string;
           return (
-            <Badge variant="warning">
-              {typeLabel[type] ?? type}
+            <Badge
+              variant="outline"
+              className={TYPE_CONFIG[type]?.className ?? "border-muted bg-muted text-muted-foreground"}
+            >
+              {TYPE_CONFIG[type]?.label ?? type}
             </Badge>
           );
         },
@@ -138,8 +149,7 @@ export default function IndustryFindingsPage() {
             Industry compliance
           </h1>
           <p className="text-sm text-muted-foreground">
-            Findings across every business — advisory signals from licence
-            enforcement (mode: {enforcement}). Click a row for the full record.
+            Licence compliance findings across every registered business. Click a row for the full record.
           </p>
         </div>
       </div>

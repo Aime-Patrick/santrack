@@ -208,7 +208,7 @@ export default function RolesPage() {
                         >
                           {humanise(capability)}
                           {byStanding && (
-                            <span className="ml-1 text-faint">("by standing")</span>
+                            <span className="ml-1 text-faint">(&quot;by standing&quot;)</span>
                           )}
                         </span>
                       </div>

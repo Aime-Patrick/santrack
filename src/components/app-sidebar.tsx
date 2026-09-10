@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Building2,
   Package,
+  PackageOpen,
   Factory,
   ShoppingCart,
   Users,
@@ -24,6 +25,10 @@ import {
   MapPin,
   AlertTriangle,
   ScrollText,
+  Megaphone,
+  Truck,
+  ArrowLeftRight,
+  Receipt,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCapabilities } from "@/hooks/permissions";
@@ -123,6 +128,8 @@ export function AppSidebar() {
     employees: false,
     compliance: false,
     regulators: false,
+    sales: false,
+    logistics: false,
   });
 
   const toggleSubmenu = (key: string) => {
@@ -193,6 +200,13 @@ export function AppSidebar() {
       icon: FileBadge,
       requires: ["DECIDE_LICENCES"],
     },
+    {
+      key: "announcements",
+      title: "Announcements",
+      href: "/dashboard/announcements",
+      icon: Megaphone,
+      requires: ["PUBLISH_ANNOUNCEMENT"],
+    },
   ];
 
   // ── Scan ("standalone dominant entry") ──
@@ -223,8 +237,12 @@ export function AppSidebar() {
       requiresTradingOrg: true,
       children: [
         { title: "Overview", href: "/dashboard/compliance", icon: ShieldCheck },
-        { title: "Findings", href: "/dashboard/compliance/findings", icon: AlertTriangle },
-        { title: "Sites", href: "/dashboard/compliance/facilities", icon: Factory },
+        { title: "Regulatory cases", href: "/dashboard/compliance/cases", icon: FileBadge },
+        // Industry-wide findings are a regulator/overseer view — not a trading business's own screen.
+        { title: "Findings", href: "/dashboard/compliance/findings", icon: AlertTriangle, requires: ["OVERSEE_INDUSTRIES"] },
+        // Sites are meaningful for multi-facility organisations (manufacturers, warehouses, distributors).
+        // Small trading orgs (retailers, shops) don't manage catalogue/facilities.
+        { title: "Sites", href: "/dashboard/compliance/facilities", icon: Factory, requires: ["MANAGE_CATALOG"] },
       ],
     },
     {
@@ -287,9 +305,11 @@ export function AppSidebar() {
       key: "inventory",
       title: "Stock & Inventory",
       icon: Box,
-      requiresAny: ["HANDLE_PACKAGING", "MOVE_STOCK", "REGISTER_IDENTITY", "RUN_PRODUCTION", "MANAGE_LOGISTICS"],
+      requiresAny: ["HANDLE_PACKAGING", "MOVE_STOCK", "REGISTER_IDENTITY", "RUN_PRODUCTION"],
       children: [
         { title: "Inventory", href: "/dashboard/inventory", icon: Box },
+        { title: "Stock In", href: "/dashboard/inventory/stock-in", icon: PackageOpen, requires: ["MOVE_STOCK"] },
+        { title: "Stock Movement", href: "/dashboard/inventory/movements", icon: ArrowLeftRight, requires: ["MOVE_STOCK"] },
         { title: "Opening Stock", href: "/dashboard/inventory/opening-stock", icon: PackagePlus, requires: ["REGISTER_IDENTITY"] },
         { title: "Locations", href: "/dashboard/inventory/locations", icon: MapPin, requires: ["MANAGE_CATALOG"] },
       ],
@@ -301,8 +321,21 @@ export function AppSidebar() {
       requiresAny: ["SELL", "MANAGE_CLIENTS"],
       children: [
         { title: "Sales", href: "/dashboard/sales", icon: ShoppingCart, requires: ["SELL"] },
+        { title: "POS", href: "/dashboard/sales/pos", icon: Receipt, requires: ["SELL"], requiresTradingOrg: true },
         { title: "Customers", href: "/dashboard/sales/customers", icon: Users, requires: ["MANAGE_CLIENTS"] },
         { title: "Purchases", href: "/dashboard/purchasing", icon: Package, requires: ["MANAGE_CLIENTS"] },
+      ],
+    },
+    {
+      key: "logistics",
+      title: "Logistics",
+      icon: Truck,
+      requires: ["MANAGE_LOGISTICS"],
+      requiresOrganization: true,
+      children: [
+        { title: "Shipments", href: "/dashboard/logistics/shipments", icon: Truck },
+        { title: "Vehicles", href: "/dashboard/logistics/vehicles", icon: Truck },
+        { title: "Drivers", href: "/dashboard/logistics/drivers", icon: Users },
       ],
     },
   ];
@@ -319,9 +352,9 @@ export function AppSidebar() {
     },
   ];
 
-  // ── Hidden from default nav (plan §10: not MVP surface) ──
-  // Employees/Payroll (MANAGE_PAYROLL), "Finance (MANAGE_FINANCE)",
-  // Logistics (MANAGE_LOGISTICS) are accessed through Settings or API only.
+  // ── Previously hidden (restored for demo) ──
+  // Employees/Payroll (MANAGE_PAYROLL), Finance (MANAGE_FINANCE) remain
+  // accessible via Settings — they are not primary daily workflows.
 
   // Menus whose every child is out of reach are dropped rather than shown
   // empty: a heading that opens onto nothing reads as a broken screen.

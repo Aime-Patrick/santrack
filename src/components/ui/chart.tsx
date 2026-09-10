@@ -152,7 +152,10 @@ function ChartTooltipContent({
 }: ChartTooltipContentProps) {
   if (!active || !payload?.length) return null
 
-  const tooltipLabel = React.useMemo(() => {
+  // Derived, not memoized: a tooltip renders a handful of times per hover, so
+  // there is nothing to cache, and calling useMemo after the guard above would
+  // make the hook conditional (a rules-of-hooks violation).
+  const tooltipLabel = ((): React.ReactNode => {
     if (hideLabel) return null
     if (labelFormatter) {
       return (
@@ -162,10 +165,8 @@ function ChartTooltipContent({
       )
     }
     if (!label) return null
-    return (
-      <div className={cn("font-medium", labelClassName)}>{label}</div>
-    )
-  }, [label, hideLabel, labelFormatter, labelClassName, payload])
+    return <div className={cn("font-medium", labelClassName)}>{label}</div>
+  })()
 
   const nestLabel = payload.length === 1 && indicator !== "dot"
 

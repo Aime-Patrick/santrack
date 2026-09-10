@@ -47,7 +47,23 @@ export type OrganizationType =
   | "REGULATOR"
   | "CONSUMER";
 
-export type OnboardingStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type OnboardingStatus =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "CHANGES_REQUESTED"
+  | "UNDER_CONSULTATION";
+
+export type IndustrySector =
+  | "FOOD_AND_BEVERAGE"
+  | "PHARMACEUTICALS"
+  | "COSMETICS"
+  | "MINING_AND_MINERALS"
+  | "AGRICULTURE_AND_EXPORTS"
+  | "GENERAL_MANUFACTURING"
+  | "DISTRIBUTION"
+  | "RETAIL"
+  | "OTHER";
 
 export interface OrganizationResponse {
   id: number;
@@ -65,8 +81,11 @@ export interface OrganizationResponse {
   sector?: string | null;
   cell?: string | null;
   village?: string | null;
+  industrySector?: IndustrySector | null;
   onboardingStatus?: OnboardingStatus;
   rejectionReason?: string | null;
+  /** Regulator's note when CHANGES_REQUESTED — shown to the applicant. */
+  reviewNote?: string | null;
   createdAt?: string;
 }
 
@@ -140,7 +159,9 @@ export type Capability =
   | "DECIDE_LICENCES"
   | "ADMINISTER_PLATFORM"
   | "MANAGE_INDUSTRIES"
-  | "READ_AUDIT";
+  | "READ_AUDIT"
+  | "PRINT_LABELS"
+  | "PUBLISH_ANNOUNCEMENT";
 
 /** The reference table behind the Roles screen, served by the API. */
 export interface CapabilityCatalogue {
@@ -218,11 +239,12 @@ export interface CreateOrganizationInput {
   sector?: string;
   cell?: string;
   village?: string;
+  industrySector?: IndustrySector;
   ownership?: OrganizationOwnerInput[];
 }
 
 export interface RegistrationDecisionInput {
-  decision: "APPROVE" | "REJECT";
+  decision: "APPROVE" | "REQUEST_CHANGES" | "REJECT";
   reason?: string;
 }
 
@@ -347,6 +369,63 @@ export interface LicenseDecision {
   decision: "APPROVE" | "REJECT";
   reason?: string;
   expiresOn?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Registration consultation types
+// ---------------------------------------------------------------------------
+
+export type ConsultationStatus =
+  | "PENDING"
+  | "RESPONDED"
+  | "CANCELLED"
+  | "OVERDUE";
+
+export type ConsultationVerdict = "APPROVED" | "CONCERNS" | "OBJECTION";
+
+export interface ConsultationAuthority {
+  id: number;
+  code: string;
+  name: string;
+}
+
+export interface ConsultationActor {
+  id: number;
+  fullName: string | null;
+  email: string;
+}
+
+export interface RegistrationConsultation {
+  id: number;
+  subject: string;
+  contextNote: string | null;
+  forwardedDocumentIds: number[];
+  status: ConsultationStatus;
+  verdict: ConsultationVerdict | null;
+  responseNote: string | null;
+  dueDate: string | null;
+  createdAt: string;
+  respondedAt: string | null;
+  fromAuthority: ConsultationAuthority | null;
+  toAuthority: ConsultationAuthority | null;
+  organization: { id: number; name: string; type: string } | null;
+  createdBy: ConsultationActor | null;
+  respondedBy: ConsultationActor | null;
+  /** Computed by the API — true when past dueDate with no response. */
+  overdue?: boolean;
+}
+
+export interface OpenConsultationInput {
+  toAuthorityId: number;
+  subject: string;
+  contextNote?: string;
+  forwardedDocumentIds?: number[];
+  dueDate?: string;
+}
+
+export interface RespondConsultationInput {
+  verdict: ConsultationVerdict;
+  responseNote?: string;
 }
 
 // ---------------------------------------------------------------------------

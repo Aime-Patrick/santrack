@@ -251,7 +251,7 @@ export function BatchJourneyView({ batchId, batchSelector }: BatchJourneyViewPro
                 {rawMaterials.length > 0 && (
                   <div className="space-y-1.5 pt-1">
                     <span className="font-semibold text-foreground text-[11px] uppercase tracking-wider">
-                      Bill of Materials ("Consumed Ingredients"):
+                      Bill of Materials (&quot;Consumed Ingredients&quot;):
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {rawMaterials.map((m) => (
@@ -318,7 +318,7 @@ export function BatchJourneyView({ batchId, batchSelector }: BatchJourneyViewPro
                       </div>
                       {insp.notes && (
                         <p className="text-muted-foreground italic border-t border-border/50 pt-1 mt-1 text-[11px]">
-                          "{insp.notes}"
+                          &quot;{insp.notes}&quot;
                         </p>
                       )}
                     </div>

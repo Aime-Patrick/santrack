@@ -18,16 +18,19 @@ import {
   statusLabel,
   statusColor,
 } from "@/hooks/licensing";
+import { usePendingRegistrations, useIncomingConsultations } from "@/hooks/organizations";
 import { getApiErrorMessage, type License, type LicenseDocument } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CaseWorkQueue } from "@/components/regulator/case-work-queue";
 import { PendingRegistrations } from "@/components/regulator/pending-registrations";
+import { IncomingConsultations } from "@/components/regulator/incoming-consultations";
 import { ComplaintTriage } from "@/components/regulator/complaint-triage";
 import { SignalWatch } from "@/components/regulator/signal-watch";
 import { FieldInspectionMode } from "@/components/regulator/field-inspection-mode";
-import { CommandOverview } from "@/components/regulator/command-overview";
+import { useRegulatoryCommand } from "@/hooks/regulatory-command";
 import { IncomingReferrals } from "@/components/regulator/incoming-referrals";
+import { AuthoritySelfSetup } from "@/components/regulator/authority-self-setup";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import { Document, Page, pdfjs } from "react-pdf";
@@ -43,6 +46,11 @@ import {
   Calendar,
   History,
   Eye,
+  ClipboardList,
+  Gavel,
+  Radar,
+  ScanLine,
+  Settings2,
 } from "lucide-react";
 
 // Configure pdfjs worker
@@ -568,9 +576,100 @@ function QueueActions({
 // Page
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Tab definitions
+// ---------------------------------------------------------------------------
+
+type Tab = "scan" | "registrations" | "licences" | "enforcement" | "intelligence" | "setup";
+
+const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: "scan",          label: "Scan",            icon: ScanLine      },
+  { id: "registrations", label: "Registrations",   icon: ClipboardList },
+  { id: "licences",      label: "Licences",        icon: Gavel         },
+  { id: "enforcement",   label: "Enforcement",     icon: Shield        },
+  { id: "intelligence",  label: "Intelligence",    icon: Radar         },
+  { id: "setup",         label: "Setup",           icon: Settings2     },
+];
+
+// ---------------------------------------------------------------------------
+// Inline command strip — 2-row × 3-col value+label cards
+// ---------------------------------------------------------------------------
+
+const STRIP_CARDS = [
+  { key: "activeCases",           label: "Active cases",   valueClass: "text-primary"  },
+  { key: "overdueCases",          label: "Overdue",        valueClass: "text-destructive" },
+  { key: "unassignedCases",       label: "Need owner",     valueClass: "text-warning"  },
+  { key: "activeRecalls",         label: "Active recalls", valueClass: "text-destructive" },
+  { key: "marketReportsToTriage", label: "Market triage",  valueClass: "text-warning"  },
+  { key: "inspectionsToday",      label: "Inspections",    valueClass: "text-success"  },
+] as const;
+
+function CommandStrip() {
+  const { data, isLoading } = useRegulatoryCommand();
+  return (
+    <div className="grid grid-cols-3 gap-x-5 gap-y-2">
+      {STRIP_CARDS.map(({ key, label, valueClass }) => (
+        <div key={key}>
+          <p className={`text-lg font-bold tabular-nums leading-none ${valueClass}`}>
+            {isLoading ? "—" : (data?.[key] ?? 0)}
+          </p>
+          <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">{label}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Registrations tab — shows empty state when both sub-sections have nothing
+// ---------------------------------------------------------------------------
+
+function RegistrationsTab() {
+  const { data: pending = [], isLoading: loadingPending } = usePendingRegistrations();
+  const { data: consultations = [], isLoading: loadingConsultations } = useIncomingConsultations();
+
+  const loading = loadingPending || loadingConsultations;
+  const empty = !loading && pending.length === 0 && consultations.length === 0;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <LoaderCircle className="mr-2 size-5 animate-spin" />
+        <span className="text-sm">Loading registration queue…</span>
+      </div>
+    );
+  }
+
+  if (empty) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+        <div className="flex size-12 items-center justify-center rounded-full bg-success/10">
+          <ClipboardList className="size-5 text-success" />
+        </div>
+        <p className="text-sm font-medium text-foreground">All clear</p>
+        <p className="max-w-xs text-xs text-muted-foreground">
+          No pending registrations and no incoming consultations at this time.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <PendingRegistrations />
+      <IncomingConsultations />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export default function RegulatorPage() {
   const { data: queue, isLoading } = useRegulatorQueue();
   const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
+  const [tab, setTab] = useState<Tab>("scan");
 
   const columns: ColumnDef<TableFeatures, License>[] = [
     {
@@ -627,55 +726,122 @@ export default function RegulatorPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
-          <Shield className="size-4" />
+
+      {/* ── Page header + inline command strip ── */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
+            <Shield className="size-4" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Regulatory Patrol</h1>
+            <p className="text-sm text-muted-foreground">
+              Registrations, licences, enforcement, and market intelligence — all in one place.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">License Review Queue</h1>
-          <p className="text-sm text-muted-foreground">
-            Review and decide on pending licence applications
-          </p>
-        </div>
+        <CommandStrip />
       </div>
 
-      <PendingRegistrations />
-      <CommandOverview />
-      <IncomingReferrals />
+      {/* ── Tabs ── */}
+      <div>
+        {/* Tab bar */}
+        <div className="flex gap-1 rounded-xl border border-border bg-muted/50 p-1">
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={cn(
+                "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all",
+                tab === id
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="size-3.5 shrink-0" />
+              <span className="hidden sm:inline">{label}</span>
+            </button>
+          ))}
+        </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : queue && queue.length > 0 ? (
-            <DataTable
-              columns={columns}
-              data={queue}
-              filterPlaceholder="Search by applicant or licence number..."
-              filterColumn="organizationName"
-              pageSize={10}
-              noBorder
-            />
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="flex size-12 items-center justify-center rounded-full bg-muted mb-4">
-                <Shield className="size-6 text-muted-foreground" />
+        {/* Tab panels */}
+        <div className="mt-5 space-y-5">
+
+          {/* Scan — primary workflow, first tab */}
+          {tab === "scan" && (
+            <FieldInspectionMode />
+          )}
+
+          {/* Registrations — review queue for new applicants */}
+          {tab === "registrations" && (
+            <RegistrationsTab />
+          )}
+
+          {/* Licences — submitted applications awaiting approve/reject */}
+          {tab === "licences" && (
+            <div className="space-y-5">
+              <div className="flex items-center gap-2">
+                <Gavel className="size-4 text-primary" />
+                <h2 className="text-base font-semibold">Licence applications</h2>
+                <Badge variant="outline" className="ml-auto">
+                  {queue?.length ?? 0} pending
+                </Badge>
               </div>
-              <p className="text-sm font-medium text-foreground">Queue empty</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                No licence applications are currently awaiting review
-              </p>
+              <Card>
+                <CardContent className="pt-6">
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-20">
+                      <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : queue && queue.length > 0 ? (
+                    <DataTable
+                      columns={columns}
+                      data={queue}
+                      filterPlaceholder="Search by applicant or licence number…"
+                      filterColumn="organizationName"
+                      pageSize={10}
+                      noBorder
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="flex size-12 items-center justify-center rounded-full bg-muted mb-4">
+                        <Gavel className="size-5 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-medium text-foreground">Queue empty</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        No licence applications are currently awaiting review.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+              <IncomingReferrals />
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      <CaseWorkQueue />
-      <FieldInspectionMode />
-      <ComplaintTriage />
-      <SignalWatch />
+          {/* Enforcement — cases only, scans live in the Scan tab */}
+          {tab === "enforcement" && (
+            <CaseWorkQueue />
+          )}
+
+          {/* Intelligence — market signals, complaint triage */}
+          {tab === "intelligence" && (
+            <div className="space-y-5">
+              <ComplaintTriage />
+              <SignalWatch />
+            </div>
+          )}
+
+          {/* Setup — authority configuration */}
+          {tab === "setup" && (
+            <div className="space-y-5">
+              <AuthoritySelfSetup />
+            </div>
+          )}
+
+        </div>
+      </div>
 
       {selectedLicense && (
         <ReviewDialog

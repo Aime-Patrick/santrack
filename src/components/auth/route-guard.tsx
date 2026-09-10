@@ -33,6 +33,12 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    // This is a hydration latch: the guard must render the loading state on
+    // the server and the first client pass, then reveal content only after the
+    // client has hydrated, so deciding on /me can never flash "not permitted"
+    // at someone who is permitted. There is no render-time substitute for the
+    // mount boundary itself.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHydrated(true);
   }, []);
 

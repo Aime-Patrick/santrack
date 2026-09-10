@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ScanLine, Search, LoaderCircle, ArrowRight, MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { ScanLine, LoaderCircle, ArrowRight, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { QrScanInput } from "@/components/ui/qr-scanner";
 import { regulatoryFieldScanService, type FieldScanResult } from "@/services/regulatory-field-scan.service";
 import { useRegulatoryCases } from "@/hooks/regulatory-cases";
 import { useBatchTimeline, useProductTimeline } from "@/hooks/accountability";
@@ -13,7 +12,6 @@ import { AccountabilityLedger } from "@/components/regulator/accountability-ledg
 import { getApiErrorMessage } from "@/lib/api";
 
 export function FieldInspectionMode() {
-  const [code, setCode] = useState("");
   const [result, setResult] = useState<FieldScanResult | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,7 +35,7 @@ export function FieldInspectionMode() {
   const productEntriesQuery = useProductTimeline(ledgerSubject?.kind === "product" ? ledgerSubject.id : 0, 40);
   const ledgerQuery = ledgerSubject?.kind === "product" ? productEntriesQuery : batchEntriesQuery;
 
-  async function scan() {
+  async function scan(code: string) {
     if (!code.trim()) return;
     setLoading(true); setError("");
     try { setResult(await regulatoryFieldScanService.resolve(code.trim())); }
@@ -57,20 +55,17 @@ export function FieldInspectionMode() {
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex gap-2">
-          <Input
-            autoFocus
-            value={code}
-            onChange={(event) => setCode(event.target.value)}
-            onKeyDown={(event) => event.key === "Enter" && scan()}
-            placeholder="Scan product QR, batch, or location label"
-            className="h-11 text-base"
-          />
-          <Button className="h-11" disabled={loading || !code.trim()} onClick={scan}>
-            {loading ? <LoaderCircle className="size-4 animate-spin" /> : <Search className="size-4" />}
-            <span className="sr-only">Resolve scan</span>
-          </Button>
-        </div>
+        <QrScanInput
+          onScan={scan}
+          placeholder="Scan product QR, batch, or location label"
+          scanning="a product, batch, or site"
+          compact
+        />
+        {loading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <LoaderCircle className="size-4 animate-spin" /> Resolving…
+          </div>
+        )}
 
         {error && <p className="text-sm text-danger">{error}</p>}
 

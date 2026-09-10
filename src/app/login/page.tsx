@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Eye, EyeOff, MailCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { getApiErrorMessage } from "@/lib/api";
 import { useLogin, useRequestPasswordReset } from "@/hooks/auth";
 import { AuthPrimaryButton } from "@/components/auth/auth-primary-button";
@@ -47,6 +48,7 @@ const slideVariants = {
 const slideTransition = { duration: 0.28, ease: [0.32, 0.72, 0, 1] as const };
 
 export default function LoginPage() {
+  const t = useTranslations("login");
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [view, setView] = useState<View>("login");
@@ -134,10 +136,10 @@ export default function LoginPage() {
                 {/* Card Header */}
                 <div className="space-y-1">
                   <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900">
-                    Welcome Back!
+                    {t("welcomeBack")}
                   </h1>
                   <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                    Login to continue to SAN TRACK
+                    {t("subtitle")}
                   </p>
                 </div>
 
@@ -153,12 +155,12 @@ export default function LoginPage() {
                       htmlFor="email"
                       className="block text-xs font-semibold text-slate-700"
                     >
-                      Username
+                      {t("username")}
                     </label>
                     <input
                       id="email"
                       type="text"
-                      placeholder="Enter your username"
+                      placeholder={t("usernamePlaceholder")}
                       autoComplete="username"
                       autoFocus
                       {...form.register("email")}
@@ -177,13 +179,13 @@ export default function LoginPage() {
                       htmlFor="password"
                       className="block text-xs font-semibold text-slate-700"
                     >
-                      Password
+                      {t("password")}
                     </label>
                     <div className="relative">
                       <input
                         id="password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
+                        placeholder={t("passwordPlaceholder")}
                         autoComplete="current-password"
                         {...form.register("password")}
                         className="w-full h-11 pl-3.5 pr-11 text-sm text-slate-900 placeholder:text-slate-400 bg-white border border-slate-200 rounded-lg outline-none transition-all duration-150 focus:border-[#067eda] focus:ring-3 focus:ring-[#067eda]/15 hover:border-slate-300"
@@ -191,9 +193,7 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={() => setShowPassword((v) => !v)}
-                        aria-label={
-                          showPassword ? "Hide password" : "Show password"
-                        }
+                        aria-label={showPassword ? t("hidePassword") : t("showPassword")}
                         className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600 transition-colors"
                       >
                         {showPassword ? (
@@ -220,7 +220,7 @@ export default function LoginPage() {
                         className="size-4 rounded border-slate-300 text-[#067eda] focus:ring-[#067eda]/20 cursor-pointer transition-colors"
                       />
                       <span className="text-xs text-slate-600 font-normal">
-                        Remember me
+                        {t("rememberMe")}
                       </span>
                     </label>
 
@@ -229,16 +229,16 @@ export default function LoginPage() {
                       onClick={goToForgot}
                       className="text-xs font-semibold text-[#0077c8] hover:text-[#005ba6] transition-colors cursor-pointer"
                     >
-                      Forgot Password?
+                      {t("forgotPassword")}
                     </button>
                   </div>
 
                   {/* Error Banner */}
                   {login.isError ? (
-                    <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
-                      {getApiErrorMessage(
+                   <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
+                     {getApiErrorMessage(
                         login.error,
-                        "Invalid username or password",
+                        t("loginError"),
                       )}
                     </div>
                   ) : null}
@@ -247,10 +247,10 @@ export default function LoginPage() {
                   <AuthPrimaryButton
                     disabled={login.isPending}
                     loading={login.isPending}
-                    loadingLabel="Signing in…"
+                    loadingLabel={t("signingIn")}
                     className="mt-2"
                   >
-                    Login
+                    {t("loginButton")}
                   </AuthPrimaryButton>
                 </form>
 
@@ -260,7 +260,7 @@ export default function LoginPage() {
                   <div className="relative flex items-center justify-center pb-1">
                     <div className="w-full border-t border-slate-200/80" />
                     <span className="absolute bg-white px-3 text-[11px] text-slate-400 font-normal">
-                      or continue with
+                      {t("orContinueWith")}
                     </span>
                   </div>
 
@@ -286,12 +286,12 @@ export default function LoginPage() {
 
                 {/* Link to Register */}
                 <p className="mt-5 text-center text-xs text-slate-500">
-                  New to San Track?{" "}
+                  {t("newToSanTrack")}{" "}
                   <Link
                     href="/register"
                     className="font-semibold text-[#067eda] hover:text-[#005ba6] hover:underline transition-colors"
                   >
-                    Create an account
+                    {t("createAccount")}
                   </Link>
                 </p>
               </motion.div>
@@ -314,14 +314,10 @@ export default function LoginPage() {
                       <MailCheck className="size-7" />
                     </div>
                     <h1 className="mt-4 text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900">
-                      Check your email
+                      {t("checkEmail")}
                     </h1>
                     <p className="mt-2 text-xs sm:text-sm text-slate-500 font-medium leading-relaxed max-w-[300px]">
-                      If an account exists for{" "}
-                      <span className="font-semibold text-slate-700">
-                        {resetSentTo}
-                      </span>
-                      , we&apos;ve sent a reset link. It expires in 1 hour.
+                      {t("checkEmailDesc", { email: resetSentTo ?? "" })}
                     </p>
 
                     <AuthPrimaryButton
@@ -329,7 +325,7 @@ export default function LoginPage() {
                       onClick={() => setResetSentTo(null)}
                       className="mt-5"
                     >
-                      Send another link
+                      {t("sendAnotherLink")}
                     </AuthPrimaryButton>
                     <button
                       type="button"
@@ -337,7 +333,7 @@ export default function LoginPage() {
                       className="mt-2 h-11 w-full rounded-lg font-semibold text-slate-600 text-sm border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all cursor-pointer flex items-center justify-center gap-2"
                     >
                       <ArrowLeft className="size-4" />
-                      Back to login
+                      {t("backToLogin")}
                     </button>
                   </div>
                 ) : (
@@ -346,10 +342,10 @@ export default function LoginPage() {
                     {/* Card Header */}
                     <div className="space-y-1">
                       <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900">
-                        Forgot your password?
+                        {t("forgotTitle")}
                       </h1>
                       <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                        Enter your email and we&apos;ll send you a reset link
+                        {t("forgotSubtitle")}
                       </p>
                     </div>
 
@@ -364,12 +360,12 @@ export default function LoginPage() {
                           htmlFor="forgot-email"
                           className="block text-xs font-semibold text-slate-700"
                         >
-                          Email
+                          {t("emailLabel")}
                         </label>
                         <input
                           id="forgot-email"
                           type="email"
-                          placeholder="Enter your email"
+                          placeholder={t("emailPlaceholder")}
                           autoComplete="email"
                           autoFocus
                           {...forgotForm.register("email")}
@@ -387,7 +383,7 @@ export default function LoginPage() {
                         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
                           {getApiErrorMessage(
                             requestReset.error,
-                            "Could not send the reset link. Please try again.",
+                            t("resetError"),
                           )}
                         </div>
                       ) : null}
@@ -396,10 +392,10 @@ export default function LoginPage() {
                       <AuthPrimaryButton
                         disabled={requestReset.isPending}
                         loading={requestReset.isPending}
-                        loadingLabel="Sending…"
+                        loadingLabel={t("sending")}
                         className="mt-2"
                       >
-                        Send reset link
+                        {t("sendResetLink")}
                       </AuthPrimaryButton>
 
                       {/* Back to Login */}
@@ -409,7 +405,7 @@ export default function LoginPage() {
                         className="w-full h-11 rounded-lg font-semibold text-slate-600 text-sm border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <ArrowLeft className="size-4" />
-                        Back to login
+                        {t("backToLogin")}
                       </button>
                     </form>
                   </>
@@ -422,7 +418,7 @@ export default function LoginPage() {
       {/* Footer Copyright */}
       <footer className="mt-7 text-center">
         <p className="text-xs text-slate-400 font-normal">
-          &copy; 2026 SAN TECH. All rights reserved.
+          {t("copyright")}
         </p>
       </footer>
     </AuthShell>

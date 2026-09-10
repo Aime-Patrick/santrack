@@ -92,19 +92,29 @@ export default function NewSalePage() {
     [customerData],
   );
 
-  useEffect(() => {
-    if (saleType === "CONSUMER") {
+  // Clearing the other type's fields belongs to the toggle itself, not to an
+  // effect watching the type: the two sides of the form hold mutually exclusive
+  // selections, so whichever one is being left must be emptied at the moment
+  // the switch happens.
+  const switchSaleType = (next: SaleType) => {
+    if (next === "CONSUMER") {
       setBuyerOrgId("");
     } else {
       setSelectedConsumerId("");
       setShowQuickConsumer(false);
     }
-  }, [saleType]);
+    setSaleType(next);
+  };
 
   useEffect(() => {
     if (!pendingCode) return;
 
     if (scanLookupFailed) {
+      // This effect commits an asynchronous scan lookup into the cart / scan
+      // feedback — the API result arrives after the scan event has finished,
+      // so there is no handler to put the follow-up in; the query result *is*
+      // the trigger. The writes are the point of the effect, not a cascade.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setScanFeedback({
         tone: "error",
         message: getApiErrorMessage(
@@ -292,7 +302,7 @@ export default function NewSalePage() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setSaleType("BUSINESS")}
+                  onClick={() => switchSaleType("BUSINESS")}
                   className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
                     saleType === "BUSINESS"
                       ? "border-primary bg-primary-light"
@@ -307,7 +317,7 @@ export default function NewSalePage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSaleType("CONSUMER")}
+                  onClick={() => switchSaleType("CONSUMER")}
                   className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
                     saleType === "CONSUMER"
                       ? "border-primary bg-primary-light"

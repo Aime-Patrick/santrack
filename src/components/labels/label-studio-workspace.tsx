@@ -63,6 +63,9 @@ import {
 } from "@/hooks/identity-pools";
 import { usePoolLabelRows } from "@/hooks/label-studio";
 import {
+  labelPrintJobService,
+} from "@/services/label-print-job.service";
+import {
   clearSavedTemplate,
   DEFAULT_PRINT_LIMIT,
   LABEL_BIND_FIELDS,
@@ -185,7 +188,7 @@ export function LabelStudioWorkspace({
     type: string,
     width: number,
     height: number,
-    extra: Record<string, any> = {},
+    extra: Record<string, unknown> = {},
   ) => {
     const next = JSON.parse(JSON.stringify(template)) as Template;
     if (!next.schemas || next.schemas.length === 0) {
@@ -312,6 +315,22 @@ export function LabelStudioWorkspace({
     }
   }, [rows, effectivePrintLimit, preset, origin, template]);
 
+  const recordPrintJob = useCallback(
+    async (count: number) => {
+      try {
+        await labelPrintJobService.create({
+          poolId,
+          template: preset,
+          quantity: count,
+          renderedCount: count,
+        });
+      } catch (error) {
+        console.warn('Print job record failed:', error);
+      }
+    },
+    [poolId, preset],
+  );
+
   const handleDownload = async () => {
     const pdf = await generateBatchPdf();
     if (pdf) {
@@ -323,6 +342,7 @@ export function LabelStudioWorkspace({
       toast.success(`Downloaded ${count} printable labels`, {
         description: `Format: ${presetMeta.name} (${presetMeta.widthMm}×${presetMeta.heightMm} mm) · 1 per page.`,
       });
+      await recordPrintJob(count);
     }
   };
 
@@ -1004,7 +1024,7 @@ export function LabelStudioWorkspace({
                   onClick={() => void handlePreviewPdf()}
                   disabled={busy || rows.length === 0}
                 >
-                  <Printer className="size-4" /> Direct Print ("Browser Dialog")
+                  <Printer className="size-4" /> Direct Print (&quot;Browser Dialog&quot;)
                 </Button>
               </div>
 

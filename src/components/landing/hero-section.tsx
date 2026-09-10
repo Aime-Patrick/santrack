@@ -1,13 +1,15 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { DashboardMockup } from "./dashboard-mockup";
 
 export function HeroSection() {
+  const t = useTranslations("landing.hero");
   return (
     <>
       <section className="relative overflow-hidden bg-[#0057b8] pt-20 sm:pt-24 pb-16 lg:pb-20">
@@ -78,7 +80,7 @@ export function HeroSection() {
               <div className="inline-flex items-center gap-2.5 w-fit">
                 <span className="w-7 sm:w-8 h-[3px] bg-rwanda-yellow rounded-full" />
                 <span className="text-rwanda-yellow text-[11px] sm:text-xs font-bold tracking-[0.22em] uppercase">
-                  WELCOME TO SAN TRACK
+                  SAN TRACK
                 </span>
               </div>
 
@@ -89,8 +91,7 @@ export function HeroSection() {
                 transition={{ duration: 0.5 }}
               >
                 <h1 className="text-[26px] sm:text-[32px] lg:text-[34px] font-extrabold text-white leading-[1.14] tracking-tight drop-shadow-lg">
-                  The All-in-One Management
-                  <br />Platform for Modern Businesses
+                  {t("title")}
                 </h1>
               </motion.div>
 
@@ -101,8 +102,7 @@ export function HeroSection() {
                 transition={{ duration: 0.5, delay: 0.1 }}
                 className="text-lg sm:text-xl text-white/90 leading-snug max-w-[400px] font-normal"
               >
-                From industry to final consumption, SAN TRACK empowers your operations
-                with traceability, inventory, manufacturing, logistics, finance, HR and more.
+                {t("subtitle")}
               </motion.p>
 
               {/* CTAs */}
@@ -117,7 +117,7 @@ export function HeroSection() {
                     size="lg"
                     className="h-10 sm:h-11 bg-[#fac600] hover:bg-[#e0aa00] text-[#0a2540] font-bold text-[13.5px] sm:text-[14px] px-5 sm:px-7 rounded-lg shadow-lg gap-2 cursor-pointer transition-all"
                   >
-                    Request a Demo <ArrowRight className="size-4 stroke-[2.5]" />
+                    {t("demo")} <ArrowRight className="size-4 stroke-[2.5]" />
                   </Button>
                 </Link>
 

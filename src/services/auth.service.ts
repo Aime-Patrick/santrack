@@ -51,6 +51,10 @@ export const authService = {
     return api.get<UserResponse>("/api/auth/me").then((r) => r.data);
   },
 
+  updateProfile(dto: { fullName?: string }): Promise<UserResponse> {
+    return api.patch<UserResponse>("/api/auth/me", dto).then((r) => r.data);
+  },
+
   /** The role/capability reference table. Reference data, not the caller's. */
   capabilities(): Promise<CapabilityCatalogue> {
     return api

@@ -92,3 +92,39 @@ export function useAssignRegulatoryCaseTeam() {
     },
   });
 }
+
+// ── Business-facing: cases opened against my organisation ───────────────────
+
+export const businessCaseKeys = {
+  all: ["business-regulatory-cases"] as const,
+  list: () => [...businessCaseKeys.all, "list"] as const,
+  detail: (id: number) => [...businessCaseKeys.all, "detail", id] as const,
+};
+
+export function useMyRegulatoryCases() {
+  return useQuery({
+    queryKey: businessCaseKeys.list(),
+    queryFn: () => regulatoryCaseService.myCases(),
+    staleTime: 15_000,
+  });
+}
+
+export function useMyRegulatoryCase(id: number | null) {
+  return useQuery({
+    queryKey: businessCaseKeys.detail(id ?? 0),
+    queryFn: () => regulatoryCaseService.myCase(id as number),
+    enabled: id !== null && id > 0,
+  });
+}
+
+export function useSubmitCaseEvidence() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ caseId, file, note }: { caseId: number; file: File; note?: string }) =>
+      regulatoryCaseService.submitEvidence(caseId, file, note),
+    onSuccess: (_evidence, input) => {
+      queryClient.invalidateQueries({ queryKey: businessCaseKeys.all });
+      queryClient.invalidateQueries({ queryKey: businessCaseKeys.detail(input.caseId) });
+    },
+  });
+}

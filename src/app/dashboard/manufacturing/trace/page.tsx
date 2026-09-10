@@ -190,10 +190,21 @@ export default function ItemConsolePage() {
 
   const { data: trace, isLoading, error } = useTraceTimeline(activeCode);
 
-  // Auto-dismiss error after 3 seconds
+  // A failed lookup shows a banner for 3 seconds, then hides. The "show again"
+  // for a fresh failure is a state adjustment during render — comparing the
+  // current error/code with the one already seen — and only the timed hide
+  // runs from the effect, so no synchronous setState happens inside it.
+  const [seenError, setSeenError] = useState(error);
+  const [seenCode, setSeenCode] = useState(activeCode);
+  if (error !== seenError || activeCode !== seenCode) {
+    setSeenError(error);
+    setSeenCode(activeCode);
+    if (error) setErrorDismissed(false);
+  }
+
+  // Auto-dismiss the error banner 3 seconds after it appears
   useEffect(() => {
     if (!error) return;
-    setErrorDismissed(false);
     const t = setTimeout(() => setErrorDismissed(true), 3000);
     return () => clearTimeout(t);
   }, [error, activeCode]);

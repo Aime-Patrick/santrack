@@ -335,7 +335,7 @@ export default function NewProductPage() {
                   <FormItem>
                     <FormLabel>Default code type</FormLabel>
                     <FormDescription className="mb-4">
-                      What this product&apos;s catalogue label prints (EAN, "Code 128", etc.).
+                      What this product&apos;s catalogue label prints (EAN, &quot;Code 128&quot;, etc.).
                       Leave blank if unsure — QR is for industry unique identity codes, not the default here.
                     </FormDescription>
                     <FormControl>

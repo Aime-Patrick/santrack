@@ -16,6 +16,9 @@ import {
   XCircle,
   Loader2,
   ArrowLeft,
+  Lock,
+  ScanLine,
+  KeyRound,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -423,6 +426,68 @@ function VerifyCertificate({
                 : "Standard shelf life"
           }
         />
+      </section>
+
+      {/* ── Manufacturer's licence compliance ── */}
+      {result.manufacturer && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-400 mb-3">
+            Manufacturer status
+          </p>
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <Factory className="size-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-900">{result.manufacturer}</p>
+              <p className="text-xs text-slate-500">Registered in the national traceability registry</p>
+            </div>
+            <Badge className="ml-auto bg-success text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
+              Licensed
+            </Badge>
+          </div>
+        </section>
+      )}
+
+      {/* ── Authenticated user extended access ── */}
+      <section className="rounded-2xl border border-primary/20 bg-[#f0f7ff] p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary/15">
+            <Lock className="size-3.5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-primary">Full operational data available</p>
+            <p className="mt-0.5 text-[11px] text-slate-600 leading-relaxed">
+              Regulators, manufacturers, distributors, and retailers can scan this same code in the
+              SANTRACK dashboard to view the complete chain of custody, production records, quality
+              inspections, and compliance history.
+            </p>
+            <Link
+              href={`/dashboard/manufacturing/trace?code=${encodeURIComponent(token)}`}
+              className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold text-white hover:bg-primary/90 transition-colors"
+            >
+              <ScanLine className="size-3" />
+              Open in SANTRACK dashboard
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── QR security note ── */}
+      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="flex items-start gap-3">
+          <KeyRound className="size-4 text-slate-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+              QR code security
+            </p>
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              This QR code is dynamically signed. The information shown is always current —
+              a recalled batch shows a recall warning even on labels printed before the recall.
+              Cloned or tampered codes are rejected by the registry.
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* ── Actions ── */}

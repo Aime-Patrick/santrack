@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogPopup,
@@ -32,11 +32,17 @@ export function ResetPasswordDialog({
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
 
-  useEffect(() => {
-    if (!open) return;
-    setPassword("");
-    setConfirm("");
-  }, [open, user?.id]);
+  // Clear the fields when the dialog opens so a previous session's input never
+  // leaks into the next reset. A render-time adjustment on the open transition
+  // replaces what would otherwise be a setState-in-effect.
+  const [wasOpen, setWasOpen] = useState(false);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setPassword("");
+      setConfirm("");
+    }
+  }
 
   const mismatch = confirm.length > 0 && password !== confirm;
   const canSubmit =

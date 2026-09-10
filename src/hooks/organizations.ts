@@ -124,6 +124,25 @@ export function useRevokeStanding() {
   );
 }
 
+/** Permanently removes an organization. SYSTEM_ADMIN / ADMINISTER_PLATFORM only. */
+export function usePurgeOrganization() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number; name: string }) =>
+      organizationService.purge(id),
+    onSuccess: (_data, { name }) => {
+      qc.invalidateQueries({ queryKey: organizationKeys.all });
+      toast.success(`${name} has been permanently deleted`);
+    },
+    onError: (error: unknown) => {
+      const message =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        "Could not delete this organization";
+      toast.error(message);
+    },
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Registration review ("Digital Tax Stamp flow"): pending registrations and the
 // regulator's approve/reject decision.
@@ -142,7 +161,7 @@ export function usePendingRegistrations() {
   });
 }
 
-/** Approves or rejects a registration application. */
+/** Approves, requests changes on, or rejects a registration application. */
 export function useDecideRegistration() {
   const qc = useQueryClient();
   return useMutation({
@@ -151,7 +170,7 @@ export function useDecideRegistration() {
       decision,
     }: {
       orgId: number;
-      decision: { decision: "APPROVE" | "REJECT"; reason?: string };
+      decision: { decision: "APPROVE" | "REQUEST_CHANGES" | "REJECT"; reason?: string };
     }) => onboardingService.decide(orgId, decision),
     onSuccess: (_data, input) => {
       qc.invalidateQueries({ queryKey: registrationKeys.pending });
@@ -159,6 +178,8 @@ export function useDecideRegistration() {
       toast.success(
         input.decision.decision === "APPROVE"
           ? "Registration approved — licence issued"
+          : input.decision.decision === "REQUEST_CHANGES"
+          ? "Changes requested — applicant notified"
           : "Registration rejected",
       );
     },
@@ -171,11 +192,120 @@ export function useDecideRegistration() {
   });
 }
 
+/** Resubmit a CHANGES_REQUESTED registration back into the review queue. */
+export function useResubmitRegistration() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (orgId: number) => onboardingService.resubmit(orgId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: registrationKeys.pending });
+      qc.invalidateQueries({ queryKey: organizationKeys.all });
+      toast.success("Registration resubmitted — a regulator will review it shortly");
+    },
+    onError: (error: unknown) => {
+      toast.error(
+        (error as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Could not resubmit registration",
+      );
+    },
+  });
+}
+
 /** Certificate copies filed against a registration. */
 export function useRegistrationDocuments(orgId: number) {
   return useQuery({
     queryKey: registrationKeys.documents(orgId),
     queryFn: () => onboardingService.documentsFor(orgId),
     enabled: orgId > 0,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Inter-authority consultation hooks
+// ---------------------------------------------------------------------------
+
+export const consultationKeys = {
+  forOrg: (orgId: number) => ["consultations", "org", orgId] as const,
+  incoming: ["consultations", "incoming"] as const,
+};
+
+/** All consultations opened by the caller's authority on one application. */
+export function useConsultations(orgId: number) {
+  return useQuery({
+    queryKey: consultationKeys.forOrg(orgId),
+    queryFn: () => onboardingService.consultationsFor(orgId),
+    enabled: orgId > 0,
+  });
+}
+
+/** Open a consultation to another authority. */
+export function useOpenConsultation(orgId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof onboardingService.openConsultation>[1]) =>
+      onboardingService.openConsultation(orgId, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: consultationKeys.forOrg(orgId) });
+      qc.invalidateQueries({ queryKey: registrationKeys.pending });
+      toast.success("Consultation sent");
+    },
+    onError: (error: unknown) => {
+      toast.error(
+        (error as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Could not send consultation",
+      );
+    },
+  });
+}
+
+/** Primary authority cancels a pending consultation. */
+export function useCancelConsultation(orgId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (consultationId: number) =>
+      onboardingService.cancelConsultation(orgId, consultationId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: consultationKeys.forOrg(orgId) });
+      qc.invalidateQueries({ queryKey: registrationKeys.pending });
+      toast.success("Consultation cancelled");
+    },
+    onError: (error: unknown) => {
+      toast.error(
+        (error as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Could not cancel consultation",
+      );
+    },
+  });
+}
+
+/** Secondary authority inbox — incoming consultations. */
+export function useIncomingConsultations() {
+  return useQuery({
+    queryKey: consultationKeys.incoming,
+    queryFn: () => onboardingService.incomingConsultations(),
+  });
+}
+
+/** Secondary authority responds to a consultation. */
+export function useRespondConsultation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      consultationId,
+      input,
+    }: {
+      consultationId: number;
+      input: Parameters<typeof onboardingService.respondConsultation>[1];
+    }) => onboardingService.respondConsultation(consultationId, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: consultationKeys.incoming });
+      toast.success("Response submitted");
+    },
+    onError: (error: unknown) => {
+      toast.error(
+        (error as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Could not submit response",
+      );
+    },
   });
 }

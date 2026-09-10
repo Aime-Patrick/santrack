@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Check, Eye, EyeOff } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { getApiErrorMessage } from "@/lib/api";
 import { useRegister } from "@/hooks/auth";
 import { AuthPrimaryButton } from "@/components/auth/auth-primary-button";
@@ -22,6 +23,7 @@ const registerSchema = z.object({
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export function RegisterForm() {
+  const t = useTranslations("register");
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -57,10 +59,10 @@ export function RegisterForm() {
             <Check className="size-8 text-emerald-600" strokeWidth={2.5} />
           </div>
           <h1 className="mt-6 text-2xl font-bold tracking-tight text-slate-900">
-            Your account is ready
+            {t("doneTitle")}
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
-            One more step — submit your business details for regulator review.
+            {t("doneSubtitle")}
           </p>
           {DESIGN_MODE ? (
             <p className="mt-3 font-mono text-xs text-amber-600">
@@ -72,7 +74,7 @@ export function RegisterForm() {
             onClick={() => router.push("/onboarding")}
             className="mt-6"
           >
-            Start business registration
+            {t("startRegistration")}
           </AuthPrimaryButton>
         </div>
       </div>
@@ -84,21 +86,21 @@ export function RegisterForm() {
       <div className="mb-5 flex items-center gap-2">
         <div className="h-1 w-8 rounded-full bg-[#067eda]" />
         <span className="font-mono text-xs uppercase tracking-wider text-slate-400">
-          Step 1 of 2
+          {t("step")}
         </span>
       </div>
 
       <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900">
-        Create your account
+        {t("title")}
       </h1>
       <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
-        Takes about a minute. You&apos;ll set up your business right after.
+        {t("subtitle")}
       </p>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4" noValidate>
         <div className="space-y-1.5">
           <label htmlFor="fullName" className="block text-xs font-semibold text-slate-700">
-            Your full name
+            {t("fullName")}
           </label>
           <input
             id="fullName"
@@ -117,7 +119,7 @@ export function RegisterForm() {
 
         <div className="space-y-1.5">
           <label htmlFor="email" className="block text-xs font-semibold text-slate-700">
-            Work email
+            {t("workEmail")}
           </label>
           <input
             id="email"
@@ -136,7 +138,7 @@ export function RegisterForm() {
 
         <div className="space-y-1.5">
           <label htmlFor="password" className="block text-xs font-semibold text-slate-700">
-            Password
+            {t("password")}
           </label>
           <div className="relative">
             <input
@@ -150,7 +152,7 @@ export function RegisterForm() {
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? t("hidePassword") : t("showPassword")}
               className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600 transition-colors"
             >
               {showPassword ? (
@@ -160,7 +162,7 @@ export function RegisterForm() {
               )}
             </button>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">At least 8 characters</p>
+          <p className="text-[11px] text-slate-400 mt-1">{t("passwordHint")}</p>
           {errors.password ? (
             <p className="text-xs font-medium text-red-500 mt-1">
               {errors.password.message}
@@ -177,20 +179,20 @@ export function RegisterForm() {
         <AuthPrimaryButton
           disabled={register.isPending}
           loading={register.isPending}
-          loadingLabel="Creating account…"
+          loadingLabel={t("creatingAccount")}
           className="mt-2"
         >
-          Create account
+          {t("createButton")}
         </AuthPrimaryButton>
       </form>
 
       <p className="mt-5 text-center text-xs text-slate-500">
-        Already registered?{" "}
+        {t("alreadyRegistered")}{" "}
         <Link
           href="/login"
           className="font-semibold text-[#067eda] hover:text-[#005ba6] hover:underline transition-colors"
         >
-          Sign in
+          {t("signIn")}
         </Link>
       </p>
     </div>

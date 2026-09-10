@@ -97,7 +97,8 @@ const columns: ColumnDef<TableFeatures, Product>[] = [
   {
     id: "category",
     header: "Category",
-    accessorFn: (row: any) => row.categoryName || row.category || "—",
+    accessorFn: (row: { categoryName?: string | null; category?: string | null }) =>
+      row.categoryName || row.category || "—",
     cell: ({ row }) => {
       const cat = (row.getValue("category") as string) || "—";
       const color =

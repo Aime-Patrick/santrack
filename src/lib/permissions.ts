@@ -65,7 +65,8 @@ export const ROUTE_CAPABILITIES: { prefix: string; requires: Capability[] }[] = 
   { prefix: "/dashboard/regulators", requires: ["ADMINISTER_PLATFORM"] },
   { prefix: "/dashboard/regulator", requires: ["DECIDE_LICENCES"] },
   // The platform-wide audit log: the operator and licensing authorities read
-  // it (READ_AUDIT is conferred on REGULATOR organizations).
+  // Platform telemetry (HTTP paths, IPs, status codes) — operator only.
+  // Regulators supervise through the accountability ledger, not raw logs.
   { prefix: "/dashboard/audit", requires: ["READ_AUDIT"] },
   // Industry-wide findings (not org Sites overview). Overseers only.
   { prefix: "/dashboard/compliance/findings", requires: ["OVERSEE_INDUSTRIES"] },
@@ -93,6 +94,8 @@ export const ROUTE_CAPABILITIES: { prefix: string; requires: Capability[] }[] = 
   { prefix: "/dashboard/manufacturing/stock-relocate", requires: ["MOVE_STOCK"] },
   { prefix: "/dashboard/inventory/new", requires: ["MANAGE_CATALOG"] },
   { prefix: "/dashboard/inventory/locations", requires: ["MANAGE_CATALOG"] },
+  { prefix: "/dashboard/inventory/opening-stock", requires: ["REGISTER_IDENTITY"] },
+  { prefix: "/dashboard/inventory/stock-in", requires: ["MOVE_STOCK"] },
 
   // Commerce.
   { prefix: "/dashboard/sales", requires: ["SELL"] },
@@ -108,6 +111,7 @@ export const ROUTE_CAPABILITIES: { prefix: string; requires: Capability[] }[] = 
   { prefix: "/dashboard/employees", requires: ["MANAGE_PAYROLL"] },
   { prefix: "/dashboard/logistics", requires: ["MANAGE_LOGISTICS"] },
   { prefix: "/dashboard/users", requires: ["ADMINISTER_PLATFORM"] },
+  { prefix: "/dashboard/roles", requires: ["MANAGE_USERS"] },
   { prefix: "/dashboard/settings", requires: ["MANAGE_USERS"] },
 
   // Compliance. Reading where the business stands is an operations question,
