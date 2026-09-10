@@ -6,7 +6,8 @@
     "search": "Search anything...",
     "viewAll": "View All",
     "success": "Success",
-    "pending": "Pending"
+    "pending": "Pending",
+    "failed": "Failed"
   },
   "nav": {
     "industryManagement": "Industry Management",

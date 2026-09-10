@@ -323,31 +323,29 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
             <MailCheck className="size-8 text-[#067eda]" strokeWidth={2.2} />
           </div>
           <h1 className="mt-6 text-2xl font-bold tracking-tight text-slate-900">
-            Application submitted for review
+            Application Submitted for Review
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-500">
             <span className="font-semibold text-slate-700">{name}</span> is registered
-            and waiting for the regulator to review it. You&apos;ll receive an email once
-            a decision is made.
+            and awaiting screening by the regulatory authorities. A confirmation email has been sent to your inbox.
           </p>
-          <div className="mt-6 w-full space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
+          <div className="mt-6 w-full space-y-2.5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
             <div className="flex items-start gap-3">
               <Clock3 className="mt-0.5 size-4 shrink-0 text-[#067eda]" />
               <div>
                 <p className="text-xs font-semibold text-slate-900">What happens next</p>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
-                  A regulator reviews your application and documents. Once approved, your
-                  operating licence is activated.
+                  Regulatory officers (RSB / Rwanda FDA) will inspect your business documents.
+                  You will be notified by email as soon as a decision is made.
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#067eda]" />
               <div>
-                <p className="text-xs font-semibold text-slate-900">Track your status</p>
+                <p className="text-xs font-semibold text-slate-900">Approval-gated Access</p>
                 <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
-                  Your account is active — head to your dashboard at any time to
-                  check the application status while the review is in progress.
+                  Full supply chain operations and business dashboard tools will unlock immediately once regulatory approval is issued.
                 </p>
               </div>
             </div>
@@ -355,13 +353,22 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
           {DESIGN_MODE && (
             <p className="mt-3 font-mono text-xs text-amber-600">DESIGN MODE — REGISTRATION SIMULATED</p>
           )}
-          <button
-            type="button"
-            className="mt-6 w-full h-11 rounded-lg font-semibold text-white text-sm bg-gradient-to-r from-[#0066d6] via-[#10b981] via-60% to-[#eab308] hover:opacity-95 transition-opacity cursor-pointer"
-            onClick={() => router.replace("/dashboard")}
-          >
-            Go to my dashboard
-          </button>
+          <div className="mt-6 w-full flex flex-col sm:flex-row gap-2.5">
+            <button
+              type="button"
+              className="flex-1 h-11 rounded-lg font-semibold text-white text-sm bg-gradient-to-r from-[#0066d6] via-[#10b981] via-60% to-[#eab308] hover:opacity-95 transition-opacity cursor-pointer shadow-sm"
+              onClick={() => router.replace("/dashboard")}
+            >
+              View Review Status
+            </button>
+            <button
+              type="button"
+              className="h-11 px-5 rounded-lg font-semibold text-slate-700 text-sm border border-slate-200 hover:bg-slate-100 transition-colors cursor-pointer"
+              onClick={() => router.replace("/")}
+            >
+              Back to Home
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -1,4 +1,20 @@
-import { api, type License, type LicenseCategory, type LicenseDocument, type LicenseEvent, type ApplyLicenseInput, type LicenseDecision } from "@/lib/api";
+import {
+  api,
+  type License,
+  type LicenseCategory,
+  type LicenseDocument,
+  type LicenseEvent,
+  type ApplyLicenseInput,
+  type LicenseDecision,
+  type CreateLicenseCategoryInput,
+  type UpdateLicenseCategoryInput,
+  type LicenseFollowUp,
+  type ActionFollowUpInput,
+  type CreateFollowUpInput,
+  type CloseFollowUpInput,
+  type SendFollowUpLinkInput,
+  type PublicFollowUpView,
+} from "@/lib/api";
 
 export interface ComplianceFindingRow {
   id: number;
@@ -49,6 +65,22 @@ export interface ComplianceFindingsResponse {
 export const licenseService = {
   categories(): Promise<LicenseCategory[]> {
     return api.get<LicenseCategory[]>("/api/licenses/categories").then((r) => r.data);
+  },
+
+  allCategories(): Promise<LicenseCategory[]> {
+    return api.get<LicenseCategory[]>("/api/licenses/categories/all").then((r) => r.data);
+  },
+
+  createCategory(input: CreateLicenseCategoryInput): Promise<LicenseCategory> {
+    return api.post<LicenseCategory>("/api/licenses/categories", input).then((r) => r.data);
+  },
+
+  updateCategory(id: number, input: UpdateLicenseCategoryInput): Promise<LicenseCategory> {
+    return api.patch<LicenseCategory>(`/api/licenses/categories/${id}`, input).then((r) => r.data);
+  },
+
+  deleteCategory(id: number): Promise<{ deleted: boolean; deactivated?: boolean; message: string }> {
+    return api.delete<{ deleted: boolean; deactivated?: boolean; message: string }>(`/api/licenses/categories/${id}`).then((r) => r.data);
   },
 
   mine(): Promise<License[]> {
@@ -145,4 +177,45 @@ export const licenseService = {
   renew(licenseId: number): Promise<License> {
     return api.post<License>(`/api/licenses/${licenseId}/renew`).then((r) => r.data);
   },
+
+  // Follow-ups & Conditions
+  getFollowUps(licenseId: number): Promise<LicenseFollowUp[]> {
+    return api.get<LicenseFollowUp[]>(`/api/licenses/${licenseId}/follow-ups`).then((r) => r.data);
+  },
+
+  actionFollowUp(licenseId: number, followUpId: number, input: ActionFollowUpInput): Promise<LicenseFollowUp> {
+    return api.post<LicenseFollowUp>(`/api/licenses/${licenseId}/follow-ups/${followUpId}/action`, input).then((r) => r.data);
+  },
+
+  getRegulatorFollowUps(licenseId: number): Promise<LicenseFollowUp[]> {
+    return api.get<LicenseFollowUp[]>(`/api/regulator/licenses/${licenseId}/follow-ups`).then((r) => r.data);
+  },
+
+  createFollowUp(licenseId: number, input: CreateFollowUpInput): Promise<LicenseFollowUp> {
+    return api.post<LicenseFollowUp>(`/api/regulator/licenses/${licenseId}/follow-ups`, input).then((r) => r.data);
+  },
+
+  closeFollowUp(licenseId: number, followUpId: number, input: CloseFollowUpInput): Promise<LicenseFollowUp> {
+    return api.post<LicenseFollowUp>(`/api/regulator/licenses/${licenseId}/follow-ups/${followUpId}/close`, input).then((r) => r.data);
+  },
+
+  sendFollowUpLink(licenseId: number, followUpId: number, input: SendFollowUpLinkInput): Promise<{ id: number; responseTokenExpiresAt: string }> {
+    return api.post<{ id: number; responseTokenExpiresAt: string }>(`/api/regulator/licenses/${licenseId}/follow-ups/${followUpId}/send-link`, input).then((r) => r.data);
+  },
+
+  getPublicFollowUp(token: string): Promise<PublicFollowUpView> {
+    return api.get<PublicFollowUpView>(`/api/public/license-followup/${token}`).then((r) => r.data);
+  },
+
+  respondToFollowUp(token: string, businessResponse: string, file?: File): Promise<{ success: boolean }> {
+    const formData = new FormData();
+    formData.append("businessResponse", businessResponse);
+    if (file) formData.append("file", file);
+    return api
+      .post<{ success: boolean }>(`/api/public/license-followup/${token}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((r) => r.data);
+  },
 };
+

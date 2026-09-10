@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,8 @@ export interface MetricCardProps {
   icon?: React.ReactNode;
   iconBg?: string;
   className?: string;
+  /** When set the entire card becomes a clickable link to this path. */
+  href?: string;
 }
 
 export function MetricCard({
@@ -29,9 +32,14 @@ export function MetricCard({
   icon,
   iconBg,
   className,
+  href,
 }: MetricCardProps) {
-  return (
-    <Card className={cn("border border-border/80 bg-card p-4 lg:p-5 shadow-xs transition-shadow hover:shadow-sm", className)}>
+  const card = (
+    <Card className={cn(
+      "border border-border/80 bg-card p-4 lg:p-5 shadow-xs transition-shadow hover:shadow-sm",
+      href && "cursor-pointer hover:shadow-md hover:border-primary/30 transition-all",
+      className,
+    )}>
       <CardContent className="p-0 space-y-2">
         <div className="flex items-center justify-between">
           {icon ? (
@@ -74,6 +82,15 @@ export function MetricCard({
       </CardContent>
     </Card>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl">
+        {card}
+      </Link>
+    );
+  }
+  return card;
 }
 
 interface StatCardProps {

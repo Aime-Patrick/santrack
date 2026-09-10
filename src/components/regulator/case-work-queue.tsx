@@ -1,11 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, Building2, CheckCircle2, CircleDotDashed, Download, Factory, FileBadge, FileDown, LoaderCircle, Package } from "lucide-react";
+import { Building2, CheckCircle2, CircleDotDashed, Download, Factory, FileBadge, FileDown, LoaderCircle, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Sheet,
   SheetContent,
@@ -92,22 +100,48 @@ export function CaseWorkQueue() {
               <p className="mt-1 text-sm text-muted-foreground">New findings, inspections, and recalls will appear here when they need ownership.</p>
             </div>
           ) : (
-            <div className="divide-y divide-border/70">
-              {activeCases.slice(0, 8).map((caseRecord) => (
-                <button key={caseRecord.id} type="button" onClick={() => setSelectedId(caseRecord.id)} className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-muted/40">
-                  <CircleDotDashed className={cn("size-4 shrink-0", PRIORITY_TONE[caseRecord.priority])} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{caseRecord.title}</p>
-                    <p className="mt-0.5 truncate text-xs text-muted-foreground">{caseRecord.caseNumber} · {caseRecord.organization.name}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className={cn("text-xs font-medium", dueLabel(caseRecord.dueOn).includes("overdue") && "text-danger")}>{dueLabel(caseRecord.dueOn)}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{caseRecord.assignedTo?.name ?? "Unassigned"}</p>
-                  </div>
-                  <ArrowRight className="size-4 text-muted-foreground" />
-                </button>
-              ))}
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted hover:bg-muted">
+                  <TableHead>Case</TableHead>
+                  <TableHead>Organisation</TableHead>
+                  <TableHead>Deadline</TableHead>
+                  <TableHead>Owner</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {activeCases.slice(0, 8).map((caseRecord) => (
+                  <TableRow
+                    key={caseRecord.id}
+                    className="cursor-pointer"
+                    onClick={() => setSelectedId(caseRecord.id)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <CircleDotDashed className={cn("size-3.5 shrink-0", PRIORITY_TONE[caseRecord.priority])} />
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">{caseRecord.title}</p>
+                          <p className="truncate text-xs text-muted-foreground">{caseRecord.caseNumber}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{caseRecord.organization.name}</TableCell>
+                    <TableCell>
+                      <span className={cn("text-xs font-medium", dueLabel(caseRecord.dueOn).includes("overdue") && "text-danger")}>
+                        {dueLabel(caseRecord.dueOn)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{caseRecord.assignedTo?.name ?? "Unassigned"}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={cn("text-[10px]", STATUS_TONE[caseRecord.status])}>
+                        {STATUS_LABEL[caseRecord.status]}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

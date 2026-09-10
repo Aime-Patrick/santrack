@@ -1,12 +1,13 @@
 {
   "common": {
     "login": "Ingia",
-    "getStarted": "Anza",
+    "getStarted": "Anza Sasa",
     "language": "Lugha",
-    "search": "Tafuta kitu chochote...",
-    "viewAll": "Ona Yote",
-    "success": "Imefanikiwa",
-    "pending": "Inasubiri"
+    "search": "Tafuta chochote...",
+    "viewAll": "Tazama Yote",
+    "success": "Imefaulu",
+    "pending": "Inasubiri",
+    "failed": "Imeshindwa"
   },
   "nav": {
     "industryManagement": "Usimamizi wa Viwanda",

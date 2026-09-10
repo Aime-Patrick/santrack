@@ -11,6 +11,7 @@ import {
   Eye,
   ExternalLink,
   FileText,
+  Info,
   LoaderCircle,
   Mail,
   MapPin,
@@ -24,7 +25,17 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { api, getApiErrorMessage, type OrganizationDocument, type RegistrationConsultation } from "@/lib/api";
@@ -35,13 +46,15 @@ import {
   useConsultations,
   useOpenConsultation,
   useCancelConsultation,
+  useCreateInfoRequest,
+  useInfoRequests,
 } from "@/hooks/organizations";
 import {
   useMyRegulatoryAuthority,
   useRegulatoryAuthorities,
 } from "@/hooks/regulatory-authorities";
 import { cn } from "@/lib/utils";
-import type { PendingRegistration } from "@/lib/api";
+import type { CreateInfoRequestInput, InfoRequestField, PendingRegistration, RegistrationInfoRequest } from "@/lib/api";
 
 type DecisionType = "APPROVE" | "REQUEST_CHANGES" | "REJECT";
 
@@ -129,46 +142,63 @@ export function PendingRegistrations() {
           )}
         </div>
       </CardHeader>
-      <CardContent className="divide-y divide-border/70 p-0">
+      <CardContent className="p-0">
         {isLoading ? (
           <p className="flex items-center gap-2 p-5 text-sm text-muted-foreground">
             <LoaderCircle className="size-4 animate-spin" />
             Checking registrations…
           </p>
         ) : (
-          data.map((org) => (
-            <div
-              key={org.id}
-              className="flex flex-wrap items-center justify-between gap-3 p-5"
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <div
-                  className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-lg",
-                    org.onboardingStatus === "CHANGES_REQUESTED"
-                      ? "bg-amber-100 text-amber-700"
-                      : org.onboardingStatus === "UNDER_CONSULTATION"
-                      ? "bg-sky-100 text-sky-700"
-                      : "bg-slate-100 text-slate-600",
-                  )}
-                >
-                  {org.onboardingStatus === "CHANGES_REQUESTED" ? (
-                    <AlertCircle className="size-4" />
-                  ) : org.onboardingStatus === "UNDER_CONSULTATION" ? (
-                    <MessageSquare className="size-4" />
-                  ) : (
-                    <Clock3 className="size-4" />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium">{org.name}</p>
-                    <Badge variant="secondary">{typeLabel(org.type)}</Badge>
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted hover:bg-muted">
+                <TableHead>Organisation</TableHead>
+                <TableHead>Type · Sector</TableHead>
+                <TableHead>TIN</TableHead>
+                <TableHead>Submitted</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map((org) => (
+                <TableRow key={org.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={cn(
+                          "flex size-7 shrink-0 items-center justify-center rounded-lg",
+                          org.onboardingStatus === "CHANGES_REQUESTED"
+                            ? "bg-amber-100 text-amber-700"
+                            : org.onboardingStatus === "UNDER_CONSULTATION"
+                            ? "bg-sky-100 text-sky-700"
+                            : "bg-slate-100 text-slate-600",
+                        )}
+                      >
+                        {org.onboardingStatus === "CHANGES_REQUESTED" ? (
+                          <AlertCircle className="size-3.5" />
+                        ) : org.onboardingStatus === "UNDER_CONSULTATION" ? (
+                          <MessageSquare className="size-3.5" />
+                        ) : (
+                          <Clock3 className="size-3.5" />
+                        )}
+                      </div>
+                      <p className="text-sm font-medium">{org.name}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="text-[10px]">{typeLabel(org.type)}</Badge>
                     {org.industrySector && (
-                      <Badge variant="outline" className="border-primary/30 text-primary text-[10px]">
-                        {sectorLabel(org.industrySector)}
-                      </Badge>
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">{sectorLabel(org.industrySector)}</p>
                     )}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {org.tin ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {formatDate(org.createdAt)}
+                  </TableCell>
+                  <TableCell>
                     {org.onboardingStatus === "CHANGES_REQUESTED" && (
                       <Badge variant="outline" className="border-amber-300 text-amber-700 text-[10px]">
                         Changes requested
@@ -179,21 +209,20 @@ export function PendingRegistrations() {
                         Under consultation
                       </Badge>
                     )}
-                  </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {org.tin ? `TIN ${org.tin}` : "No TIN"} · submitted{" "}
-                    {formatDate(org.createdAt)} ·{" "}
-                    {org.ownership?.length ?? 0} owner
-                    {(org.ownership?.length ?? 0) !== 1 ? "s" : ""}
-                  </p>
-                </div>
-              </div>
-              <Button size="sm" variant="outline" onClick={() => setSelected(org)}>
-                <Eye className="mr-1.5 size-3.5" />
-                Review
-              </Button>
-            </div>
-          ))
+                    {org.onboardingStatus === "PENDING" && (
+                      <Badge variant="outline" className="text-[10px]">Pending</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setSelected(org)}>
+                      <Eye className="mr-1 size-3" />
+                      Review
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </CardContent>
       {selected && (
@@ -204,6 +233,192 @@ export function PendingRegistrations() {
         />
       )}
     </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Send Information Request Dialog
+// ---------------------------------------------------------------------------
+
+const DEFAULT_EXPIRY_DAYS = "7";
+const FIELD_TYPES = [
+  { value: "text", label: "Text answer" },
+  { value: "file", label: "File / document upload" },
+] as const;
+
+function SendInfoRequestDialog({
+  orgId,
+  orgName,
+  onClose,
+}: {
+  orgId: number;
+  orgName: string;
+  onClose: () => void;
+}) {
+  const createRequest = useCreateInfoRequest();
+
+  const [requestMessage, setRequestMessage] = useState("");
+  const [expiryDays, setExpiryDays] = useState(DEFAULT_EXPIRY_DAYS);
+  const [fields, setFields] = useState<InfoRequestField[]>([]);
+  const [newFieldLabel, setNewFieldLabel] = useState("");
+  const [newFieldType, setNewFieldType] = useState<"text" | "file">("text");
+  const [newFieldRequired, setNewFieldRequired] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const addField = () => {
+    const label = newFieldLabel.trim();
+    if (!label) return;
+    const key = label.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+    setFields((prev) => [...prev, { key, label, type: newFieldType, required: newFieldRequired }]);
+    setNewFieldLabel("");
+    setNewFieldType("text");
+    setNewFieldRequired(true);
+  };
+
+  const removeField = (key: string) => {
+    setFields((prev) => prev.filter((f) => f.key !== key));
+  };
+
+  const handleSubmit = async () => {
+    setError(null);
+    const input: CreateInfoRequestInput = {
+      requestMessage: requestMessage.trim(),
+      requestedFields: fields,
+      expiryDays: parseInt(expiryDays, 10) || 7,
+    };
+    try {
+      await createRequest.mutateAsync({ orgId, input });
+      onClose();
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <div>
+            <h2 className="text-base font-bold">Request Information</h2>
+            <p className="text-xs text-muted-foreground">{orgName}</p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="size-4" />
+          </Button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800">
+            The applicant will receive an email with a secure link to submit the requested information. The link expires after the number of days you choose below.
+          </div>
+
+          {/* Message */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Request message *</Label>
+            <Textarea
+              value={requestMessage}
+              onChange={(e) => setRequestMessage(e.target.value)}
+              placeholder="Clearly describe what information or documents you require from the applicant. e.g. Please provide your Rwanda FDA Premise Certificate and proof of cold-chain storage."
+              className="min-h-[100px] text-sm"
+            />
+          </div>
+
+          {/* Dynamic fields */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide">
+              Specific fields (optional)
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              Add specific inputs you want on the response form. Leave blank to let the applicant reply freely in a text box.
+            </p>
+
+            {fields.length > 0 && (
+              <div className="space-y-2">
+                {fields.map((f) => (
+                  <div key={f.key} className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs">
+                    <span className="flex-1 font-medium">{f.label}</span>
+                    <span className="text-muted-foreground">{f.type === "file" ? "File" : "Text"}</span>
+                    {f.required && <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-700">Required</span>}
+                    <button type="button" onClick={() => removeField(f.key)} className="text-muted-foreground hover:text-danger">
+                      <X className="size-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                placeholder="Field label, e.g. FDA Certificate"
+                value={newFieldLabel}
+                onChange={(e) => setNewFieldLabel(e.target.value)}
+                className="text-xs h-9 col-span-2"
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addField(); } }}
+              />
+              <Select value={newFieldType} onValueChange={(v) => setNewFieldType(v as "text" | "file")}>
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {FIELD_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value} className="text-xs">{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button type="button" variant="outline" size="sm" className="h-9 text-xs" onClick={addField}>
+                <Plus className="mr-1 size-3" />
+                Add field
+              </Button>
+            </div>
+          </div>
+
+          {/* Expiry */}
+          <div className="flex items-center gap-3">
+            <Label className="text-xs font-semibold whitespace-nowrap">Link expires after</Label>
+            <Select value={expiryDays} onValueChange={(v) => v && setExpiryDays(v)}>
+              <SelectTrigger className="h-9 text-xs w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[3, 5, 7, 14, 21, 30].map((d) => (
+                  <SelectItem key={d} value={String(d)} className="text-xs">{d} days</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {error && (
+            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-danger">
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-border p-4 flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose} disabled={createRequest.isPending}>Cancel</Button>
+          <Button
+            onClick={() => void handleSubmit()}
+            disabled={createRequest.isPending || !requestMessage.trim()}
+          >
+            {createRequest.isPending ? (
+              <LoaderCircle className="mr-2 size-4 animate-spin" />
+            ) : (
+              <Mail className="mr-2 size-4" />
+            )}
+            Send request
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -221,6 +436,7 @@ function RegistrationReviewDialog({
   const decide = useDecideRegistration();
   const { data: documents, isLoading: docsLoading, error: docsError } = useRegistrationDocuments(org.id);
   const { data: consultations = [], isLoading: consultsLoading } = useConsultations(org.id);
+  const { data: infoRequests = [] } = useInfoRequests(org.id);
   const { data: myAuthority } = useMyRegulatoryAuthority(true);
 
   const [decision, setDecision] = useState<DecisionType | null>(null);
@@ -228,6 +444,7 @@ function RegistrationReviewDialog({
   const [error, setError] = useState<string | null>(null);
   const [openDoc, setOpenDoc] = useState<OrganizationDocument | null>(null);
   const [showSendConsultation, setShowSendConsultation] = useState(false);
+  const [showInfoRequest, setShowInfoRequest] = useState(false);
 
   const reasonRequired = decision === "REJECT" || decision === "REQUEST_CHANGES";
   const reasonLabel =
@@ -518,6 +735,64 @@ function RegistrationReviewDialog({
           </section>
         </div>
 
+        {/* ── INFORMATION REQUESTS ── */}
+        <section className="px-6 pb-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Information requests
+            </h3>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowInfoRequest(true)}
+              className="h-7 text-xs gap-1"
+            >
+              <Info className="size-3" />
+              Request information
+            </Button>
+          </div>
+
+          {infoRequests.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No information requests sent yet. Use the button above to request specific documents or clarifications from the applicant via email.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {infoRequests.map((req) => (
+                <div key={req.id} className={cn(
+                  "rounded-lg border p-3 text-xs",
+                  req.status === "RESPONDED"
+                    ? "border-emerald-200 bg-emerald-50"
+                    : req.status === "EXPIRED"
+                    ? "border-slate-200 bg-slate-50 opacity-60"
+                    : "border-amber-200 bg-amber-50",
+                )}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={cn(
+                      "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                      req.status === "RESPONDED" ? "bg-emerald-100 text-emerald-700" :
+                      req.status === "EXPIRED" ? "bg-slate-100 text-slate-500" :
+                      "bg-amber-100 text-amber-700"
+                    )}>
+                      {req.status === "RESPONDED" ? "✓ Responded" : req.status === "EXPIRED" ? "Expired" : "Awaiting response"}
+                    </span>
+                    <span className="text-muted-foreground">
+                      Sent {new Date(req.createdAt).toLocaleDateString()}
+                      {req.respondedAt ? ` · Responded ${new Date(req.respondedAt).toLocaleDateString()}` : ""}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-foreground/80 line-clamp-2">{req.requestMessage}</p>
+                  {req.requestedFields.length > 0 && (
+                    <p className="mt-1 text-muted-foreground">
+                      {req.requestedFields.length} field{req.requestedFields.length !== 1 ? "s" : ""} requested
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
         {/* Decision panel */}
         <div className="border-t border-border p-5">
           <div className="flex gap-2">
@@ -603,6 +878,14 @@ function RegistrationReviewDialog({
           myAuthorityId={myAuthority.id}
           documents={documents ?? []}
           onClose={() => setShowSendConsultation(false)}
+        />
+      )}
+
+      {showInfoRequest && (
+        <SendInfoRequestDialog
+          orgId={org.id}
+          orgName={org.name}
+          onClose={() => setShowInfoRequest(false)}
         />
       )}
     </div>
@@ -872,6 +1155,8 @@ function SendConsultationDialog({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Document opener
 // ---------------------------------------------------------------------------
 // Document opener
 // ---------------------------------------------------------------------------

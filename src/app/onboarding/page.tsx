@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { RwandaWave } from "@/components/auth/auth-shell";
 import { SanTrackBrand } from "@/components/auth/san-track-logo";
+import { useMe } from "@/hooks/auth";
+import { RegistrationStatusScreen } from "@/components/auth/org-guard";
 
 // Lazy-load the heavy form so the brand panel renders instantly
 const OnboardingForm = dynamic(
@@ -17,10 +19,24 @@ const OnboardingForm = dynamic(
 
 export default function OnboardingPage() {
   const [brandVisible, setBrandVisible] = useState(true);
+  const { data: me, isLoading } = useMe();
 
   const handleFormStart = useCallback(() => {
     setBrandVisible(false);
   }, []);
+
+  const organization = me?.organization;
+
+  if (!isLoading && organization && organization.onboardingStatus && organization.onboardingStatus !== "APPROVED" && me.role !== "SYSTEM_ADMIN") {
+    const statusMap: Record<string, "pending" | "consultation" | "changes" | "rejected"> = {
+      PENDING: "pending",
+      UNDER_CONSULTATION: "consultation",
+      CHANGES_REQUESTED: "changes",
+      REJECTED: "rejected",
+    };
+    const screenStatus = statusMap[organization.onboardingStatus] || "pending";
+    return <RegistrationStatusScreen organization={organization} status={screenStatus} />;
+  }
 
   return (
     // The outermost container is the scroll root — overflow-hidden keeps

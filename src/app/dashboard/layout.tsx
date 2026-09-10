@@ -14,22 +14,22 @@ export default function DashboardLayout({
 }) {
   return (
     <DesignModeProvider>
-      <SidebarProvider defaultOpen={true} className="min-h-screen bg-[#f8fafc] dark:bg-background p-2 md:p-3">
-        <AppSidebar />
-        <SidebarInset className="relative flex flex-col flex-1 min-h-[calc(100vh-1.5rem)] rounded-2xl border border-border/80 bg-white shadow-xs overflow-hidden">
-          <DashboardHeader />
+      <PasswordChangeGuard>
+        <OrgGuard>
+          <SidebarProvider defaultOpen={true} className="min-h-screen bg-[#f8fafc] dark:bg-background p-2 md:p-3">
+            <AppSidebar />
+            <SidebarInset className="relative flex flex-col flex-1 min-h-[calc(100vh-1.5rem)] rounded-2xl border border-border/80 bg-white shadow-xs overflow-hidden">
+              <DashboardHeader />
 
-          <div className="flex-1 overflow-y-auto bg-white p-6 md:p-8">
-            <PasswordChangeGuard>
-              <OrgGuard>
+              <div className="flex-1 overflow-y-auto bg-white p-6 md:p-8">
                 <RouteGuard>{children}</RouteGuard>
-              </OrgGuard>
-            </PasswordChangeGuard>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
+              </div>
+            </SidebarInset>
+          </SidebarProvider>
 
-      <RoleSwitcher />
+          <RoleSwitcher />
+        </OrgGuard>
+      </PasswordChangeGuard>
     </DesignModeProvider>
   );
 }

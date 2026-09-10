@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import {
   statusColor,
 } from "@/hooks/licensing";
 import { usePendingRegistrations, useIncomingConsultations } from "@/hooks/organizations";
-import { getApiErrorMessage, type License, type LicenseDocument } from "@/lib/api";
+import { api, getApiErrorMessage, type License, type LicenseDocument } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CaseWorkQueue } from "@/components/regulator/case-work-queue";
@@ -31,9 +31,8 @@ import { FieldInspectionMode } from "@/components/regulator/field-inspection-mod
 import { useRegulatoryCommand } from "@/hooks/regulatory-command";
 import { IncomingReferrals } from "@/components/regulator/incoming-referrals";
 import { AuthoritySelfSetup } from "@/components/regulator/authority-self-setup";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
-import { Document, Page, pdfjs } from "react-pdf";
+import { RegulatorFollowUpPanel } from "@/components/licensing/regulator-followup-panel";
+import { ManageCategoriesDialog } from "@/components/licensing/manage-categories-dialog";
 import {
   FileText,
   ExternalLink,
@@ -51,10 +50,9 @@ import {
   Radar,
   ScanLine,
   Settings2,
+  Layers,
+  Download,
 } from "lucide-react";
-
-// Configure pdfjs worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -133,101 +131,6 @@ function DocumentViewer({ document: doc }: { document: LicenseDocument }) {
   );
 }
 
-function PdfViewer({
-  url,
-  filename,
-  onClose,
-}: {
-  url: string;
-  filename: string;
-  onClose: () => void;
-}) {
-  const [numPages, setNumPages] = useState<number>(0);
-  const [currentPage, setCurrentPage] = useState(1);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="relative flex max-h-[92vh] max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">{filename}</p>
-            <p className="text-xs text-muted-foreground">
-              Page {currentPage} of {numPages || "—"}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {numPages > 1 && (
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  disabled={currentPage <= 1}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                >
-                  Prev
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  disabled={currentPage >= numPages}
-                  onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))}
-                >
-                  Next
-                </Button>
-              </div>
-            )}
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="size-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* PDF content */}
-        <div className="overflow-auto p-4" style={{ maxHeight: "calc(92vh - 56px)" }}>
-          <div className="flex justify-center">
-            <Document
-              file={url}
-              onLoadSuccess={({ numPages: n }) => {
-                setNumPages(n);
-                setCurrentPage(1);
-              }}
-              onLoadError={(err) => console.error("PDF load error:", err)}
-              loading={
-                <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground">
-                  <LoaderCircle className="size-4 animate-spin" />
-                  Loading PDF...
-                </div>
-              }
-              error={
-                <div className="py-12 text-center text-sm text-danger">
-                  Could not load PDF
-                </div>
-              }
-            >
-              <Page
-                pageNumber={currentPage}
-                renderTextLayer={true}
-                renderAnnotationLayer={true}
-                className="shadow-md"
-                width={Math.min(800, typeof window !== "undefined" ? window.innerWidth - 100 : 800)}
-              />
-            </Document>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function DocumentPreviewModal({
   document: doc,
   onClose,
@@ -235,13 +138,44 @@ function DocumentPreviewModal({
   document: LicenseDocument;
   onClose: () => void;
 }) {
-  const isImage = doc.contentType.startsWith("image/");
   const isPdf = doc.contentType === "application/pdf";
-  const fileUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081"}/api/licenses/documents/${doc.id}`;
+  const isImage = doc.contentType.startsWith("image/");
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  if (isPdf) {
-    return <PdfViewer url={fileUrl} filename={doc.filename} onClose={onClose} />;
-  }
+  // Fetch the document through the authenticated API client so auth headers are sent
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    setLoading(true);
+    setFetchError(null);
+
+    api
+      .get(`/licenses/documents/${doc.id}`, { responseType: "blob" })
+      .then((res) => {
+        objectUrl = URL.createObjectURL(
+          new Blob([res.data], { type: doc.contentType })
+        );
+        setBlobUrl(objectUrl);
+      })
+      .catch((err) => {
+        console.error("Document fetch error:", err);
+        setFetchError("Could not load document.");
+      })
+      .finally(() => setLoading(false));
+
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [doc.id, doc.contentType]);
+
+  const handleDownload = () => {
+    if (!blobUrl) return;
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = doc.filename;
+    a.click();
+  };
 
   return (
     <div
@@ -249,26 +183,67 @@ function DocumentPreviewModal({
       onClick={onClose}
     >
       <div
-        className="relative max-h-[92vh] max-w-5xl overflow-hidden rounded-xl bg-white shadow-2xl"
+        className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
           <div className="min-w-0">
-            <p className="text-sm font-medium">{doc.filename}</p>
+            <p className="truncate text-sm font-medium">{doc.filename}</p>
+            <p className="text-xs text-muted-foreground">{docLabel(doc.documentType)}</p>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="size-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={!blobUrl}
+              onClick={handleDownload}
+            >
+              <Download className="size-3.5" />
+              Download
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="size-4" />
+            </Button>
+          </div>
         </div>
 
-        {/* Image content */}
-        <div className="flex items-center justify-center overflow-auto p-4" style={{ maxHeight: "calc(92vh - 56px)" }}>
-          <img
-            src={fileUrl}
-            alt={doc.filename}
-            className="max-h-[85vh] max-w-full object-contain"
-          />
+        {/* Body */}
+        <div
+          className="flex flex-1 items-center justify-center overflow-hidden bg-muted/20"
+          style={{ minHeight: 0 }}
+        >
+          {loading && (
+            <div className="flex flex-col items-center gap-3 py-16 text-sm text-muted-foreground">
+              <LoaderCircle className="size-6 animate-spin" />
+              Loading document…
+            </div>
+          )}
+
+          {!loading && fetchError && (
+            <div className="py-16 text-center text-sm text-destructive">
+              {fetchError}
+            </div>
+          )}
+
+          {!loading && blobUrl && isPdf && (
+            <iframe
+              src={blobUrl}
+              title={doc.filename}
+              className="h-[calc(92vh-57px)] w-full border-0"
+            />
+          )}
+
+          {!loading && blobUrl && isImage && (
+            <div className="overflow-auto p-4">
+              <img
+                src={blobUrl}
+                alt={doc.filename}
+                className="max-h-[calc(92vh-100px)] max-w-full object-contain shadow"
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -453,6 +428,14 @@ function ReviewDialog({
                   ))}
                 </div>
               )}
+
+              {/* Conditions & Follow-up Items */}
+              <div className="mt-6 border-t border-border pt-4">
+                <RegulatorFollowUpPanel
+                  licenseId={lic.id}
+                  licenseNumber={lic.licenseNumber}
+                />
+              </div>
             </div>
 
             {/* Decision area */}
@@ -670,6 +653,7 @@ export default function RegulatorPage() {
   const { data: queue, isLoading } = useRegulatorQueue();
   const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
   const [tab, setTab] = useState<Tab>("scan");
+  const [showCategoriesDialog, setShowCategoriesDialog] = useState(false);
 
   const columns: ColumnDef<TableFeatures, License>[] = [
     {
@@ -802,6 +786,7 @@ export default function RegulatorPage() {
                       filterColumn="organizationName"
                       pageSize={10}
                       noBorder
+                      headerClassName="bg-muted"
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -836,6 +821,22 @@ export default function RegulatorPage() {
           {/* Setup — authority configuration */}
           {tab === "setup" && (
             <div className="space-y-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
+                <div>
+                  <h2 className="text-sm font-semibold">Regulatory Framework & License Categories</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Define authorized license categories, document submission rules, and permitted product sectors.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="shadow-sm gap-1.5 text-xs h-9 shrink-0"
+                  onClick={() => setShowCategoriesDialog(true)}
+                >
+                  <Layers className="size-4 text-primary" />
+                  Manage License Categories
+                </Button>
+              </div>
               <AuthoritySelfSetup />
             </div>
           )}
@@ -850,6 +851,11 @@ export default function RegulatorPage() {
           onClose={() => setSelectedLicense(null)}
         />
       )}
+
+      <ManageCategoriesDialog
+        open={showCategoriesDialog}
+        onOpenChange={setShowCategoriesDialog}
+      />
     </div>
   );
 }

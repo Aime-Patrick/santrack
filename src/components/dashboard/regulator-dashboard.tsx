@@ -62,6 +62,7 @@ export function RegulatorDashboard() {
           icon={<Building2 className="size-4" />}
           iconBg="bg-primary"
           caption="Businesses licensed by us"
+          href="/dashboard/industries?scope=licensed_by_us"
         />
         <MetricCard
           title="Licence queue"
@@ -69,6 +70,7 @@ export function RegulatorDashboard() {
           icon={<FileBadge className="size-4" />}
           iconBg="bg-warning-foreground"
           caption="Awaiting review"
+          href="/dashboard/regulator"
         />
         <MetricCard
           title="Compliance findings"
@@ -76,6 +78,7 @@ export function RegulatorDashboard() {
           icon={<AlertTriangle className="size-4" />}
           iconBg="bg-danger"
           caption="Recent industry signals"
+          href="/dashboard/compliance/findings"
         />
         <MetricCard
           title="Trace"
@@ -83,6 +86,7 @@ export function RegulatorDashboard() {
           icon={<Clock className="size-4" />}
           iconBg="bg-success"
           caption="Investigate any identity"
+          href="/dashboard/manufacturing/trace"
         />
       </div>
 

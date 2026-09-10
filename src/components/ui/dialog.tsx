@@ -103,6 +103,7 @@ export {
   DialogPortal,
   DialogBackdropStyled as DialogBackdrop,
   DialogPopupStyled as DialogPopup,
+  DialogPopupStyled as DialogContent,
   DialogClose,
   DialogHeader,
   DialogFooter,

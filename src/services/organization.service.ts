@@ -1,8 +1,12 @@
 import {
   api,
+  type CreateInfoRequestInput,
   type OrganizationResponse,
   type OrganizationType,
   type CreateOrganizationInput,
+  type PendingRegistration,
+  type RegistrationDecisionInput,
+  type RegistrationInfoRequest,
 } from "@/lib/api";
 
 /**
@@ -27,17 +31,29 @@ export interface RegulatorResponse extends OrganizationResponse {
   createdAt: string;
 }
 
+/** One license associated with a business in the industry registry. */
+export interface RegistryLicense {
+  id?: number;
+  licenseNumber: string;
+  activity: string;
+  categoryCode?: string;
+  categoryName?: string;
+  status: string;
+  issuedOn?: string | null;
+  expiresOn: string | null;
+  issuedByOrgId?: number | null;
+  issuedByOrgName?: string | null;
+  facilityId?: number | null;
+  facilityName?: string | null;
+}
+
 /** One business as the industry register reports it. */
 export interface RegistryEntry extends OrganizationResponse {
   createdAt: string;
   staff: number;
   products: number;
-  licenses: {
-    licenseNumber: string;
-    activity: string;
-    status: string;
-    expiresOn: string | null;
-  }[];
+  facilities?: number;
+  licenses: RegistryLicense[];
 }
 
 export const organizationService = {
@@ -130,5 +146,43 @@ export const organizationService = {
     return api
       .delete(`/api/organizations/${organizationId}`)
       .then(() => undefined);
+  },
+
+  /** Retrieves pending registrations awaiting a regulator decision. */
+  pendingRegistrations(): Promise<PendingRegistration[]> {
+    return api
+      .get<PendingRegistration[]>("/api/organizations/pending")
+      .then((r) => r.data);
+  },
+
+  /** Records a registration decision (APPROVE / REQUEST_CHANGES / REJECT). */
+  decide(organizationId: number, input: RegistrationDecisionInput): Promise<OrganizationResponse> {
+    return api
+      .post<OrganizationResponse>(`/api/organizations/${organizationId}/decision`, input)
+      .then((r) => r.data);
+  },
+
+  // ── Information request ──
+
+  /** Creates an information request for a pending registration. Regulator only. */
+  createInfoRequest(
+    organizationId: number,
+    input: CreateInfoRequestInput,
+  ): Promise<RegistrationInfoRequest> {
+    return api
+      .post<RegistrationInfoRequest>(
+        `/api/organizations/${organizationId}/info-request`,
+        input,
+      )
+      .then((r) => r.data);
+  },
+
+  /** Lists information requests for a registration. Regulator only. */
+  listInfoRequests(organizationId: number): Promise<RegistrationInfoRequest[]> {
+    return api
+      .get<RegistrationInfoRequest[]>(
+        `/api/organizations/${organizationId}/info-requests`,
+      )
+      .then((r) => r.data);
   },
 };

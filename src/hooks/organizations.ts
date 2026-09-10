@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { organizationService, TRADE_TYPES } from "@/services/organization.service";
-import type { OrganizationType } from "@/lib/api";
+import type { CreateInfoRequestInput, OrganizationType } from "@/lib/api";
 import { onboardingService } from "@/services/onboarding.service";
 
 export const organizationKeys = {
@@ -305,6 +305,47 @@ export function useRespondConsultation() {
       toast.error(
         (error as { response?: { data?: { message?: string } } })?.response?.data
           ?.message ?? "Could not submit response",
+      );
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Registration information-request hooks
+// ---------------------------------------------------------------------------
+
+export const infoRequestKeys = {
+  forOrg: (orgId: number) => ["info-requests", "org", orgId] as const,
+};
+
+/** Lists all information requests filed against a registration. Regulator only. */
+export function useInfoRequests(orgId: number) {
+  return useQuery({
+    queryKey: infoRequestKeys.forOrg(orgId),
+    queryFn: () => organizationService.listInfoRequests(orgId),
+    enabled: orgId > 0,
+  });
+}
+
+/** Creates an information request for a pending registration. Regulator only. */
+export function useCreateInfoRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      orgId,
+      input,
+    }: {
+      orgId: number;
+      input: CreateInfoRequestInput;
+    }) => organizationService.createInfoRequest(orgId, input),
+    onSuccess: (_data, { orgId }) => {
+      qc.invalidateQueries({ queryKey: infoRequestKeys.forOrg(orgId) });
+      toast.success("Information request sent — applicant notified by email");
+    },
+    onError: (error: unknown) => {
+      toast.error(
+        (error as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Could not send information request",
       );
     },
   });

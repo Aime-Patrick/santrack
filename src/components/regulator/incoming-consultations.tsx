@@ -13,6 +13,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { getApiErrorMessage, type RegistrationConsultation, type ConsultationVerdict } from "@/lib/api";
@@ -78,68 +86,80 @@ export function IncomingConsultations() {
           )}
         </div>
       </CardHeader>
-      <CardContent className="divide-y divide-border/70 p-0">
+      <CardContent className="p-0">
         {isLoading ? (
           <p className="flex items-center gap-2 p-5 text-sm text-muted-foreground">
             <LoaderCircle className="size-4 animate-spin" />
             Checking consultation inbox…
           </p>
         ) : (
-          data.map((c) => (
-            <div
-              key={c.id}
-              className="flex flex-wrap items-center justify-between gap-3 p-5"
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <div
-                  className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-lg",
-                    c.overdue || c.status === "OVERDUE"
-                      ? "bg-red-100 text-red-600"
-                      : "bg-sky-100 text-sky-700",
-                  )}
-                >
-                  {c.overdue || c.status === "OVERDUE" ? (
-                    <AlertCircle className="size-4" />
-                  ) : (
-                    <MessageSquare className="size-4" />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium">
-                      {c.organization?.name ?? "Unknown applicant"}
-                    </p>
-                    <Badge variant="secondary" className="text-[10px]">
-                      from {c.fromAuthority?.name ?? "Unknown"}
-                    </Badge>
-                    {(c.overdue || c.status === "OVERDUE") && (
-                      <Badge
-                        variant="outline"
-                        className="border-red-300 text-red-700 text-[10px]"
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted hover:bg-muted">
+                <TableHead>Applicant</TableHead>
+                <TableHead>From authority</TableHead>
+                <TableHead>Subject</TableHead>
+                <TableHead>Received · Due</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={cn(
+                          "flex size-7 shrink-0 items-center justify-center rounded-lg",
+                          c.overdue || c.status === "OVERDUE"
+                            ? "bg-red-100 text-red-600"
+                            : "bg-sky-100 text-sky-700",
+                        )}
                       >
-                        Overdue
-                      </Badge>
+                        {c.overdue || c.status === "OVERDUE" ? (
+                          <AlertCircle className="size-3.5" />
+                        ) : (
+                          <MessageSquare className="size-3.5" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">
+                          {c.organization?.name ?? "Unknown applicant"}
+                        </p>
+                        {(c.overdue || c.status === "OVERDUE") && (
+                          <Badge variant="outline" className="border-red-300 text-red-700 text-[10px]">
+                            Overdue
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {c.fromAuthority?.name ?? "Unknown"}
+                  </TableCell>
+                  <TableCell className="max-w-xs">
+                    <p className="text-xs text-muted-foreground line-clamp-2">{c.subject}</p>
+                  </TableCell>
+                  <TableCell>
+                    <p className="text-xs text-muted-foreground">{formatDate(c.createdAt)}</p>
+                    {c.dueDate && (
+                      <p className="text-xs text-muted-foreground">due {formatDate(c.dueDate)}</p>
                     )}
-                  </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
-                    {c.subject}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    Received {formatDate(c.createdAt)}
-                    {c.dueDate ? ` · due ${formatDate(c.dueDate)}` : ""}
-                  </p>
-                </div>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setResponding(c)}
-              >
-                Respond
-              </Button>
-            </div>
-          ))
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={() => setResponding(c)}
+                    >
+                      Respond
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </CardContent>
 

@@ -1,6 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { licenseService } from "@/services/license.service";
-import type { ApplyLicenseInput, LicenseDecision } from "@/lib/api";
+import type {
+  ApplyLicenseInput,
+  LicenseDecision,
+  CreateLicenseCategoryInput,
+  UpdateLicenseCategoryInput,
+  ActionFollowUpInput,
+  CreateFollowUpInput,
+  CloseFollowUpInput,
+  SendFollowUpLinkInput,
+} from "@/lib/api";
 
 // Query key factory
 export const licenseKeys = {
@@ -8,22 +17,70 @@ export const licenseKeys = {
   my: () => [...licenseKeys.all, "mine"] as const,
   queue: () => [...licenseKeys.all, "queue"] as const,
   categories: () => [...licenseKeys.all, "categories"] as const,
+  categoriesAll: () => [...licenseKeys.all, "categories", "all"] as const,
   documents: (id: number) => [...licenseKeys.all, id, "documents"] as const,
   regulatorDocuments: (id: number) =>
     [...licenseKeys.all, id, "documents", "regulator"] as const,
   history: (id: number) => [...licenseKeys.all, id, "history"] as const,
+  followUps: (id: number) => [...licenseKeys.all, id, "followUps"] as const,
 };
 
 // ---------------------------------------------------------------------------
 // Applicant-side hooks
 // ---------------------------------------------------------------------------
 
-/** Fetch license categories for the apply form. */
+/** Fetch active license categories for the apply form. */
 export function useLicenseCategories() {
   return useQuery({
     queryKey: licenseKeys.categories(),
     queryFn: licenseService.categories,
     staleTime: 10 * 60_000,
+  });
+}
+
+/** Fetch all license categories (including inactive) for administrative management. */
+export function useAllLicenseCategories() {
+  return useQuery({
+    queryKey: licenseKeys.categoriesAll(),
+    queryFn: licenseService.allCategories,
+    staleTime: 30_000,
+  });
+}
+
+/** Create a new license category (Admin only). */
+export function useCreateLicenseCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateLicenseCategoryInput) => licenseService.createCategory(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: licenseKeys.categories() });
+      queryClient.invalidateQueries({ queryKey: licenseKeys.categoriesAll() });
+    },
+  });
+}
+
+/** Update an existing license category (Admin only). */
+export function useUpdateLicenseCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number; input: UpdateLicenseCategoryInput }) =>
+      licenseService.updateCategory(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: licenseKeys.categories() });
+      queryClient.invalidateQueries({ queryKey: licenseKeys.categoriesAll() });
+    },
+  });
+}
+
+/** Delete or deactivate a license category (Admin only). */
+export function useDeleteLicenseCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => licenseService.deleteCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: licenseKeys.categories() });
+      queryClient.invalidateQueries({ queryKey: licenseKeys.categoriesAll() });
+    },
   });
 }
 
@@ -75,6 +132,17 @@ export function useCancelLicense() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (licenseId: number) => licenseService.cancel(licenseId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: licenseKeys.my() });
+    },
+  });
+}
+
+/** Renew an existing or expired licence. */
+export function useRenewLicense() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (licenseId: number) => licenseService.renew(licenseId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: licenseKeys.my() });
     },
@@ -233,6 +301,114 @@ export function useReinstateLicense() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: licenseKeys.queue() });
       queryClient.invalidateQueries({ queryKey: licenseKeys.my() });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Follow-ups & Conditions hooks
+// ---------------------------------------------------------------------------
+
+/** Get follow-up items/conditions for a license (Applicant side). */
+export function useLicenseFollowUps(licenseId: number) {
+  return useQuery({
+    queryKey: licenseKeys.followUps(licenseId),
+    queryFn: () => licenseService.getFollowUps(licenseId),
+    enabled: !!licenseId,
+  });
+}
+
+/** Submit business response and evidence for a condition (Applicant side). */
+export function useActionLicenseFollowUp() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      licenseId,
+      followUpId,
+      input,
+    }: {
+      licenseId: number;
+      followUpId: number;
+      input: ActionFollowUpInput;
+    }) => licenseService.actionFollowUp(licenseId, followUpId, input),
+    onSuccess: (_, { licenseId }) => {
+      queryClient.invalidateQueries({ queryKey: licenseKeys.followUps(licenseId) });
+      queryClient.invalidateQueries({ queryKey: licenseKeys.history(licenseId) });
+      queryClient.invalidateQueries({ queryKey: licenseKeys.my() });
+    },
+  });
+}
+
+/** Get follow-up items/conditions for a license (Regulator side). */
+export function useRegulatorLicenseFollowUps(licenseId: number) {
+  return useQuery({
+    queryKey: [...licenseKeys.followUps(licenseId), "regulator"],
+    queryFn: () => licenseService.getRegulatorFollowUps(licenseId),
+    enabled: !!licenseId,
+  });
+}
+
+/** Attach a condition or follow-up requirement to a license (Regulator side). */
+export function useCreateLicenseFollowUp() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      licenseId,
+      input,
+    }: {
+      licenseId: number;
+      input: CreateFollowUpInput;
+    }) => licenseService.createFollowUp(licenseId, input),
+    onSuccess: (_, { licenseId }) => {
+      queryClient.invalidateQueries({ queryKey: licenseKeys.followUps(licenseId) });
+      queryClient.invalidateQueries({ queryKey: [...licenseKeys.followUps(licenseId), "regulator"] });
+      queryClient.invalidateQueries({ queryKey: licenseKeys.history(licenseId) });
+      queryClient.invalidateQueries({ queryKey: licenseKeys.queue() });
+    },
+  });
+}
+
+/** Verify and close a follow-up condition (Regulator side). */
+export function useCloseLicenseFollowUp() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      licenseId,
+      followUpId,
+      input,
+    }: {
+      licenseId: number;
+      followUpId: number;
+      input: CloseFollowUpInput;
+    }) => licenseService.closeFollowUp(licenseId, followUpId, input),
+    onSuccess: (_, { licenseId }) => {
+      queryClient.invalidateQueries({ queryKey: licenseKeys.followUps(licenseId) });
+      queryClient.invalidateQueries({ queryKey: [...licenseKeys.followUps(licenseId), "regulator"] });
+      queryClient.invalidateQueries({ queryKey: licenseKeys.history(licenseId) });
+      queryClient.invalidateQueries({ queryKey: licenseKeys.queue() });
+    },
+  });
+}
+
+/**
+ * Sends an email to the licence holder with a one-time response link so they
+ * can submit evidence against a condition without logging in (Regulator side).
+ */
+export function useSendFollowUpLink() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      licenseId,
+      followUpId,
+      input,
+    }: {
+      licenseId: number;
+      followUpId: number;
+      input: SendFollowUpLinkInput;
+    }) => licenseService.sendFollowUpLink(licenseId, followUpId, input),
+    onSuccess: (_, { licenseId }) => {
+      queryClient.invalidateQueries({ queryKey: licenseKeys.followUps(licenseId) });
+      queryClient.invalidateQueries({ queryKey: [...licenseKeys.followUps(licenseId), "regulator"] });
     },
   });
 }

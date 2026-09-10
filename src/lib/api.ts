@@ -302,7 +302,8 @@ export type LicenseStatus =
   | "ACTIVE"
   | "EXPIRED"
   | "SUSPENDED"
-  | "REVOKED";
+  | "REVOKED"
+  | "CANCELLED";
 
 export type LicensedActivity =
   | "MANUFACTURING"
@@ -320,7 +321,30 @@ export interface LicenseCategory {
   requiredDocuments: string[];
   permittedProductCategories: string[];
   validityMonths: number;
+  active?: boolean;
 }
+
+export interface CreateLicenseCategoryInput {
+  code: string;
+  name: string;
+  activity: LicensedActivity;
+  appliesTo: OrganizationType[];
+  permittedProductCategories?: string[];
+  requiredDocuments?: string[];
+  validityMonths?: number;
+  active?: boolean;
+}
+
+export interface UpdateLicenseCategoryInput {
+  name?: string;
+  activity?: LicensedActivity;
+  appliesTo?: OrganizationType[];
+  permittedProductCategories?: string[];
+  requiredDocuments?: string[];
+  validityMonths?: number;
+  active?: boolean;
+}
+
 
 export interface License {
   id: number;
@@ -333,12 +357,81 @@ export interface License {
   categoryCode: string;
   categoryName: string;
   activity: LicensedActivity;
+  facilityId?: number | null;
+  facilityName?: string | null;
+  grain?: string;
+  premiseMetadata?: Record<string, any> | null;
   issuedByName: string | null;
   reviewedByName: string | null;
   issuedOn: string | null;
   expiresOn: string | null;
   statusReason: string | null;
   statusChangedAt: string | null;
+  previousLicenseId?: number | null;
+}
+
+export type LicenseFollowUpStatus = 'OPEN' | 'ACTIONED' | 'CLOSED';
+export type LicenseFollowUpPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export interface LicenseFollowUp {
+  id: number;
+  licenseId: number;
+  title: string;
+  description: string;
+  priority: LicenseFollowUpPriority;
+  status: LicenseFollowUpStatus;
+  dueDate?: string | null;
+  createdBy?: { id: number; fullName: string; email?: string } | null;
+  businessResponse?: string | null;
+  evidenceAttachmentKey?: string | null;
+  evidenceFilename?: string | null;
+  actionedBy?: { id: number; fullName: string; email?: string } | null;
+  actionedAt?: string | null;
+  closureNotes?: string | null;
+  closedBy?: { id: number; fullName: string; email?: string } | null;
+  closedAt?: string | null;
+  responseToken?: string | null;
+  responseTokenExpiresAt?: string | null;
+  responseTokenUsed?: boolean | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SendFollowUpLinkInput {
+  expiryDays?: number;
+}
+
+export interface PublicFollowUpView {
+  id: number;
+  licenseNumber: string;
+  organizationName: string;
+  title: string;
+  description: string;
+  priority: LicenseFollowUpPriority;
+  dueDate?: string | null;
+  status: LicenseFollowUpStatus;
+  readOnly: boolean;
+  businessResponse?: string | null;
+  evidenceFilename?: string | null;
+  actionedAt?: string | null;
+  responseTokenExpiresAt?: string | null;
+}
+
+export interface CreateFollowUpInput {
+  title: string;
+  description: string;
+  priority?: LicenseFollowUpPriority;
+  dueDate?: string;
+}
+
+export interface ActionFollowUpInput {
+  businessResponse: string;
+  evidenceAttachmentKey?: string;
+  evidenceFilename?: string;
+}
+
+export interface CloseFollowUpInput {
+  closureNotes?: string;
 }
 
 export interface LicenseDocument {
@@ -362,13 +455,104 @@ export interface LicenseEvent {
 
 export interface ApplyLicenseInput {
   categoryId: number;
+  facilityId?: number;
   notes?: string;
+  premiseMetadata?: Record<string, any>;
+  facilityDetails?: {
+    name: string;
+    province?: string;
+    district?: string;
+    sector?: string;
+    cell?: string;
+    village?: string;
+    businessCenter?: string;
+    gpsCoordinates?: { lat: number; lng: number };
+    landUpi?: string;
+    ownershipType?: string;
+    leaseContractExpiry?: string;
+  };
 }
 
 export interface LicenseDecision {
   decision: "APPROVE" | "REJECT";
   reason?: string;
   expiresOn?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Product Registration types
+// ---------------------------------------------------------------------------
+
+export type ProductRegistrationStatus =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "UNDER_REVIEW"
+  | "APPROVED"
+  | "REJECTED"
+  | "SUSPENDED"
+  | "EXPIRED"
+  | "CANCELLED";
+
+export interface ProductRegistration {
+  id: number;
+  registrationNumber: string;
+  productName: string;
+  brandName?: string | null;
+  intendedUse?: string | null;
+  targetConsumer?: string | null;
+  ingredients?: Array<{ name: string; percentage?: number; purpose?: string }>;
+  netContents?: string[];
+  shelfLifeMonths?: number | null;
+  storageConditions?: string | null;
+  rsbStandardNumber?: string | null;
+  status: ProductRegistrationStatus;
+  statusReason?: string | null;
+  statusChangedAt?: string | null;
+  facilityId?: number | null;
+  facility?: { id: number; name: string; district?: string } | null;
+  categoryId?: number | null;
+  category?: { id: number; name: string; code: string } | null;
+  productId?: number | null;
+  issuedByName?: string | null;
+  reviewedByName?: string | null;
+  issuedOn?: string | null;
+  expiresOn?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductRegistrationDocument {
+  id: number;
+  documentType: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+}
+
+export interface ProductRegistrationEvent {
+  id: number;
+  type: string;
+  fromStatus: ProductRegistrationStatus | null;
+  toStatus: ProductRegistrationStatus | null;
+  actor?: { fullName?: string; email?: string } | null;
+  notes?: string | null;
+  recordedAt: string;
+}
+
+export interface ApplyProductRegistrationInput {
+  productName: string;
+  brandName?: string;
+  facilityId?: number;
+  productId?: number;
+  categoryId?: number;
+  intendedUse?: string;
+  targetConsumer?: string;
+  ingredients?: Array<{ name: string; percentage?: number; purpose?: string }>;
+  netContents?: string[];
+  shelfLifeMonths?: number;
+  storageConditions?: string;
+  rsbStandardNumber?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -426,6 +610,55 @@ export interface OpenConsultationInput {
 export interface RespondConsultationInput {
   verdict: ConsultationVerdict;
   responseNote?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Registration Info Request
+// ---------------------------------------------------------------------------
+
+export type InfoRequestStatus = 'PENDING' | 'RESPONDED' | 'EXPIRED';
+
+export interface InfoRequestField {
+  key: string;
+  label: string;
+  type: 'text' | 'file';
+  required: boolean;
+}
+
+export interface RegistrationInfoRequest {
+  id: number;
+  organizationId: number;
+  token: string;
+  requestMessage: string;
+  requestedFields: InfoRequestField[];
+  expiresAt: string;
+  status: InfoRequestStatus;
+  respondedAt: string | null;
+  createdAt: string;
+}
+
+/** The data returned by the public GET /api/public/registration-response/:token */
+export interface PublicInfoRequestView {
+  id: number;
+  organizationName: string;
+  requestMessage: string;
+  requestedFields: InfoRequestField[];
+  expiresAt: string;
+  status: InfoRequestStatus;
+  /** True when already responded — page renders in read-only mode */
+  readOnly: boolean;
+  /** Previously submitted text responses (key → HTML value) */
+  responseData: Record<string, string> | null;
+  /** Filename of the uploaded attachment, if any */
+  responseAttachmentFilename: string | null;
+  /** When the applicant responded */
+  respondedAt: string | null;
+}
+
+export interface CreateInfoRequestInput {
+  requestMessage: string;
+  requestedFields?: InfoRequestField[];
+  expiryDays?: number;
 }
 
 // ---------------------------------------------------------------------------

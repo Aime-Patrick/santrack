@@ -73,6 +73,10 @@ import {
   useBoms,
 } from "@/hooks/manufacturing";
 import {
+  useProductionEligibility,
+  useDebouncedValue,
+} from "@/hooks/eligibility";
+import {
   useIdentityPools,
   useAssignIdentities,
   useCancelIdentities,
@@ -844,6 +848,26 @@ function NewOrderDialog({
   const productIdNum = productId ? Number(productId) : undefined;
   const { data: poolsData } = useIdentityPools(productIdNum);
 
+  // Live product-registration check — debounced so it doesn't fire on every
+  // keystroke while the quantity field is being filled.
+  const today = new Date().toISOString().split("T")[0];
+  const debouncedProductId = useDebouncedValue(productId, 300);
+  const { data: eligibility, isFetching: eligChecking } = useProductionEligibility(
+    {
+      productId: debouncedProductId ? Number(debouncedProductId) : undefined,
+      quantity: 1, // quantity doesn't affect this check; any positive value works
+      date: today,
+    },
+    { enabled: !!debouncedProductId },
+  );
+  const productAuthCheck = eligibility?.checks.find(
+    (c) => c.code === "PRODUCT_AUTHORIZATION",
+  );
+  const registrationBlocking =
+    eligibility?.blocking === true ||
+    (eligibility?.enforcementMode === "STRICT" &&
+      productAuthCheck?.status === "FAIL");
+
   const readyPoolCodes = useMemo(() => {
     const pools = (poolsData?.content ?? []).filter((p) => p.status === "READY");
     return pools.reduce((sum, p) => sum + (p.requestedCount || 0), 0);
@@ -933,6 +957,14 @@ function NewOrderDialog({
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Product Registration Status */}
+            {debouncedProductId && (
+              <ProductRegistrationPill
+                checking={eligChecking}
+                check={productAuthCheck}
+              />
+            )}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -1051,7 +1083,7 @@ function NewOrderDialog({
             Cancel
           </Button>
           <Button
-            disabled={!valid || pending}
+            disabled={!valid || pending || registrationBlocking}
             onClick={() =>
               onSubmit({
                 productId: Number(productId),
@@ -1242,5 +1274,68 @@ function AmendDialog({
         </DialogFooter>
       </DialogPopup>
     </Dialog>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Product Registration Status Pill
+// Shown inside NewOrderDialog directly below the product selector.
+// ─────────────────────────────────────────────────────────────────────────────
+
+type EligCheck = { status: string; message: string; remedy?: { label: string; href: string } };
+
+function ProductRegistrationPill({
+  checking,
+  check,
+}: {
+  checking: boolean;
+  check: EligCheck | undefined;
+}) {
+  if (checking || !check) {
+    return (
+      <div className="flex items-center gap-1.5 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        <Loader2 className="size-3 animate-spin shrink-0" />
+        Checking product registration…
+      </div>
+    );
+  }
+
+  if (check.status === "NOT_APPLICABLE") return null;
+
+  const isPASS = check.status === "PASS";
+  const isWARN = check.status === "WARN";
+  const isFAIL = check.status === "FAIL";
+
+  return (
+    <div
+      className={[
+        "flex items-start gap-2 rounded-md border px-3 py-2 text-xs",
+        isPASS && "border-success/30 bg-success/5 text-success-foreground",
+        isWARN && "border-amber-300 bg-amber-50 text-amber-800",
+        isFAIL && "border-danger/30 bg-danger/5 text-danger",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      {isPASS && <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-success" />}
+      {isWARN && <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600" />}
+      {isFAIL && <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-danger" />}
+      <div className="min-w-0">
+        <p className="font-medium leading-snug">
+          {isPASS && "Product registration active"}
+          {isWARN && "Product registration suspended"}
+          {isFAIL && "No product registration"}
+        </p>
+        <p className="mt-0.5 leading-snug opacity-80">{check.message}</p>
+        {check.remedy && (
+          <Link
+            href={check.remedy.href}
+            className="mt-1 inline-block font-semibold underline"
+          >
+            {check.remedy.label} →
+          </Link>
+        )}
+      </div>
+    </div>
   );
 }

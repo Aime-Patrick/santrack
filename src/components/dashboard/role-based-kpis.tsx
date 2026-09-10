@@ -26,6 +26,7 @@ type KPIDefinition = {
   getCaption: (summary: ExecutiveSummary | undefined) => string;
   icon: React.ReactNode;
   iconBg: string;
+  href: string;
 };
 
 const WAREHOUSE_KPIS: KPIDefinition[] = [
@@ -35,6 +36,7 @@ const WAREHOUSE_KPIS: KPIDefinition[] = [
     getCaption: () => "In stock",
     icon: <Warehouse className="size-4" />,
     iconBg: "bg-primary",
+    href: "/dashboard/inventory",
   },
   {
     title: "Stock-Out Products",
@@ -42,6 +44,7 @@ const WAREHOUSE_KPIS: KPIDefinition[] = [
     getCaption: () => "Need replenishment",
     icon: <AlertTriangle className="size-4" />,
     iconBg: "bg-danger",
+    href: "/dashboard/inventory",
   },
   {
     title: "In Transit",
@@ -49,6 +52,7 @@ const WAREHOUSE_KPIS: KPIDefinition[] = [
     getCaption: (s) => `${s?.supplyChain?.inTransitShipments ?? 0} shipments`,
     icon: <Truck className="size-4" />,
     iconBg: "bg-primary",
+    href: "/dashboard/logistics/shipments",
   },
   {
     title: "Quarantined",
@@ -56,6 +60,7 @@ const WAREHOUSE_KPIS: KPIDefinition[] = [
     getCaption: () => "Held for review",
     icon: <ShieldCheck className="size-4" />,
     iconBg: "bg-warning-foreground",
+    href: "/dashboard/manufacturing/trace",
   },
 ];
 
@@ -66,6 +71,7 @@ const RETAILER_KPIS: KPIDefinition[] = [
     getCaption: () => "Units sold",
     icon: <ShoppingCart className="size-4" />,
     iconBg: "bg-primary",
+    href: "/dashboard/sales",
   },
   {
     title: "Revenue",
@@ -73,6 +79,7 @@ const RETAILER_KPIS: KPIDefinition[] = [
     getCaption: () => "Total invoiced",
     icon: <DollarSign className="size-4" />,
     iconBg: "bg-success",
+    href: "/dashboard/sales/invoices",
   },
   {
     title: "Available Units",
@@ -80,6 +87,7 @@ const RETAILER_KPIS: KPIDefinition[] = [
     getCaption: () => "On hand",
     icon: <Package className="size-4" />,
     iconBg: "bg-primary",
+    href: "/dashboard/inventory",
   },
   {
     title: "Active Licenses",
@@ -87,6 +95,7 @@ const RETAILER_KPIS: KPIDefinition[] = [
     getCaption: () => "Compliant permits",
     icon: <ShieldCheck className="size-4" />,
     iconBg: "bg-success",
+    href: "/dashboard/licenses",
   },
 ];
 
@@ -97,6 +106,7 @@ const MANUFACTURER_ADMIN_KPIS: KPIDefinition[] = [
     getCaption: () => "In stock",
     icon: <Package className="size-4" />,
     iconBg: "bg-primary",
+    href: "/dashboard/inventory",
   },
   {
     title: "Distinct Products",
@@ -104,6 +114,7 @@ const MANUFACTURER_ADMIN_KPIS: KPIDefinition[] = [
     getCaption: () => "Tracked products",
     icon: <Factory className="size-4" />,
     iconBg: "bg-success",
+    href: "/dashboard/products",
   },
   {
     title: "Revenue",
@@ -111,6 +122,7 @@ const MANUFACTURER_ADMIN_KPIS: KPIDefinition[] = [
     getCaption: () => "Total invoiced",
     icon: <DollarSign className="size-4" />,
     iconBg: "bg-primary",
+    href: "/dashboard/sales/invoices",
   },
   {
     title: "Active Licenses",
@@ -118,6 +130,7 @@ const MANUFACTURER_ADMIN_KPIS: KPIDefinition[] = [
     getCaption: () => "Compliant permits",
     icon: <ShieldCheck className="size-4" />,
     iconBg: "bg-success",
+    href: "/dashboard/licenses",
   },
 ];
 
@@ -131,6 +144,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "In progress",
       icon: <Factory className="size-4" />,
       iconBg: "bg-primary",
+      href: "/dashboard/manufacturing/production",
     },
     {
       title: "Raw Materials",
@@ -138,6 +152,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: (s) => `${s?.supplyChain?.lowRawMaterials ?? 0} with reorder level`,
       icon: <Package className="size-4" />,
       iconBg: "bg-success",
+      href: "/dashboard/manufacturing/raw-materials",
     },
     {
       title: "Available Units",
@@ -145,6 +160,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Ready for dispatch",
       icon: <Warehouse className="size-4" />,
       iconBg: "bg-primary",
+      href: "/dashboard/inventory",
     },
     {
       title: "Products Sold",
@@ -152,6 +168,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Total units sold",
       icon: <ShoppingCart className="size-4" />,
       iconBg: "bg-success",
+      href: "/dashboard/sales",
     },
   ],
   PRODUCTION_OFFICER: [
@@ -161,6 +178,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "In progress",
       icon: <Factory className="size-4" />,
       iconBg: "bg-primary",
+      href: "/dashboard/manufacturing/production",
     },
     {
       title: "Raw Materials",
@@ -168,6 +186,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: (s) => `${s?.supplyChain?.lowRawMaterials ?? 0} with reorder level`,
       icon: <Package className="size-4" />,
       iconBg: "bg-success",
+      href: "/dashboard/manufacturing/raw-materials",
     },
     {
       title: "Available Units",
@@ -175,6 +194,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Ready for dispatch",
       icon: <Warehouse className="size-4" />,
       iconBg: "bg-primary",
+      href: "/dashboard/inventory",
     },
     {
       title: "Products Sold",
@@ -182,6 +202,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Total units sold",
       icon: <ShoppingCart className="size-4" />,
       iconBg: "bg-success",
+      href: "/dashboard/sales",
     },
   ],
   WAREHOUSE_MANAGER: WAREHOUSE_KPIS,
@@ -193,6 +214,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Awaiting inspection",
       icon: <ClipboardCheck className="size-4" />,
       iconBg: "bg-primary",
+      href: "/dashboard/manufacturing/quality",
     },
     {
       title: "Quarantined Items",
@@ -200,6 +222,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Held for review",
       icon: <ShieldCheck className="size-4" />,
       iconBg: "bg-warning-foreground",
+      href: "/dashboard/manufacturing/trace",
     },
     {
       title: "Recalled Items",
@@ -207,6 +230,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Active recalls",
       icon: <RotateCcw className="size-4" />,
       iconBg: "bg-danger",
+      href: "/dashboard/recall",
     },
     {
       title: "Active Licenses",
@@ -214,6 +238,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Compliant",
       icon: <Building2 className="size-4" />,
       iconBg: "bg-success",
+      href: "/dashboard/licenses",
     },
   ],
   LOGISTICS_OFFICER: [
@@ -223,6 +248,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: (s) => `${s?.supplyChain?.inTransitShipments ?? 0} shipments`,
       icon: <Truck className="size-4" />,
       iconBg: "bg-primary",
+      href: "/dashboard/logistics/shipments",
     },
     {
       title: "Delivered",
@@ -230,6 +256,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Completed deliveries",
       icon: <Package className="size-4" />,
       iconBg: "bg-success",
+      href: "/dashboard/logistics/shipments",
     },
     {
       title: "Distribution Volumes",
@@ -237,6 +264,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Received transfers",
       icon: <BarChart3 className="size-4" />,
       iconBg: "bg-primary",
+      href: "/dashboard/manufacturing/stock-transfer",
     },
     {
       title: "Available Units",
@@ -244,6 +272,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "In stock",
       icon: <Warehouse className="size-4" />,
       iconBg: "bg-warning-foreground",
+      href: "/dashboard/inventory",
     },
   ],
   SALES_OFFICER: RETAILER_KPIS,
@@ -255,6 +284,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Compliant",
       icon: <ShieldCheck className="size-4" />,
       iconBg: "bg-success",
+      href: "/dashboard/licenses",
     },
     {
       title: "Expired Licenses",
@@ -262,6 +292,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Need renewal",
       icon: <AlertTriangle className="size-4" />,
       iconBg: "bg-danger",
+      href: "/dashboard/licenses",
     },
     {
       title: "Pending Reviews",
@@ -269,6 +300,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Awaiting action",
       icon: <ClipboardCheck className="size-4" />,
       iconBg: "bg-warning-foreground",
+      href: "/dashboard/compliance",
     },
     {
       title: "Available Units",
@@ -276,6 +308,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "In stock",
       icon: <Package className="size-4" />,
       iconBg: "bg-primary",
+      href: "/dashboard/inventory",
     },
   ],
 };
@@ -287,6 +320,7 @@ const REGULATOR_KPIS: KPIDefinition[] = [
     getCaption: () => "Awaiting review",
     icon: <ClipboardCheck className="size-4" />,
     iconBg: "bg-primary",
+    href: "/dashboard/regulator",
   },
   {
     title: "Active Licences",
@@ -294,6 +328,7 @@ const REGULATOR_KPIS: KPIDefinition[] = [
     getCaption: () => "In force",
     icon: <ShieldCheck className="size-4" />,
     iconBg: "bg-success",
+    href: "/dashboard/regulator",
   },
   {
     title: "Recalled Items",
@@ -301,6 +336,7 @@ const REGULATOR_KPIS: KPIDefinition[] = [
     getCaption: () => "Active recalls",
     icon: <RotateCcw className="size-4" />,
     iconBg: "bg-danger",
+    href: "/dashboard/recall",
   },
   {
     title: "Expired Licences",
@@ -308,6 +344,7 @@ const REGULATOR_KPIS: KPIDefinition[] = [
     getCaption: () => "Need renewal",
     icon: <AlertTriangle className="size-4" />,
     iconBg: "bg-warning-foreground",
+    href: "/dashboard/regulator",
   },
 ];
 
@@ -327,6 +364,7 @@ function kpisFor(
         getCaption: () => "In stock",
         icon: <Package className="size-4" />,
         iconBg: "bg-primary",
+        href: "/dashboard/inventory",
       },
       {
         title: "In Transit",
@@ -334,6 +372,7 @@ function kpisFor(
         getCaption: (s) => `${s?.supplyChain?.inTransitShipments ?? 0} shipments`,
         icon: <Truck className="size-4" />,
         iconBg: "bg-primary",
+        href: "/dashboard/logistics/shipments",
       },
       {
         title: "Products Sold",
@@ -341,6 +380,7 @@ function kpisFor(
         getCaption: () => "Units sold",
         icon: <ShoppingCart className="size-4" />,
         iconBg: "bg-success",
+        href: "/dashboard/sales",
       },
       {
         title: "Revenue",
@@ -348,6 +388,7 @@ function kpisFor(
         getCaption: () => "Total invoiced",
         icon: <DollarSign className="size-4" />,
         iconBg: "bg-success",
+        href: "/dashboard/sales/invoices",
       },
     ];
   }
@@ -371,6 +412,7 @@ export function RoleBasedKPIs() {
           icon={kpi.icon}
           iconBg={kpi.iconBg}
           caption={isLoading ? "" : kpi.getCaption(summary)}
+          href={kpi.href}
         />
       ))}
     </div>

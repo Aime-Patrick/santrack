@@ -6,7 +6,8 @@
     "search": "Shakisha byose...",
     "viewAll": "Reba Byose",
     "success": "Byagenze neza",
-    "pending": "Bitegerejwe"
+    "pending": "Bitegerejwe",
+    "failed": "Byanze"
   },
   "nav": {
     "industryManagement": "Gucunga Inganda",
