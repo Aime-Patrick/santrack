@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   ClipboardCheck,
@@ -64,6 +65,56 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] as const } },
 };
 
+/** Collapse legacy per-unit RECALLED/RELEASED rows into one lot-level entry. */
+function collapseLotLifecycleEntries(entries: AccountabilityEntry[]): AccountabilityEntry[] {
+  const out: AccountabilityEntry[] = [];
+  const groups = new Map<string, AccountabilityEntry>();
+
+  for (const entry of entries) {
+    if (
+      entry.source !== "TRACEABILITY" ||
+      (entry.type !== "RECALLED" && entry.type !== "RELEASED")
+    ) {
+      out.push(entry);
+      continue;
+    }
+
+    const notes =
+      typeof entry.detail?.notes === "string" ? entry.detail.notes.trim() : "";
+    const window = Math.floor(new Date(entry.recordedAt).getTime() / (10 * 60_000));
+    const key = [entry.type, entry.actorEmail ?? entry.actor ?? "", notes, window].join("|");
+
+    const existing = groups.get(key);
+    if (!existing) {
+      const copy: AccountabilityEntry = {
+        ...entry,
+        detail: entry.detail ? { ...entry.detail } : { quantity: 0, notes },
+      };
+      groups.set(key, copy);
+      out.push(copy);
+      continue;
+    }
+
+    const prevQty =
+      typeof existing.detail?.quantity === "number" ? existing.detail.quantity : 0;
+    const addQty =
+      typeof entry.detail?.quantity === "number" ? entry.detail.quantity : 0;
+    const quantity = prevQty + addQty;
+    existing.detail = {
+      ...(existing.detail ?? {}),
+      quantity,
+      notes: notes || existing.detail?.notes,
+    };
+    const action = entry.type === "RECALLED" ? "Lot recalled" : "Recall lifted";
+    const parts = [action];
+    if (quantity) parts.push(`${quantity} units`);
+    if (notes) parts.push(notes);
+    existing.summary = parts.join(" — ");
+  }
+
+  return out;
+}
+
 interface AccountabilityLedgerProps {
   entries: AccountabilityEntry[];
   title?: string;
@@ -75,7 +126,12 @@ export function AccountabilityLedger({
   title = "Accountability ledger",
   description = "Everything that touched this entity — who acted, what was decided, and what evidence exists.",
 }: AccountabilityLedgerProps) {
-  if (entries.length === 0) {
+  const displayEntries = useMemo(
+    () => collapseLotLifecycleEntries(entries),
+    [entries],
+  );
+
+  if (displayEntries.length === 0) {
     return (
       <div className="py-10 text-center">
         <Clock className="mx-auto mb-3 size-7 text-border" />
@@ -103,8 +159,8 @@ export function AccountabilityLedger({
           initial="hidden"
           animate="visible"
         >
-          {entries.map((entry, idx) => {
-            const isLast = idx === entries.length - 1;
+          {displayEntries.map((entry, idx) => {
+            const isLast = idx === displayEntries.length - 1;
             const sourceConfig = SOURCE_CONFIG[entry.source];
             const SourceIcon = sourceConfig.icon;
             const typeColor = TYPE_COLORS[entry.type] ?? sourceConfig.color;
@@ -172,9 +228,13 @@ export function AccountabilityLedger({
                       const notes = entry.detail?.notes;
                       const note = entry.detail?.note;
                       const text =
-                        typeof notes === "string" && notes !== entry.summary
+                        typeof notes === "string" &&
+                        notes !== entry.summary &&
+                        !entry.summary.includes(notes)
                           ? notes
-                          : typeof note === "string" && note !== entry.summary
+                          : typeof note === "string" &&
+                              note !== entry.summary &&
+                              !entry.summary.includes(note)
                             ? note
                             : null;
                       if (text === null) return null;

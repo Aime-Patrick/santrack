@@ -503,14 +503,23 @@ export default function RecallDetailPage() {
                               badgeClass,
                             )}
                           >
-                            {evt.type.replace(/_/g, " ")}
+                            {evt.type === "RECALLED"
+                              ? "Lot recalled"
+                              : evt.type === "RELEASED"
+                                ? "Recall lifted"
+                                : evt.type.replace(/_/g, " ")}
                           </span>
                           <span className="text-xs text-muted-foreground">
                             {new Date(evt.occurredAt).toLocaleString()}
                           </span>
                           {evt.quantity > 0 && (
                             <span className="font-mono text-[11px] font-semibold text-foreground/70">
-                              {evt.quantity.toLocaleString()}
+                              {evt.quantity.toLocaleString()} units
+                            </span>
+                          )}
+                          {evt.batchCode && (
+                            <span className="font-mono text-[11px] text-muted-foreground">
+                              {evt.batchCode}
                             </span>
                           )}
                         </div>
