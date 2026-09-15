@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -586,6 +587,12 @@ function QueueActions({
 
 type Tab = "scan" | "registrations" | "licences" | "enforcement" | "intelligence" | "setup";
 
+const TAB_IDS: Tab[] = ["scan", "registrations", "licences", "enforcement", "intelligence", "setup"];
+
+function parseTab(value: string | null): Tab {
+  return TAB_IDS.includes(value as Tab) ? (value as Tab) : "scan";
+}
+
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "scan",          label: "Scan",            icon: ScanLine      },
   { id: "registrations", label: "Registrations",   icon: ClipboardList },
@@ -671,10 +678,28 @@ function RegistrationsTab() {
 // ---------------------------------------------------------------------------
 
 export default function RegulatorPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegulatorWorkspace />
+    </Suspense>
+  );
+}
+
+function RegulatorWorkspace() {
   const { data: queue, isLoading } = useRegulatorQueue();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [selectedLicense, setSelectedLicense] = useState<License | null>(null);
-  const [tab, setTab] = useState<Tab>("scan");
+  const tab = parseTab(searchParams.get("tab"));
   const [showCategoriesDialog, setShowCategoriesDialog] = useState(false);
+
+  function setTab(id: Tab) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (id === "scan") params.delete("tab");
+    else params.set("tab", id);
+    const qs = params.toString();
+    router.replace(qs ? `/dashboard/regulator?${qs}` : "/dashboard/regulator", { scroll: false });
+  }
 
   const columns: ColumnDef<TableFeatures, License>[] = [
     {

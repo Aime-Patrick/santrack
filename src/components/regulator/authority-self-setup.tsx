@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { AlertTriangle, ShieldCheck, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { getApiErrorMessage } from "@/lib/api";
 import { useConfigureMyRegulatoryAuthority, useMyRegulatoryAuthority } from "@/hooks/regulatory-authorities";
 
 // ── All sector values that can be assigned as mandates ────────────────────────
@@ -159,12 +161,18 @@ export function AuthoritySelfSetup() {
 
         <Button
           onClick={() =>
-            save.mutate({
-              mandates: [...mandates],
-              caseCategories: split(categories),
-              teams: split(teams),
-              referralResponseDays: referralDays ? Number(referralDays) : null,
-            })
+            save.mutate(
+              {
+                mandates: [...mandates],
+                caseCategories: split(categories),
+                teams: split(teams),
+                referralResponseDays: referralDays ? Number(referralDays) : null,
+              },
+              {
+                onSuccess: () => toast.success("Authority settings saved"),
+                onError: (error) => toast.error(getApiErrorMessage(error, "Could not save setup")),
+              },
+            )
           }
           disabled={save.isPending}
         >

@@ -23,7 +23,9 @@ export function useConfigureMyRegulatoryAuthority() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: Pick<RegulatoryAuthorityProfile, "mandates" | "caseCategories" | "teams" | "referralResponseDays">) => regulatoryAuthorityService.configureMine(input),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: regulatoryAuthorityKeys.mine }); toast.success("Authority settings saved"); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: regulatoryAuthorityKeys.mine });
+    },
   });
 }
 
