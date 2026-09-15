@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { type ColumnDef } from "@tanstack/react-table";
 import {
   ArrowUpDown,
@@ -193,17 +194,27 @@ export default function ComplianceFacilitiesPage() {
           <div>
             <h1 className="text-xl font-bold tracking-tight">Sites</h1>
             <p className="text-sm text-muted-foreground">
-              Premises this organization operates — name, address, and whether
-              each site is open.
+              Premises this organization operates — licensing standing lives on
+              Compliance overview.
             </p>
           </div>
         </div>
 
-        {mayManage && (
-          <Button onClick={() => setDialog({ mode: "create" })}>
-            <Plus className="mr-2 size-4" /> Open a site
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link href="/dashboard/compliance?tab=sites" />}
+          >
+            View site standing
           </Button>
-        )}
+          {mayManage && (
+            <Button size="sm" onClick={() => setDialog({ mode: "create" })}>
+              <Plus className="mr-1.5 size-4" /> Open a site
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

@@ -1,8 +1,10 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, ClipboardList, List, Wallet } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AccountsPanel } from "@/components/finance-panels/accounts-panel";
 import { JournalPanel } from "@/components/finance-panels/journal-panel";
@@ -36,14 +38,26 @@ function AccountingWorkspace() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-9 items-center justify-center rounded-lg bg-success text-white">
-          <Wallet className="size-4" />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-success text-white">
+            <Wallet className="size-4" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Accounting</h1>
+            <p className="text-sm text-muted-foreground">
+              Chart, journal, budgets, and cost centres for the same books.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">Accounting</h1>
-          <p className="text-sm text-muted-foreground">The ledger: what the accounts are, what was posted, and what was planned.</p>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          nativeButton={false}
+          render={<Link href="/dashboard/finance/reports" />}
+        >
+          Finance reports
+        </Button>
       </div>
 
       <Tabs value={tab} onValueChange={select} className="space-y-4">

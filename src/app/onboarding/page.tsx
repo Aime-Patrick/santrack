@@ -5,7 +5,7 @@ import { useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import { AuthPrimaryLink } from "@/components/auth/auth-primary-button";
 import { RwandaWave } from "@/components/auth/auth-shell";
 import { SanTrackBrand } from "@/components/auth/san-track-logo";
 import { useMe } from "@/hooks/auth";
@@ -147,13 +147,11 @@ export default function OnboardingPage() {
         </div>
 
         {/* Back to home — desktop */}
-        <Link
-          href="/"
-          className="hidden lg:flex absolute top-5 left-6 items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors z-10"
-        >
-          <ArrowLeft className="size-3.5" />
-          Back to home
-        </Link>
+        <div className="absolute left-6 top-5 z-10 hidden lg:block">
+          <AuthPrimaryLink href="/" compact showBackIcon>
+            Back to home
+          </AuthPrimaryLink>
+        </div>
 
         {/* Form container — animates maxWidth from 520 → 720px after brand exits */}
         <motion.div

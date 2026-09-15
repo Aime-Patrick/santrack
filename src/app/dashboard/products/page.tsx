@@ -15,7 +15,6 @@ import {
   ExternalLink,
   ChevronRight,
   Tags,
-  Bookmark,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,21 +31,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DataTable, type TableFeatures } from "@/components/ui/data-table";
 import { MetricCard } from "@/components/dashboard/stat-card";
 import { useProducts } from "@/hooks/products";
+import { useCapabilities } from "@/hooks/permissions";
 import type { Product } from "@/services/product.service";
-
-const categoryColors: Record<string, string> = {
-  AGRICULTURE: "border-transparent bg-success text-white",
-  MINING: "border-transparent bg-warning-foreground text-white",
-  MANUFACTURING: "border-transparent bg-primary text-white",
-  FOOD: "border-transparent bg-success text-white",
-  PHARMACEUTICAL: "border-transparent bg-info text-white",
-};
 
 const columns: ColumnDef<TableFeatures, Product>[] = [
   {
@@ -57,7 +48,7 @@ const columns: ColumnDef<TableFeatures, Product>[] = [
         onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         className="h-8 px-2"
       >
-        Product Name
+        Product
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
@@ -68,43 +59,35 @@ const columns: ColumnDef<TableFeatures, Product>[] = [
           href={`/dashboard/products/${product.id}`}
           className="group flex items-center gap-2.5 hover:opacity-90"
         >
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-white shadow-xs group-hover:bg-primary/90 transition-colors">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-white shadow-xs transition-colors group-hover:bg-primary/90">
             <Package className="size-4" />
           </div>
           <div>
-            <p className="font-medium text-foreground group-hover:text-primary transition-colors flex items-center gap-1">
+            <p className="flex items-center gap-1 font-medium text-foreground transition-colors group-hover:text-primary">
               {row.getValue("name")}
-              <ChevronRight className="size-3 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
+              <ChevronRight className="size-3 text-primary opacity-0 transition-opacity group-hover:opacity-100" />
             </p>
-            <p className="font-mono text-xs text-muted-foreground">{product.sku}</p>
+            <p className="font-mono text-xs text-muted-foreground">{product.sku || "No SKU"}</p>
           </div>
         </Link>
       );
     },
   },
   {
-    accessorKey: "sku",
-    header: "SKU",
-    cell: ({ row }) => (
-      <Link
-        href={`/dashboard/products/${row.original.id}`}
-        className="font-mono text-xs text-muted-foreground hover:text-primary"
-      >
-        {row.getValue("sku")}
-      </Link>
-    ),
-  },
-  {
     id: "category",
     header: "Category",
-    accessorFn: (row: { categoryName?: string | null; category?: string | null }) =>
-      row.categoryName || row.category || "—",
+    accessorFn: (row) => row.categoryName || row.categoryCode || row.category || "—",
     cell: ({ row }) => {
       const cat = (row.getValue("category") as string) || "—";
-      const color =
-        categoryColors[cat] ?? "border-border bg-muted/60 text-muted-foreground";
       return (
-        <Badge variant="outline" className={color}>
+        <Badge
+          variant="outline"
+          className={
+            cat === "—"
+              ? "border-border bg-muted/60 text-muted-foreground"
+              : "border-primary/20 bg-primary/10 text-primary"
+          }
+        >
           {cat}
         </Badge>
       );
@@ -116,16 +99,14 @@ const columns: ColumnDef<TableFeatures, Product>[] = [
     cell: ({ row }) => row.getValue("brand") || "—",
   },
   {
-    accessorKey: "specification",
-    header: "Specification",
+    accessorKey: "gtin",
+    header: "GTIN",
     cell: ({ row }) => {
-      const spec = row.getValue("specification") as string | null;
-      return spec ? (
-        <span className="line-clamp-1 max-w-[180px] text-xs text-muted-foreground">
-          {spec}
-        </span>
+      const gtin = row.getValue("gtin") as string | null;
+      return gtin ? (
+        <span className="font-mono text-xs">{gtin}</span>
       ) : (
-        "—"
+        <span className="text-xs text-faint">—</span>
       );
     },
   },
@@ -142,31 +123,35 @@ const columns: ColumnDef<TableFeatures, Product>[] = [
             <span className="sr-only">Open menu</span>
             <MoreHorizontal className="h-4 w-4" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel className="text-xs">Product Actions</DropdownMenuLabel>
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuLabel className="text-xs">Open</DropdownMenuLabel>
             <DropdownMenuItem
+              nativeButton={false}
               render={<Link href={`/dashboard/products/${product.id}`} />}
             >
               <ExternalLink className="mr-2 size-4 text-primary" />
-              View Details
+              Details
             </DropdownMenuItem>
             <DropdownMenuItem
+              nativeButton={false}
               render={<Link href={`/dashboard/products/${product.id}?tab=identities`} />}
             >
               <QrCode className="mr-2 size-4 text-primary" />
-              Identities & Pools
+              Code pools
             </DropdownMenuItem>
             <DropdownMenuItem
+              nativeButton={false}
               render={<Link href={`/dashboard/products/${product.id}?tab=batches`} />}
             >
               <Layers className="mr-2 size-4 text-success" />
               Batches
             </DropdownMenuItem>
             <DropdownMenuItem
+              nativeButton={false}
               render={<Link href={`/dashboard/products/${product.id}?tab=labels`} />}
             >
               <Barcode className="mr-2 size-4 text-warning-foreground" />
-              Labels & Codes
+              Labels
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -177,6 +162,8 @@ const columns: ColumnDef<TableFeatures, Product>[] = [
 
 export default function ProductsPage() {
   const { data, isLoading } = useProducts(0, 200);
+  const permissions = useCapabilities();
+  const canManage = permissions.can("MANAGE_CATALOG");
   const [search, setSearch] = useState("");
 
   const products = data?.content ?? [];
@@ -188,13 +175,20 @@ export default function ProductsPage() {
           p.name.toLowerCase().includes(search.toLowerCase()) ||
           p.sku?.toLowerCase().includes(search.toLowerCase()) ||
           p.brand?.toLowerCase().includes(search.toLowerCase()) ||
-          p.gtin?.toLowerCase().includes(search.toLowerCase()),
+          p.gtin?.toLowerCase().includes(search.toLowerCase()) ||
+          p.categoryName?.toLowerCase().includes(search.toLowerCase()),
       )
     : products;
 
+  const categoryCount = new Set(
+    products
+      .map((p) => p.categoryId ?? p.categoryName ?? p.category)
+      .filter(Boolean),
+  ).size;
+  const withGtin = products.filter((p) => p.gtin).length;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
@@ -203,83 +197,100 @@ export default function ProductsPage() {
           <div>
             <h1 className="text-xl font-bold tracking-tight">Products</h1>
             <p className="text-sm text-muted-foreground">
-              Manage your product catalog. Select a product to prepare code pools, manage batches, or download labels.
+              Catalogue SKUs. Open a product to mint code pools, see lots, or print labels.
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
+            nativeButton={false}
             render={<Link href="/dashboard/products/categories" />}
           >
             <Tags className="mr-1.5 size-4" />
-            Categories & Brands
+            Categories &amp; brands
           </Button>
-          <Button size="sm" render={<Link href="/dashboard/products/new" />}>
-            <Plus className="mr-1.5 size-4" />
-            Add Product
-          </Button>
+          {canManage && (
+            <Button size="sm" nativeButton={false} render={<Link href="/dashboard/products/new" />}>
+              <Plus className="mr-1.5 size-4" />
+              Add product
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <MetricCard
-          title="Total Products"
+          title="Products"
           value={total}
           icon={<Package className="size-4" />}
           iconBg="bg-primary"
-          caption="Registered in catalog"
+          caption="In this organisation"
         />
         <MetricCard
-          title="Categories"
-          value={new Set(products.map((p) => p.category).filter(Boolean)).size || "—"}
+          title="Categories used"
+          value={categoryCount || "—"}
           icon={<Tag className="size-4" />}
           iconBg="bg-success"
-          caption="Product categories"
+          caption="Filed in the catalogue"
+          href="/dashboard/products/categories"
         />
         <MetricCard
-          title="With Barcodes / SKU"
-          value={products.filter((p) => p.sku).length}
+          title="With GTIN"
+          value={withGtin}
           icon={<QrCode className="size-4" />}
-          iconBg="bg-warning-foreground"
-          caption="Ready for traceability"
+          iconBg="bg-warning text-foreground"
+          caption="Ready for retail barcodes"
         />
       </div>
 
-      {/* Table */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
           <div>
-            <CardTitle>Product Catalog</CardTitle>
-            <CardDescription>{filtered.length} products found</CardDescription>
+            <CardTitle>Catalogue</CardTitle>
+            <CardDescription>
+              {filtered.length} product{filtered.length === 1 ? "" : "s"}
+              {search ? " matching search" : ""}
+            </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Search by name, SKU, brand, or GTIN..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-72"
-            />
-          </div>
+          <Input
+            placeholder="Search name, SKU, brand, GTIN…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full sm:w-72"
+          />
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex h-32 items-center justify-center text-muted-foreground">
-              Loading products...
+              Loading products…
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-14 text-center">
+              <Package className="size-8 text-border" />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {search ? "No products match that search" : "No products yet"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {search
+                    ? "Try another name, SKU, or brand."
+                    : "Add a product, then mint QR pools before production."}
+                </p>
+              </div>
+              {!search && canManage && (
+                <Button size="sm" nativeButton={false} render={<Link href="/dashboard/products/new" />}>
+                  <Plus className="mr-1.5 size-4" />
+                  Add first product
+                </Button>
+              )}
             </div>
           ) : (
-            <DataTable
-              columns={columns}
-              data={filtered}
-              pageSize={10}
-              noBorder
-            />
+            <DataTable columns={columns} data={filtered} pageSize={10} noBorder />
           )}
         </CardContent>
       </Card>
     </div>
   );
 }
-

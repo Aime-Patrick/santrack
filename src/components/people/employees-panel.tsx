@@ -29,14 +29,20 @@ const columns: ColumnDef<TableFeatures, Employee>[] = [
     ),
     cell: ({ row }) => {
       const emp = row.original;
-      const initials = emp.fullName.split(" ").map((w) => w[0]).join("").slice(0, 2);
+      const name = emp.fullName?.trim() || emp.employeeNumber || "?";
+      const initials = name
+        .split(/\s+/)
+        .map((w) => w[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase();
       return (
         <div className="flex items-center gap-3">
           <Avatar className="size-9">
-            <AvatarFallback className="bg-primary text-white text-xs">{initials}</AvatarFallback>
+            <AvatarFallback className="bg-primary text-xs text-white">{initials}</AvatarFallback>
           </Avatar>
           <div>
-            <div className="font-medium">{emp.fullName}</div>
+            <div className="font-medium">{emp.fullName || "Unnamed"}</div>
             <div className="font-mono text-xs text-faint">{emp.employeeNumber}</div>
           </div>
         </div>

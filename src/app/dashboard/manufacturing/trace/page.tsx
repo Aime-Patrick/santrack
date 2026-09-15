@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { QrScanInput } from "@/components/ui/qr-scanner";
+import { ScanTargetHint } from "@/components/trace/scan-target-hint";
 import { ActionBar } from "@/components/trace/action-bar";
 import {
   DispatchDialog,
@@ -159,6 +160,20 @@ function SimpleTabs({
 }
 
 export default function ItemConsolePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+          Loading scanner…
+        </div>
+      }
+    >
+      <ScanAndTraceWorkspace />
+    </Suspense>
+  );
+}
+
+function ScanAndTraceWorkspace() {
   const searchParams = useSearchParams();
   const [traceMode, setTraceMode] = useState<"item" | "batch">(
     searchParams.get("batchId") ? "batch" : "item",
@@ -166,7 +181,7 @@ export default function ItemConsolePage() {
   const [selectedBatchId, setSelectedBatchId] = useState<number>(
     Number(searchParams.get("batchId")) || 0,
   );
-  const { data: batches = [], isLoading: batchesLoading } = useBatches();
+  const { data: batches = [] } = useBatches();
 
   const [activeCode, setActiveCode] = useState(
     searchParams.get("code") ?? searchParams.get("qr") ?? "",
@@ -321,12 +336,62 @@ export default function ItemConsolePage() {
 
   return (
     <div className="space-y-4">
-      <div className="border-b border-border/80 pb-3">
-        <h1 className="text-lg font-semibold tracking-tight">Traceability</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/80 pb-3">
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
+            <ScanLine className="size-4" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Scan &amp; trace</h1>
+            <p className="text-sm text-muted-foreground">
+              Look up a unit or package. The badge shows Unit · bottle or Package · box/pallet.
+            </p>
+          </div>
+        </div>
+        {(activeCode || selectedBatchId > 0) && (
+          <div className="flex items-center gap-1 rounded-lg border border-border/80 bg-muted/40 p-0.5">
+            <button
+              type="button"
+              disabled={!activeCode && !trace}
+              onClick={() => setTraceMode("item")}
+              className={cn(
+                "rounded-md px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-40",
+                traceMode === "item"
+                  ? "bg-white text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Unit / package
+            </button>
+            <button
+              type="button"
+              disabled={!(selectedBatchId > 0 || trace?.origin.batchId)}
+              onClick={() => {
+                const batchId = selectedBatchId > 0 ? selectedBatchId : (trace?.origin.batchId ?? 0);
+                if (batchId) {
+                  setSelectedBatchId(batchId);
+                  setTraceMode("batch");
+                }
+              }}
+              className={cn(
+                "rounded-md px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-40",
+                traceMode === "batch"
+                  ? "bg-white text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              Lot journey
+            </button>
+          </div>
+        )}
       </div>
+
+      <ScanTargetHint expect="either" />
 
       <QrScanInput
         compact
+        placeholder="Scan unit QR or package QR…"
+        scanning="a unit or a box/pallet"
         onScan={(code) => {
           void handleScan(code);
         }}
@@ -341,7 +406,7 @@ export default function ItemConsolePage() {
             transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] as const }}
             className="flex flex-col items-center gap-1 py-1.5 text-center text-sm"
           >
-            <p className="font-medium text-amber-600">{scanNote.title}</p>
+            <p className="font-medium text-warning-foreground">{scanNote.title}</p>
             <p className="text-muted-foreground">{scanNote.detail}</p>
             {scanNote.href ? (
               <Link
@@ -389,14 +454,35 @@ export default function ItemConsolePage() {
         ) : null}
       </AnimatePresence>
 
-      {!activeCode && !scanNote && !resolveCode.isPending ? (
-        <div className="flex items-center justify-center py-16">
-          <ScanLine className="size-8 text-border" />
+      {!activeCode &&
+      !scanNote &&
+      !resolveCode.isPending &&
+      !(traceMode === "batch" && selectedBatchId > 0) ? (
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-border py-14 text-center">
+          <div className="flex size-12 items-center justify-center rounded-xl bg-muted">
+            <ScanLine className="size-6 text-muted-foreground" />
+          </div>
+          <div className="max-w-md space-y-1 px-4">
+            <p className="font-semibold text-foreground">Scan to get started</p>
+            <p className="text-sm text-muted-foreground">
+              Use a unit or package QR to pack, move, or sell. Use a lot code to see the full
+              journey for that batch.
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
+            <Link href="/dashboard/manufacturing" className="rounded-md border border-border px-2.5 py-1 hover:text-foreground">
+              Production pipeline
+            </Link>
+            <Link href="/dashboard/labels/print" className="rounded-md border border-border px-2.5 py-1 hover:text-foreground">
+              Print labels
+            </Link>
+          </div>
         </div>
       ) : null}
 
+      {/* Item / package detail — only in unit mode */}
       <AnimatePresence>
-        {trace && item && (
+        {traceMode === "item" && trace && item && (
           <motion.div
             key={item.qrCode}
             variants={stagger}
@@ -426,8 +512,8 @@ export default function ItemConsolePage() {
                       </Badge>
                       <Badge variant="outline" className="text-[10px]">
                         {item.kind === "PACKAGE"
-                          ? (item.packageType ?? "PACKAGE")
-                          : "UNIT"}
+                          ? `Package · ${(item.packageType ?? "BOX").toLowerCase()}`
+                          : "Unit · bottle"}
                       </Badge>
                       {item.sealState && (
                         <Badge variant="secondary" className="text-[10px]">
@@ -470,7 +556,7 @@ export default function ItemConsolePage() {
                 </div>
 
                 {(item.status === "RECALLED" || item.expired) && (
-                  <div className="mt-4 flex items-start gap-2 rounded-lg border border-danger/30 bg-red-50 px-3 py-2 text-sm text-danger">
+                  <div className="mt-4 flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm text-danger">
                     <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                     <span>
                       {item.status === "RECALLED"
@@ -487,12 +573,12 @@ export default function ItemConsolePage() {
                     className="mt-4 flex w-full items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
                   >
                     <Package className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="text-muted-foreground">Inside</span>
+                    <span className="text-muted-foreground">Inside package</span>
                     <span className="font-mono font-medium text-foreground">
                       {trace.containedIn.code}
                     </span>
                     <Badge variant="outline" className="text-[10px]">
-                      {trace.containedIn.packageType}
+                      Package · {(trace.containedIn.packageType ?? "BOX").toLowerCase()}
                     </Badge>
                     <ArrowUpRight className="ml-auto size-3.5 text-faint" />
                   </button>
@@ -644,7 +730,7 @@ export default function ItemConsolePage() {
                                         setTraceMode("batch");
                                       }}
                                     >
-                                      <Sparkles className="size-2.5" /> Lot Journey ➔
+                                      <Sparkles className="size-2.5" /> View lot journey
                                     </Button>
                                   ) : null}
                                 </div>
@@ -966,41 +1052,51 @@ export default function ItemConsolePage() {
         )}
       </AnimatePresence>
 
-      {/* ── Batch Journey ── */}
-      {(() => {
-        const resolvedBatchId =
-          selectedBatchId > 0
-            ? selectedBatchId
-            : (trace?.origin.batchId ?? 0);
-        if (!resolvedBatchId) return null;
-        const batchOption = batches.find((b) => b.id === resolvedBatchId);
-        return (
-          <BatchJourneyView
-            batchId={resolvedBatchId}
-            batchSelector={
-              batches.length > 1 ? (
-                <select
-                  value={resolvedBatchId}
-                  onChange={(e) => setSelectedBatchId(Number(e.target.value))}
-                  className="h-8 rounded-md border border-input bg-background px-2.5 text-xs font-semibold text-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
+      {/* Lot journey — only in batch mode (was always stacked under the unit) */}
+      {traceMode === "batch" &&
+        (() => {
+          const resolvedBatchId =
+            selectedBatchId > 0 ? selectedBatchId : (trace?.origin.batchId ?? 0);
+          if (!resolvedBatchId) return null;
+          const batchOption = batches.find((b) => b.id === resolvedBatchId);
+          return (
+            <div className="space-y-3">
+              {activeCode && (
+                <button
+                  type="button"
+                  onClick={() => setTraceMode("item")}
+                  className="text-xs font-medium text-primary hover:underline"
                 >
-                  {batches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      Lot {b.batchCode} · {b.productName}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <span className="font-mono text-xs font-bold text-foreground">
-                  {batchOption
-                    ? `Lot ${batchOption.batchCode}`
-                    : `Lot #${resolvedBatchId}`}
-                </span>
-              )
-            }
-          />
-        );
-      })()}
+                  ← Back to scanned unit
+                </button>
+              )}
+              <BatchJourneyView
+                batchId={resolvedBatchId}
+                batchSelector={
+                  batches.length > 1 ? (
+                    <select
+                      value={resolvedBatchId}
+                      onChange={(e) => setSelectedBatchId(Number(e.target.value))}
+                      className="h-8 rounded-md border border-input bg-background px-2.5 text-xs font-semibold text-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
+                    >
+                      {batches.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          Lot {b.batchCode} · {b.productName}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="font-mono text-xs font-bold text-foreground">
+                      {batchOption
+                        ? `Lot ${batchOption.batchCode}`
+                        : `Lot #${resolvedBatchId}`}
+                    </span>
+                  )
+                }
+              />
+            </div>
+          );
+        })()}
     </div>
   );
 }

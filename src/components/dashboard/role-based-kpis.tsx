@@ -79,7 +79,7 @@ const RETAILER_KPIS: KPIDefinition[] = [
     getCaption: () => "Total invoiced",
     icon: <DollarSign className="size-4" />,
     iconBg: "bg-success",
-    href: "/dashboard/sales/invoices",
+    href: "/dashboard/sales?tab=invoices",
   },
   {
     title: "Available Units",
@@ -122,7 +122,7 @@ const MANUFACTURER_ADMIN_KPIS: KPIDefinition[] = [
     getCaption: () => "Total invoiced",
     icon: <DollarSign className="size-4" />,
     iconBg: "bg-primary",
-    href: "/dashboard/sales/invoices",
+    href: "/dashboard/sales?tab=invoices",
   },
   {
     title: "Active Licenses",
@@ -139,20 +139,20 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
   ORG_ADMIN: MANUFACTURER_ADMIN_KPIS,
   PRODUCTION_MANAGER: [
     {
-      title: "Active Production Orders",
+      title: "Tracked Products",
       getValue: (s) => s?.supplyChain?.distinctProducts ?? 0,
-      getCaption: () => "In progress",
+      getCaption: () => "In the catalogue",
       icon: <Factory className="size-4" />,
       iconBg: "bg-primary",
-      href: "/dashboard/manufacturing/production",
+      href: "/dashboard/products",
     },
     {
       title: "Raw Materials",
       getValue: (s) => s?.supplyChain?.rawMaterialCount ?? 0,
-      getCaption: (s) => `${s?.supplyChain?.lowRawMaterials ?? 0} with reorder level`,
+      getCaption: (s) => `${s?.supplyChain?.lowRawMaterials ?? 0} at or below reorder`,
       icon: <Package className="size-4" />,
       iconBg: "bg-success",
-      href: "/dashboard/manufacturing/raw-materials",
+      href: "/dashboard/manufacturing/resources?tab=materials",
     },
     {
       title: "Available Units",
@@ -173,20 +173,20 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
   ],
   PRODUCTION_OFFICER: [
     {
-      title: "Active Production Orders",
+      title: "Tracked Products",
       getValue: (s) => s?.supplyChain?.distinctProducts ?? 0,
-      getCaption: () => "In progress",
+      getCaption: () => "In the catalogue",
       icon: <Factory className="size-4" />,
       iconBg: "bg-primary",
-      href: "/dashboard/manufacturing/production",
+      href: "/dashboard/products",
     },
     {
       title: "Raw Materials",
       getValue: (s) => s?.supplyChain?.rawMaterialCount ?? 0,
-      getCaption: (s) => `${s?.supplyChain?.lowRawMaterials ?? 0} with reorder level`,
+      getCaption: (s) => `${s?.supplyChain?.lowRawMaterials ?? 0} at or below reorder`,
       icon: <Package className="size-4" />,
       iconBg: "bg-success",
-      href: "/dashboard/manufacturing/raw-materials",
+      href: "/dashboard/manufacturing/resources?tab=materials",
     },
     {
       title: "Available Units",
@@ -214,7 +214,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Awaiting inspection",
       icon: <ClipboardCheck className="size-4" />,
       iconBg: "bg-primary",
-      href: "/dashboard/manufacturing/quality",
+      href: "/dashboard/manufacturing",
     },
     {
       title: "Quarantined Items",
@@ -264,7 +264,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Received transfers",
       icon: <BarChart3 className="size-4" />,
       iconBg: "bg-primary",
-      href: "/dashboard/manufacturing/stock-transfer",
+      href: "/dashboard/inventory?tab=transfer",
     },
     {
       title: "Available Units",
@@ -388,7 +388,7 @@ function kpisFor(
         getCaption: () => "Total invoiced",
         icon: <DollarSign className="size-4" />,
         iconBg: "bg-success",
-        href: "/dashboard/sales/invoices",
+        href: "/dashboard/sales?tab=invoices",
       },
     ];
   }

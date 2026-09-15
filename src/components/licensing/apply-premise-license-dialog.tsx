@@ -65,6 +65,7 @@ const premiseSchema = z.object({
   landUpi: z.string().optional(),
   ownershipType: z.enum(["OWNED", "RENTED", "OTHER"]),
   leaseExpiry: z.string().optional(),
+  ownershipDetail: z.string().optional(),
   // Technician
   technicianName: z.string().min(2, "Responsible technician name is required"),
   technicianTitle: z.string().min(2, "Designation / Title is required"),
@@ -75,6 +76,21 @@ const premiseSchema = z.object({
   // Products
   productsProduced: z.string().min(3, "Specify products to be manufactured"),
   notes: z.string().optional(),
+}).superRefine((values, ctx) => {
+  if (values.ownershipType === "RENTED" && !values.leaseExpiry?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["leaseExpiry"],
+      message: "Lease expiry date is required for rented premises",
+    });
+  }
+  if (values.ownershipType === "OTHER" && (values.ownershipDetail?.trim().length ?? 0) < 2) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["ownershipDetail"],
+      message: "Please describe the ownership arrangement",
+    });
+  }
 });
 
 type PremiseFormValues = z.infer<typeof premiseSchema>;
@@ -123,6 +139,8 @@ export function ApplyPremiseLicenseDialog({
       longitude: "",
       landUpi: "",
       ownershipType: "OWNED",
+      leaseExpiry: "",
+      ownershipDetail: "",
       technicianName: "",
       technicianTitle: "Quality Assurance Officer",
       technicianGender: "MALE",
@@ -262,7 +280,18 @@ export function ApplyPremiseLicenseDialog({
     try {
       const license = await applyMutation.mutateAsync({
         categoryId: values.categoryId,
-        notes: values.notes,
+        notes: [
+          values.notes?.trim(),
+          values.ownershipType === "OTHER" && values.ownershipDetail?.trim()
+            ? `Ownership details: ${values.ownershipDetail.trim()}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n") || undefined,
+        premiseMetadata:
+          values.ownershipType === "OTHER" && values.ownershipDetail?.trim()
+            ? { ownershipDetail: values.ownershipDetail.trim() }
+            : undefined,
         facilityDetails: {
           name: values.premiseName,
           province: values.province,
@@ -280,7 +309,7 @@ export function ApplyPremiseLicenseDialog({
               : undefined,
           landUpi: values.landUpi,
           ownershipType: values.ownershipType,
-          leaseContractExpiry: values.leaseExpiry,
+          leaseContractExpiry: values.ownershipType === "RENTED" ? values.leaseExpiry : undefined,
         },
       });
 
@@ -718,6 +747,8 @@ export function ApplyPremiseLicenseDialog({
                               "ownershipType",
                               val as "OWNED" | "RENTED" | "OTHER",
                             );
+                          if (val !== "RENTED") form.setValue("leaseExpiry", "");
+                          if (val !== "OTHER") form.setValue("ownershipDetail", "");
                         }}
                       >
                         <SelectTrigger className="h-9 text-xs">
@@ -743,6 +774,29 @@ export function ApplyPremiseLicenseDialog({
                           {...form.register("leaseExpiry")}
                           className="h-9 text-xs"
                         />
+                        {form.formState.errors.leaseExpiry && (
+                          <p className="text-xs text-destructive">
+                            {form.formState.errors.leaseExpiry.message}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {ownershipType === "OTHER" && (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium">
+                          Please specify ownership <span className="font-bold text-red-500">*</span>
+                        </Label>
+                        <Input
+                          {...form.register("ownershipDetail")}
+                          placeholder="e.g. Inherited, partnership, government land…"
+                          className="h-9 text-xs"
+                        />
+                        {form.formState.errors.ownershipDetail && (
+                          <p className="text-xs text-destructive">
+                            {form.formState.errors.ownershipDetail.message}
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>

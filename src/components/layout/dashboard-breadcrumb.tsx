@@ -60,7 +60,6 @@ const PAGE_LABELS: Record<string, string> = {
  * Send those crumbs to the section's real landing page instead.
  */
 const SECTION_LANDINGS: Record<string, string> = {
-  manufacturing: "/dashboard/manufacturing/production",
   logistics: "/dashboard/logistics/shipments",
   finance: "/dashboard/finance/accounts",
 };

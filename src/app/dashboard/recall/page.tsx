@@ -200,40 +200,52 @@ export default function RecallPage() {
             <AlertTriangle className="size-4" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Product Recall</h1>
+            <h1 className="text-xl font-bold tracking-tight">Recalls</h1>
             <p className="text-sm text-muted-foreground">
-              Manage product recalls and track affected units across locations.
+              Stop a lot in the field and see which holders still have it.
             </p>
           </div>
         </div>
-        {canManageRecall ? (
+        <div className="flex flex-wrap items-center gap-2">
           <Button
-            className="bg-danger text-white hover:bg-danger/90"
-            onClick={() => setIssueOpen(true)}
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link href="/dashboard/manufacturing/trace" />}
           >
-            <Plus className="mr-1.5 size-4" />
-            Issue recall
+            <ScanLine className="mr-1.5 size-3.5" />
+            Scan &amp; trace
           </Button>
-        ) : null}
+          {canManageRecall ? (
+            <Button
+              size="sm"
+              className="bg-danger text-white hover:bg-danger/90"
+              onClick={() => setIssueOpen(true)}
+            >
+              <Plus className="mr-1.5 size-4" />
+              Issue recall
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <MetricCard
-          title="Active Recalls"
+          title="Active recalls"
           value={total}
           icon={<AlertTriangle className="size-4" />}
           iconBg="bg-danger"
-          caption="Recalled batches"
+          caption="Recalled lots"
         />
         <MetricCard
-          title="Units Affected"
+          title="Units affected"
           value={totalUnits}
           icon={<Trash2 className="size-4" />}
           iconBg="bg-danger"
           caption="Across all recalls"
         />
         <MetricCard
-          title="Locations Impacted"
+          title="Holders impacted"
           value={totalLocations}
           icon={<MapPin className="size-4" />}
           iconBg="bg-warning-foreground"
@@ -243,21 +255,44 @@ export default function RecallPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recall History</CardTitle>
+          <CardTitle>Recall history</CardTitle>
           <CardDescription>
-            {total} recall events — open a row for the full impact page
+            {total === 0
+              ? "No recalls issued yet"
+              : `${total} recall${total === 1 ? "" : "s"} — open a row for impact and response`}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex h-32 items-center justify-center text-muted-foreground">
-              Loading recalls...
+              Loading recalls…
+            </div>
+          ) : total === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-14 text-center">
+              <AlertTriangle className="size-8 text-border" />
+              <div>
+                <p className="text-sm font-medium text-foreground">No recalls yet</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  When a lot must leave the market, issue a recall here. Impact
+                  follows the same identities used in Scan &amp; trace.
+                </p>
+              </div>
+              {canManageRecall ? (
+                <Button
+                  size="sm"
+                  className="bg-danger text-white hover:bg-danger/90"
+                  onClick={() => setIssueOpen(true)}
+                >
+                  <Plus className="mr-1.5 size-4" />
+                  Issue first recall
+                </Button>
+              ) : null}
             </div>
           ) : (
             <DataTable
               columns={columns}
               data={recalls}
-              filterPlaceholder="Search by product, lot or SKU..."
+              filterPlaceholder="Search by product, lot or SKU…"
               filterColumn="batchNumber"
               pageSize={10}
               noBorder
@@ -380,7 +415,7 @@ function IssueRecallDialog({
         </DialogHeader>
 
         <div className="space-y-5 px-5 py-5 sm:px-6">
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm leading-relaxed text-foreground/75">
+          <div className="rounded-xl border border-danger/30 bg-danger/5 px-4 py-3.5 text-sm leading-relaxed text-muted-foreground">
             <span className="font-semibold text-danger">Before issuing:</span>{" "}
             confirm the lot and record enough detail for the response team to act.
           </div>
@@ -424,7 +459,7 @@ function IssueRecallDialog({
                 )}
 
                 {scanError && !isResolving && (
-                  <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-danger leading-relaxed" role="alert">
+                  <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2.5 text-xs leading-relaxed text-danger" role="alert">
                     <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
                     <span>{scanError}</span>
                   </div>
@@ -453,7 +488,7 @@ function IssueRecallDialog({
 
             {/* Identified lot card — shown regardless of mode */}
             {chosen && (
-              <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3">
+              <div className="flex items-center gap-3 rounded-lg border border-success/30 bg-success/5 px-3 py-3">
                 <CheckCircle2 className="size-4 shrink-0 text-success" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-foreground">{chosen.productName}</p>

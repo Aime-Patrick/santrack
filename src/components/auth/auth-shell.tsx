@@ -4,7 +4,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import { AuthPrimaryLink } from "@/components/auth/auth-primary-button";
 import { SanTrackBrand } from "@/components/auth/san-track-logo";
 
 /**
@@ -133,13 +133,11 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         </motion.div>
 
         {/* Back to home — desktop only (mobile has the logo link above) */}
-        <Link
-          href="/"
-          className="hidden lg:flex absolute top-5 left-6 items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors z-10"
-        >
-          <ArrowLeft className="size-3.5" />
-          Back to home
-        </Link>
+        <div className="absolute left-6 top-5 z-10 hidden lg:block">
+          <AuthPrimaryLink href="/" compact showBackIcon>
+            Back to home
+          </AuthPrimaryLink>
+        </div>
 
         {/* Form Container */}
         <motion.div

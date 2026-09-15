@@ -53,7 +53,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MetricCard } from "@/components/dashboard/stat-card";
-import { IdentityPoolsPanel } from "@/components/products/identity-pools-panel";
+import { IdentityPoolsPanel, PrepareCodesDialog } from "@/components/products/identity-pools-panel";
 import {
   SymbologyPicker,
   SymbologyNote,
@@ -88,6 +88,7 @@ export default function ProductDetailPage() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") || "details";
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [prepareOpen, setPrepareOpen] = useState(false);
 
   // Keep the tab in sync when the URL changes (deep link, back/forward) via a
   // render-time adjustment keyed on the URL value, so no effect watches
@@ -119,15 +120,15 @@ export default function ProductDetailPage() {
   if (!product) {
     return (
       <div className="py-12 text-center">
-        <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-red-50">
+        <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-danger/10">
           <AlertCircle className="size-6 text-danger" />
         </div>
-        <h2 className="text-lg font-semibold">Product Not Found</h2>
+        <h2 className="text-lg font-semibold">Product not found</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          The requested product does not exist or has been removed.
+          It may have been removed, or you do not have access.
         </p>
-        <Button className="mt-4" render={<Link href="/dashboard/products" />}>
-          <ArrowLeft className="mr-2 size-4" /> Back to Products
+        <Button className="mt-4" nativeButton={false} render={<Link href="/dashboard/products" />}>
+          <ArrowLeft className="mr-2 size-4" /> Back to products
         </Button>
       </div>
     );
@@ -174,20 +175,36 @@ export default function ProductDetailPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setActiveTab("labels")}
+            onClick={() => {
+              setActiveTab("labels");
+              router.replace(`/dashboard/products/${product.id}?tab=labels`, { scroll: false });
+            }}
           >
             <QrCode className="mr-1.5 size-4" />
-            Product Labels
+            Print labels
           </Button>
           <Button
             size="sm"
-            onClick={() => setActiveTab("identities")}
+            onClick={() => {
+              setActiveTab("identities");
+              router.replace(`/dashboard/products/${product.id}?tab=identities`, {
+                scroll: false,
+              });
+              setPrepareOpen(true);
+            }}
           >
             <Plus className="mr-1.5 size-4" />
-            Prepare Codes
+            Prepare codes
           </Button>
         </div>
       </div>
+
+      <PrepareCodesDialog
+        productId={product.id}
+        productName={product.name}
+        open={prepareOpen}
+        onOpenChange={setPrepareOpen}
+      />
 
       {/* ── Overview KPI Cards ── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -225,15 +242,22 @@ export default function ProductDetailPage() {
       </div>
 
       {/* ── Tabs Container ── */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={(next) => {
+          setActiveTab(next);
+          router.replace(`/dashboard/products/${product.id}?tab=${next}`, { scroll: false });
+        }}
+        className="space-y-4"
+      >
         <TabsList className="rounded-xl border border-border/80 bg-muted/50 p-1">
           <TabsTrigger value="details" className="gap-2">
             <FileText className="size-4" />
-            Details & Specs
+            Details
           </TabsTrigger>
           <TabsTrigger value="identities" className="gap-2">
             <QrCode className="size-4" />
-            Identities & Pools
+            Code pools
           </TabsTrigger>
           <TabsTrigger value="batches" className="gap-2">
             <Layers className="size-4" />
@@ -241,7 +265,7 @@ export default function ProductDetailPage() {
           </TabsTrigger>
           <TabsTrigger value="labels" className="gap-2">
             <Barcode className="size-4" />
-            Labels & Codes
+            Catalogue label
           </TabsTrigger>
         </TabsList>
 
@@ -252,7 +276,11 @@ export default function ProductDetailPage() {
 
         {/* ── Tab 2: Identities ── */}
         <TabsContent value="identities">
-          <IdentityPoolsPanel productId={product.id} productName={product.name} />
+          <IdentityPoolsPanel
+            productId={product.id}
+            productName={product.name}
+            onPrepare={() => setPrepareOpen(true)}
+          />
         </TabsContent>
 
         {/* ── Tab 3: Batches ── */}
@@ -262,7 +290,15 @@ export default function ProductDetailPage() {
 
         {/* ── Tab 4: Labels ── */}
         <TabsContent value="labels">
-          <LabelsTab product={product} onOpenPools={() => setActiveTab("identities")} />
+          <LabelsTab
+            product={product}
+            preparedCount={totalMinted}
+            onOpenPools={() => setActiveTab("identities")}
+            onPrepareCodes={() => {
+              setActiveTab("identities");
+              setPrepareOpen(true);
+            }}
+          />
         </TabsContent>
       </Tabs>
     </div>
@@ -763,12 +799,14 @@ function NewBatchDialog({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Labels Tab Component (Catalog QR + Barcode Symbology Preview)
+// Catalogue label tab — product-type barcode (SKU/GTIN), NOT unit identity QRs
 // ─────────────────────────────────────────────────────────────────────────────
 
 function LabelsTab({
   product,
+  preparedCount,
   onOpenPools,
+  onPrepareCodes,
 }: {
   product: {
     id: number;
@@ -777,7 +815,9 @@ function LabelsTab({
     gtin?: string | null;
     barcodeSymbology?: Symbology | null;
   };
+  preparedCount: number;
   onOpenPools: () => void;
+  onPrepareCodes: () => void;
 }) {
   const [symbology, setSymbology] = useState<Symbology>(
     product.barcodeSymbology || "QR",
@@ -824,24 +864,37 @@ function LabelsTab({
 
   const encodesWhat =
     spec?.use === "RETAIL" || spec?.use === "PUBLICATION"
-      ? "product GTIN (same for every bottle)"
-      : "product SKU (same for every bottle)";
+      ? "the product GTIN — same on every pack"
+      : "the product SKU — same on every pack";
 
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-primary/25 bg-primary-light p-4 text-sm">
         <p className="font-semibold text-foreground">
-          This is the catalogue barcode — not your stock identities
+          Catalogue label vs unique unit codes
         </p>
         <p className="mt-1 text-muted-foreground">
-          Every pack of {product.name} can carry this same code ({encodesWhat}).
-          Trace and New Sale need the <strong>unique</strong> serial on each
-          unit (ST-… / pool QR). Having 44 in stock means 44 different identity
-          codes — download those from Code runs or open Stock codes.
+          This tab downloads one shared shelf / retail mark for {product.name} (
+          {encodesWhat}). It is <span className="font-medium text-foreground">not</span>{" "}
+          a stock identity. Tracing and New Sale need a unique QR per unit from{" "}
+          <span className="font-medium text-foreground">Code pools</span>
+          {preparedCount > 0
+            ? ` (${preparedCount.toLocaleString()} codes prepared so far)`
+            : ""}
+          .
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
+          <Button size="sm" onClick={onPrepareCodes}>
+            <Plus className="mr-1.5 size-3.5" />
+            Prepare unique codes
+          </Button>
+          <Button size="sm" variant="outline" onClick={onOpenPools}>
+            <QrCode className="mr-1.5 size-3.5" />
+            View code pools
+          </Button>
           <Button
             size="sm"
+            variant="outline"
             nativeButton={false}
             render={
               <Link
@@ -850,11 +903,7 @@ function LabelsTab({
             }
           >
             <Boxes className="mr-1.5 size-3.5" />
-            View stock codes in inventory
-          </Button>
-          <Button size="sm" variant="outline" onClick={onOpenPools}>
-            <QrCode className="mr-1.5 size-3.5" />
-            Code runs (pool QR ZIP)
+            Stock codes in inventory
           </Button>
         </div>
       </div>
@@ -867,8 +916,8 @@ function LabelsTab({
                 Product catalogue label
               </CardTitle>
               <CardDescription>
-                Shelf / retail mark for the product type — not one bottle&apos;s
-                identity.
+                Shared mark for the product type — identical on every pack of this
+                SKU.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

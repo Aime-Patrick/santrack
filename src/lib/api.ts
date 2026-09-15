@@ -298,6 +298,7 @@ export type LicenseStatus =
   | "DRAFT"
   | "SUBMITTED"
   | "UNDER_REVIEW"
+  | "CHANGES_REQUESTED"
   | "REJECTED"
   | "ACTIVE"
   | "EXPIRED"
@@ -474,7 +475,7 @@ export interface ApplyLicenseInput {
 }
 
 export interface LicenseDecision {
-  decision: "APPROVE" | "REJECT";
+  decision: "APPROVE" | "REQUEST_CHANGES" | "REJECT";
   reason?: string;
   expiresOn?: string;
 }
@@ -487,6 +488,7 @@ export type ProductRegistrationStatus =
   | "DRAFT"
   | "SUBMITTED"
   | "UNDER_REVIEW"
+  | "CHANGES_REQUESTED"
   | "APPROVED"
   | "REJECTED"
   | "SUSPENDED"
@@ -513,6 +515,9 @@ export interface ProductRegistration {
   categoryId?: number | null;
   category?: { id: number; name: string; code: string } | null;
   productId?: number | null;
+  organizationId?: number;
+  organization?: { id: number; name: string } | null;
+  organizationName?: string | null;
   issuedByName?: string | null;
   reviewedByName?: string | null;
   issuedOn?: string | null;
@@ -635,6 +640,10 @@ export interface RegistrationInfoRequest {
   status: InfoRequestStatus;
   respondedAt: string | null;
   createdAt: string;
+  /** Applicant's field responses (HTML), when status is RESPONDED */
+  responseData?: Record<string, string> | null;
+  /** Filename of uploaded attachment, if any */
+  responseAttachmentFilename?: string | null;
 }
 
 /** The data returned by the public GET /api/public/registration-response/:token */

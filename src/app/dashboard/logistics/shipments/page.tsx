@@ -1,8 +1,10 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MapPin, Truck } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShipmentsPanel } from "@/components/logistics-panels/shipments-panel";
 import { RoutesPanel } from "@/components/logistics-panels/routes-panel";
@@ -32,14 +34,26 @@ function ShipmentsWorkspace() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
-          <Truck className="size-4" />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
+            <Truck className="size-4" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Shipments &amp; routes</h1>
+            <p className="text-sm text-muted-foreground">
+              Consignments in motion, and the routes they take.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">Shipments</h1>
-          <p className="text-sm text-muted-foreground">Consignments in motion, and the routes they take.</p>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          nativeButton={false}
+          render={<Link href="/dashboard/logistics/vehicles" />}
+        >
+          Fleet &amp; transporters
+        </Button>
       </div>
 
       <Tabs value={tab} onValueChange={select} className="space-y-4">

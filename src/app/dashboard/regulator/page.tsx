@@ -33,6 +33,7 @@ import { IncomingReferrals } from "@/components/regulator/incoming-referrals";
 import { AuthoritySelfSetup } from "@/components/regulator/authority-self-setup";
 import { RegulatorFollowUpPanel } from "@/components/licensing/regulator-followup-panel";
 import { ManageCategoriesDialog } from "@/components/licensing/manage-categories-dialog";
+import { ProductRegistrationQueue } from "@/components/regulator/product-registration-queue";
 import {
   FileText,
   ExternalLink,
@@ -265,7 +266,7 @@ function ReviewDialog({
   const decideMutation = useDecideOnLicense();
   const { data: documents, isLoading: docsLoading } = useRegulatorDocuments(lic.id);
   const { data: history, isLoading: historyLoading } = useLicenseHistory(lic.id);
-  const [decision, setDecision] = useState<"APPROVE" | "REJECT" | null>(null);
+  const [decision, setDecision] = useState<"APPROVE" | "REQUEST_CHANGES" | "REJECT" | null>(null);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -471,6 +472,17 @@ function ReviewDialog({
                       Approve
                     </Button>
                     <Button
+                      variant={decision === "REQUEST_CHANGES" ? "default" : "outline"}
+                      onClick={() => setDecision("REQUEST_CHANGES")}
+                      className={cn(
+                        "flex-1",
+                        decision === "REQUEST_CHANGES" &&
+                          "bg-warning text-white hover:bg-warning/90 border-transparent",
+                      )}
+                    >
+                      Request changes
+                    </Button>
+                    <Button
                       variant={decision === "REJECT" ? "destructive" : "outline"}
                       onClick={() => setDecision("REJECT")}
                       className="flex-1"
@@ -480,10 +492,12 @@ function ReviewDialog({
                     </Button>
                   </div>
 
-                  {decision === "REJECT" && (
+                  {(decision === "REJECT" || decision === "REQUEST_CHANGES") && (
                     <div className="space-y-1.5">
                       <Label htmlFor="reject-reason" className="text-xs">
-                        Rejection reason *
+                        {decision === "REQUEST_CHANGES"
+                          ? "What should the applicant change? *"
+                          : "Rejection reason *"}
                       </Label>
                       <Textarea
                         id="reject-reason"
@@ -500,10 +514,15 @@ function ReviewDialog({
                       onClick={handleDecide}
                       disabled={
                         decideMutation.isPending ||
-                        (decision === "REJECT" && !reason.trim())
+                        ((decision === "REJECT" || decision === "REQUEST_CHANGES") &&
+                          !reason.trim())
                       }
                       variant={decision === "REJECT" ? "destructive" : "default"}
-                      className="w-full"
+                      className={cn(
+                        "w-full",
+                        decision === "REQUEST_CHANGES" &&
+                          "bg-warning text-white hover:bg-warning/90",
+                      )}
                     >
                       {decideMutation.isPending ? (
                         <LoaderCircle className="mr-2 size-4 animate-spin" />
@@ -512,7 +531,9 @@ function ReviewDialog({
                         ? "Processing..."
                         : decision === "APPROVE"
                           ? "Approve Licence"
-                          : "Reject Application"}
+                          : decision === "REQUEST_CHANGES"
+                            ? "Send changes request"
+                            : "Reject Application"}
                     </Button>
                   )}
                 </div>
@@ -801,6 +822,7 @@ export default function RegulatorPage() {
                   )}
                 </CardContent>
               </Card>
+              <ProductRegistrationQueue />
               <IncomingReferrals />
             </div>
           )}

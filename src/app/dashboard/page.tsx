@@ -4,6 +4,7 @@ import { TrendingUp, Warehouse, Store, Factory } from "lucide-react";
 import { RoleBasedKPIs } from "@/components/dashboard/role-based-kpis";
 import { ProductionTrendsChart } from "@/components/dashboard/production-trends-chart";
 import { RecentActivities } from "@/components/dashboard/recent-activities";
+import { ContinueWork } from "@/components/dashboard/continue-work";
 import { PlatformDashboard } from "@/components/dashboard/platform-dashboard";
 import { RegulatorDashboard } from "@/components/dashboard/regulator-dashboard";
 import { OversightDashboard } from "@/components/dashboard/oversight-dashboard";
@@ -86,6 +87,9 @@ export default function DashboardPage() {
           <p className="text-sm text-muted-foreground">{copy.subtitle}</p>
         </div>
       </div>
+
+      {/* Actions first — numbers second. People open this page to do work. */}
+      <ContinueWork />
 
       <RoleBasedKPIs />
 

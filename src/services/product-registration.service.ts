@@ -73,7 +73,11 @@ export const productRegistrationService = {
 
   async decide(
     id: number,
-    decision: { decision: "APPROVE" | "REJECT"; reason?: string; expiresOn?: string },
+    decision: {
+      decision: "APPROVE" | "REQUEST_CHANGES" | "REJECT";
+      reason?: string;
+      expiresOn?: string;
+    },
   ): Promise<ProductRegistration> {
     const res = await api.post<ProductRegistration>(
       `/api/product-registrations/${id}/decision`,

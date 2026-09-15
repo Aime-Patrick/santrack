@@ -13,6 +13,9 @@ export interface ScanResult {
   /** What the scanner actually read. */
   scanned: string;
   itemQrCode?: string;
+  /** When kind is ITEM — unit (bottle) vs package (box/pallet). */
+  itemKind?: "UNIT" | "PACKAGE";
+  packageType?: string;
   productId?: number;
   batchId?: number;
   locationId?: number;

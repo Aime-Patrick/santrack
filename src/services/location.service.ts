@@ -3,6 +3,8 @@ import { api } from "@/lib/api";
 export interface Location {
   id: number;
   name: string;
+  /** e.g. LOC-000004 — printed on the bay label and scanned to address a movement. */
+  code?: string;
   type: string;
   address: string | null;
   active: boolean;

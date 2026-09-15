@@ -85,11 +85,12 @@ export function useDeleteLicenseCategory() {
 }
 
 /** The current organization's licenses and applications. */
-export function useMyLicenses() {
+export function useMyLicenses(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: licenseKeys.my(),
     queryFn: licenseService.mine,
     staleTime: 30_000,
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -428,6 +429,7 @@ export function statusLabel(status: string): string {
     DRAFT: "Draft",
     SUBMITTED: "Submitted",
     UNDER_REVIEW: "Under Review",
+    CHANGES_REQUESTED: "Changes requested",
     REJECTED: "Rejected",
     ACTIVE: "Active",
     EXPIRED: "Expired",
@@ -446,6 +448,8 @@ export function statusColor(status: string): string {
     case "SUBMITTED":
     case "UNDER_REVIEW":
       return "bg-info text-white border-info";
+    case "CHANGES_REQUESTED":
+      return "bg-warning text-white border-warning";
     case "DRAFT":
       return "bg-muted text-muted-foreground border-border";
     case "EXPIRED":

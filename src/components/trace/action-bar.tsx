@@ -74,7 +74,7 @@ const GROUP_TITLES: Record<string, string> = {
   compliance: "Compliance",
 };
 
-const GROUP_ORDER = ["label", "packaging", "movement", "lifecycle", "compliance"];
+const GROUP_ORDER = ["packaging", "label", "movement", "lifecycle", "compliance"];
 
 interface ActionBarProps {
   actions: AvailableAction[];

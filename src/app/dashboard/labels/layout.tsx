@@ -4,7 +4,7 @@ export default function LabelsLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="-m-6 md:-m-8 flex min-h-[calc(100vh-5.5rem)] flex-col">
+    <div className="-m-3 flex h-[calc(100%+1.5rem)] min-h-0 flex-col overflow-hidden md:-m-4 md:h-[calc(100%+2rem)]">
       {children}
     </div>
   );

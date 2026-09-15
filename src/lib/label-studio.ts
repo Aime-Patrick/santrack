@@ -12,7 +12,8 @@ export type LabelTemplateId =
   | "bottle_wrap"
   | "security_seal";
 
-export type LabelStudioMode = "preview" | "design" | "data";
+/** @deprecated Label Studio is design-only; kept for import compat. */
+export type LabelStudioMode = "design";
 
 export interface LabelRow {
   serial: string;
@@ -56,9 +57,9 @@ export const LABEL_TEMPLATES: Array<{
   {
     id: "carton",
     name: "Carton / Case Box",
-    description: "70×40 mm shipping box label with Code 128 barcode",
+    description: "70×50 mm shipping box label with unit serial + batch barcodes",
     widthMm: 70,
-    heightMm: 40,
+    heightMm: 50,
   },
   {
     id: "shelf",
@@ -106,18 +107,33 @@ export const LABEL_BIND_FIELDS: Array<{
   label: string;
   sample: string;
 }> = [
-  { name: "qr", label: "QR payload / URL", sample: "84dd98c5-2cc0-47a6-9efc-01b33434cde0" },
-  { name: "productName", label: "Product Name", sample: "Inyange Mineral Water 500ml" },
-  { name: "serial", label: "Unique Serial (ST-…)", sample: "ST-INY-000001" },
+  { name: "qr", label: "Verification link (QR)", sample: "84dd98c5-2cc0-47a6-9efc-01b33434cde0" },
+  { name: "productName", label: "Product name", sample: "Inyange Mineral Water 500ml" },
+  { name: "serial", label: "Unique serial (ST-…)", sample: "ST-INY-000001" },
   { name: "batchLine", label: "Batch · SKU", sample: "Batch LOT-42 · SKU-500ML" },
-  { name: "hint", label: "Verification Prompt", sample: "Scan with camera to verify authenticity" },
-  { name: "barcode", label: "Code 128 / Barcode", sample: "ST-INY-000001" },
-  { name: "expiryDate", label: "Expiry / Best Before", sample: "EXP: 12/2027" },
-  { name: "mfgDate", label: "Manufacture Date", sample: "MFG: 09/2026" },
+  { name: "hint", label: "Scan prompt text", sample: "Scan with camera to verify authenticity" },
+  { name: "barcode", label: "Barcode — unit serial", sample: "ST-INY-000001" },
+  { name: "batchBarcode", label: "Barcode — batch code", sample: "LOT-42" },
+  { name: "expiryDate", label: "Expiry / best before", sample: "EXP: 12/2027" },
+  { name: "mfgDate", label: "Manufacture date", sample: "MFG: 09/2026" },
 ];
 
+/** Which bind fields make sense for each canvas element kind. */
+export function bindFieldsForKind(kind: string): typeof LABEL_BIND_FIELDS {
+  if (kind === "qrcode") return LABEL_BIND_FIELDS.filter((f) => f.name === "qr");
+  if (kind === "barcode") {
+    return LABEL_BIND_FIELDS.filter((f) => f.name === "barcode" || f.name === "batchBarcode");
+  }
+  return LABEL_BIND_FIELDS.filter(
+    (f) => !["qr", "barcode", "batchBarcode"].includes(f.name),
+  );
+}
+
 function templateStorageKey(poolId: number, preset: LabelTemplateId): string {
-  return `santrack-label-template:${poolId}:${preset}`;
+  // The unit template was rebuilt after correcting Fabric's coordinate origin.
+  // Keep its old saved geometry from overriding the corrected default layout.
+  const templateVersion = preset === "unit" ? ":v2" : "";
+  return `santrack-label-template:${poolId}:${preset}${templateVersion}`;
 }
 
 export function loadSavedTemplate(

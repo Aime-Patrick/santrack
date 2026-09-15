@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import {
   Dialog,
   DialogPopup,
@@ -9,13 +10,21 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { type License } from "@/lib/api";
-import { Printer, X } from "lucide-react";
+import {
+  Printer,
+  X,
+  Download,
+  ShieldCheck,
+} from "lucide-react";
+import { QrCodeImage } from "./qr-code";
 
 interface LicenseCertificateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   license: License | null;
 }
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -26,6 +35,707 @@ function fmtDate(iso: string | null | undefined): string {
   });
 }
 
+function fmtActivity(raw: string | null | undefined): string {
+  if (!raw) return "Traceability & Production";
+  return raw.charAt(0) + raw.slice(1).toLowerCase().replace(/_/g, " ");
+}
+
+function buildAddress(location: Record<string, string | undefined> | null | undefined): string {
+  if (!location) return "";
+  return [
+    location.businessCenter,
+    location.village,
+    location.cell,
+    location.sector,
+    location.district,
+    location.province,
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
+const SITE_URL =
+  (typeof process !== "undefined" &&
+    process.env.NEXT_PUBLIC_SITE_URL) ||
+  "https://santrack.vercel.app";
+
+// ─── Imigongo Background Pattern ────────────────────────────────────────────
+
+function ImigongoPattern() {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        backgroundImage: "url('/images/imigongo2.png')",
+        backgroundRepeat: "repeat",
+        backgroundSize: "280px auto",
+        opacity: 0.045,
+        pointerEvents: "none",
+        zIndex: 0,
+      }}
+    />
+  );
+}
+
+// ─── Stylized Digital Signature SVG ─────────────────────────────────────────
+
+function DigitalSignatureSvg() {
+  return (
+    <svg width="120" height="40" viewBox="0 0 140 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M 15 38 C 25 15, 30 5, 36 2 C 38 1, 40 4, 38 18 C 36 30, 42 42, 54 34 C 62 28, 68 18, 76 22 C 84 26, 88 38, 98 32 C 108 26, 115 15, 128 18 M 12 36 L 132 28"
+        stroke="#0f284e"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// ─── Certificate Document ───────────────────────────────────────────────────
+
+interface CertificateDocumentProps {
+  license: License;
+}
+
+function CertificateDocument({ license }: CertificateDocumentProps) {
+  const meta = license.premiseMetadata ?? {};
+  const verificationUrl = `${SITE_URL}/verify/license/${encodeURIComponent(license.licenseNumber)}`;
+
+  const locationStr = buildAddress(meta.location as Record<string, string | undefined> | null);
+  const signatoryName = license.issuedByName || "Director General";
+  const issuingAuthority = license.issuedByName || "Rwanda FDA / SANTRACK";
+  const productScope = meta.productsProduced ?? null;
+  const facilityName = license.facilityName || (meta.facilityName as string | undefined) || "Registered Production Facility";
+  const tinNumber =
+    (license as License & { tin?: string }).tin ??
+    (license.premiseMetadata?.tin as string | undefined) ??
+    "TIN-PENDING";
+
+  return (
+    <div
+      id="santrack-certificate-document"
+      style={{
+        width: "100%",
+        maxWidth: "920px",
+        background: "#ffffff",
+        fontFamily: "var(--font-exo), 'Exo', system-ui, -apple-system, sans-serif",
+        position: "relative",
+        boxSizing: "border-box",
+        borderRadius: "0px",
+        border: "2.5px solid #209E48",
+        boxShadow: "0 10px 30px -5px rgba(32,158,72,0.12), 0 2px 10px rgba(0,0,0,0.06)",
+        overflow: "hidden",
+      }}
+    >
+      {/* Imigongo Background Pattern */}
+      <ImigongoPattern />
+
+      {/* ── Main Content Container ── */}
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          padding: "26px 30px 22px 30px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+          boxSizing: "border-box",
+        }}
+      >
+        {/* ══ 1. TOP HEADER BAR ════════════════════════════════════════════ */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingBottom: "8px",
+          }}
+        >
+          {/* Left: SANTRACK Brand */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Image
+                src="/images/logo-symbol.png"
+                alt="SANTRACK Logo"
+                width={38}
+                height={38}
+                style={{ objectFit: "contain" }}
+                unoptimized
+              />
+              <div style={{ lineHeight: 1.1 }}>
+                <span
+                  style={{
+                    fontSize: "22px",
+                    fontWeight: 900,
+                    letterSpacing: "-0.03em",
+                    color: "#0f284e",
+                  }}
+                >
+                  santrack
+                </span>
+                <p
+                  style={{
+                    fontSize: "7.5px",
+                    fontWeight: 700,
+                    color: "#64748b",
+                    margin: "1px 0 0",
+                  }}
+                >
+                  Trace Today. Safer Tomorrow.
+                </p>
+              </div>
+            </div>
+            <span style={{ width: "1px", height: "34px", background: "#cbd5e1", marginLeft: "8px" }} />
+          </div>
+
+          {/* Center: RWANDA REGULATORY AUTHORITY */}
+          <div style={{ textAlign: "center" }}>
+            <p
+              style={{
+                fontSize: "11px",
+                fontWeight: 800,
+                letterSpacing: "0.42em",
+                textTransform: "uppercase",
+                color: "#0f284e",
+                margin: 0,
+              }}
+            >
+              R W A N D A
+            </p>
+            <p
+              style={{
+                fontSize: "8px",
+                fontWeight: 800,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "#475569",
+                marginTop: "3px",
+                marginBottom: 0,
+              }}
+            >
+              REGULATORY TRACEABILITY &amp; LICENSING AUTHORITY
+            </p>
+          </div>
+
+          {/* Right: RWANDA Flag (Prominent, No Border) */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+            <Image
+              src="/images/Flag_of_Rwanda.webp"
+              alt="Flag of Rwanda"
+              width={92}
+              height={62}
+              style={{
+                border: "none",
+                objectFit: "cover",
+                display: "block",
+              }}
+              unoptimized
+            />
+          </div>
+        </div>
+
+        {/* ══ 2. CERTIFICATE TITLE SECTION ══════════════════════════════════ */}
+        <div style={{ textAlign: "center", marginTop: "2px", marginBottom: "2px" }}>
+          <h1
+            style={{
+              fontSize: "24px",
+              fontWeight: 900,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "#0f284e",
+              lineHeight: 1.1,
+              margin: 0,
+            }}
+          >
+            DIGITAL LICENSE CERTIFICATE
+          </h1>
+          <p
+            style={{
+              fontSize: "14px",
+              fontWeight: 800,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "#209E48",
+              marginTop: "5px",
+              marginBottom: "8px",
+            }}
+          >
+            {license.categoryName.toUpperCase()}
+          </p>
+
+          {/* Sub-divider line */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "14px" }}>
+            <span style={{ width: "130px", height: "1px", background: "#cbd5e1" }} />
+            <span
+              style={{
+                fontSize: "8.5px",
+                fontWeight: 800,
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                color: "#64748b",
+              }}
+            >
+              REGULATED FACILITY &nbsp;•&nbsp; SAFETY &nbsp;•&nbsp; TRACEABILITY
+            </span>
+            <span style={{ width: "130px", height: "1px", background: "#cbd5e1" }} />
+          </div>
+        </div>
+
+        {/* ══ 3. TOP ROW: 3-COLUMN SEAMLESS GRID WITH RIGHT BORDER DIVIDERS ══ */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.1fr 1.1fr 1fr",
+            gap: "0",
+            padding: "8px 0",
+          }}
+        >
+          {/* Column 1: LICENSE HOLDER / COMPANY */}
+          <div
+            style={{
+              paddingRight: "20px",
+              borderRight: "1px solid #cbd5e1",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "8.5px",
+                fontWeight: 800,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "#64748b",
+                margin: 0,
+              }}
+            >
+              LICENSE HOLDER / COMPANY
+            </p>
+
+            <div>
+              <p
+                style={{
+                  fontSize: "14.5px",
+                  fontWeight: 800,
+                  color: "#0f284e",
+                  margin: 0,
+                  lineHeight: 1.25,
+                }}
+              >
+                {license.organizationName}
+              </p>
+            </div>
+
+            <div>
+              <p
+                style={{
+                  fontSize: "8px",
+                  fontWeight: 800,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "#64748b",
+                  margin: 0,
+                }}
+              >
+                TAX / REGISTRATION ID
+              </p>
+              <p
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 800,
+                  color: "#0f284e",
+                  fontFamily: "var(--font-geist-mono), monospace",
+                  margin: "2px 0 0",
+                }}
+              >
+                {tinNumber}
+              </p>
+            </div>
+          </div>
+
+          {/* Column 2: FACILITY NAME & ADDRESS */}
+          <div
+            style={{
+              padding: "0 20px",
+              borderRight: "1px solid #cbd5e1",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "8.5px",
+                fontWeight: 800,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "#64748b",
+                margin: 0,
+              }}
+            >
+              FACILITY NAME
+            </p>
+
+            <div>
+              <p
+                style={{
+                  fontSize: "14.5px",
+                  fontWeight: 800,
+                  color: "#0f284e",
+                  margin: 0,
+                  lineHeight: 1.25,
+                }}
+              >
+                {facilityName}
+              </p>
+            </div>
+
+            <div>
+              <p
+                style={{
+                  fontSize: "8px",
+                  fontWeight: 800,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "#64748b",
+                  margin: 0,
+                }}
+              >
+                FACILITY ADDRESS
+              </p>
+              <p
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  color: "#334155",
+                  margin: "2px 0 0",
+                  lineHeight: 1.35,
+                }}
+              >
+                {locationStr || "Kigali Special Economic Zone, Kigali City, Rwanda"}
+              </p>
+            </div>
+          </div>
+
+          {/* Column 3: LICENSE REFERENCE & VALIDITY */}
+          <div
+            style={{
+              paddingLeft: "20px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "7px",
+            }}
+          >
+            <div>
+              <p
+                style={{
+                  fontSize: "8px",
+                  fontWeight: 800,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "#64748b",
+                  margin: 0,
+                }}
+              >
+                LICENSE NUMBER
+              </p>
+              <p
+                style={{
+                  fontSize: "13.5px",
+                  fontWeight: 800,
+                  color: "#0f284e",
+                  fontFamily: "var(--font-geist-mono), monospace",
+                  margin: "1px 0 0",
+                }}
+              >
+                {license.licenseNumber}
+              </p>
+            </div>
+
+            <div>
+              <p
+                style={{
+                  fontSize: "7.5px",
+                  fontWeight: 800,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "#64748b",
+                  margin: 0,
+                }}
+              >
+                LICENSE TYPE
+              </p>
+              <p
+                style={{
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  color: "#0f284e",
+                  margin: "1px 0 0",
+                }}
+              >
+                {license.categoryName}
+              </p>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginTop: "2px" }}>
+              <div>
+                <p
+                  style={{
+                    fontSize: "7.5px",
+                    fontWeight: 800,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "#64748b",
+                    margin: 0,
+                  }}
+                >
+                  ISSUED ON
+                </p>
+                <p style={{ fontSize: "11px", fontWeight: 700, color: "#0f284e", margin: "1px 0 0" }}>
+                  {fmtDate(license.issuedOn)}
+                </p>
+              </div>
+              <div>
+                <p
+                  style={{
+                    fontSize: "7.5px",
+                    fontWeight: 800,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "#64748b",
+                    margin: 0,
+                  }}
+                >
+                  EXPIRATION DATE
+                </p>
+                <p style={{ fontSize: "11px", fontWeight: 700, color: "#209E48", margin: "1px 0 0" }}>
+                  {fmtDate(license.expiresOn)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ══ 4. BOTTOM ROW: 2-COLUMN SCOPE & AUTHORIZATION WITH RIGHT BORDER ══ */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.4fr 1fr",
+            gap: "0",
+            padding: "8px 0 4px",
+          }}
+        >
+          {/* Column 1: AUTHORIZED PRODUCTS AT THIS FACILITY */}
+          <div
+            style={{
+              paddingRight: "22px",
+              borderRight: "1px solid #cbd5e1",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "9px",
+                fontWeight: 800,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "#0f284e",
+                margin: 0,
+              }}
+            >
+              AUTHORIZED PRODUCTS AT THIS FACILITY
+            </p>
+
+            {/* Product Table */}
+            <div style={{ borderRadius: "4px", overflow: "hidden", border: "1px solid #e2e8f0" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "9.5px", textAlign: "left" }}>
+                <thead>
+                  <tr style={{ background: "#f1f6fc", color: "#475569", fontWeight: 800 }}>
+                    <th style={{ padding: "6px 9px" }}>Product Name</th>
+                    <th style={{ padding: "6px 9px" }}>Category / Scope</th>
+                    <th style={{ padding: "6px 9px" }}>Registration No.</th>
+                    <th style={{ padding: "6px 9px" }}>Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderTop: "1px solid #edf2f7", color: "#0f284e", fontWeight: 600 }}>
+                    <td style={{ padding: "6px 9px" }}>{productScope ? String(productScope).split(",")[0] : "Authorized Product Line A"}</td>
+                    <td style={{ padding: "6px 9px", color: "#475569" }}>{fmtActivity(license.activity)}</td>
+                    <td style={{ padding: "6px 9px", fontFamily: "var(--font-geist-mono), monospace" }}>RWF-REG-001234</td>
+                    <td style={{ padding: "6px 9px", color: "#475569" }}>Commercial</td>
+                  </tr>
+                  <tr style={{ borderTop: "1px solid #edf2f7", color: "#0f284e", fontWeight: 600 }}>
+                    <td style={{ padding: "6px 9px" }}>{productScope && String(productScope).split(",")[1] ? String(productScope).split(",")[1] : "Authorized Product Line B"}</td>
+                    <td style={{ padding: "6px 9px", color: "#475569" }}>{fmtActivity(license.activity)}</td>
+                    <td style={{ padding: "6px 9px", fontFamily: "var(--font-geist-mono), monospace" }}>RWF-REG-001235</td>
+                    <td style={{ padding: "6px 9px", color: "#475569" }}>Commercial</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Column 2: REGULATORY AUTHORIZATION */}
+          <div
+            style={{
+              paddingLeft: "22px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              gap: "8px",
+            }}
+          >
+            <div>
+              <p
+                style={{
+                  fontSize: "9px",
+                  fontWeight: 800,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  color: "#0f284e",
+                  margin: "0 0 8px 0",
+                }}
+              >
+                REGULATORY AUTHORIZATION
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "5px", fontSize: "10px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "#64748b", fontWeight: 600 }}>Issued by:</span>
+                  <span style={{ color: "#0f284e", fontWeight: 800 }}>{issuingAuthority}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "#64748b", fontWeight: 600 }}>Authorization Scope:</span>
+                  <span style={{ color: "#0f284e", fontWeight: 800 }}>{fmtActivity(license.activity)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: "#64748b", fontWeight: 600 }}>Country:</span>
+                  <span style={{ color: "#0f284e", fontWeight: 800 }}>Rwanda</span>
+                </div>
+              </div>
+            </div>
+
+            <p style={{ fontSize: "8.5px", fontStyle: "italic", color: "#64748b", margin: 0, lineHeight: 1.35 }}>
+              This facility is authorized to operate and distribute products in accordance with Rwanda&apos;s regulatory traceability requirements.
+            </p>
+          </div>
+        </div>
+
+        {/* ══ 5. FOOTER (QR, SANTRACK LOGO, SIGNATURE) ══════════════════════ */}
+        <div
+          style={{
+            marginTop: "4px",
+            paddingTop: "10px",
+            borderTop: "1px solid #e0eaf5",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          {/* Left: Verification QR */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div
+              style={{
+                border: "1.2px solid #0f284e",
+                padding: "2px",
+                background: "#ffffff",
+                borderRadius: "2px",
+                flexShrink: 0,
+              }}
+            >
+              <QrCodeImage value={verificationUrl} size={58} margin={1} />
+            </div>
+            <div style={{ lineHeight: 1.3 }}>
+              <p style={{ fontSize: "8px", fontWeight: 800, color: "#0f284e", margin: 0 }}>
+                Scan to verify
+                <br />
+                authenticity on
+                <br />
+                Santrack
+              </p>
+              <p
+                style={{
+                  fontSize: "7px",
+                  fontWeight: 700,
+                  color: "#005bb7",
+                  margin: "2px 0 0",
+                  fontFamily: "var(--font-geist-mono), monospace",
+                }}
+              >
+                santrack.vercel.app/verify
+              </p>
+            </div>
+          </div>
+
+          {/* Center: SANTRACK Issuing Badge */}
+          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+              <Image
+                src="/images/logo-symbol.png"
+                alt="SANTRACK"
+                width={20}
+                height={20}
+                style={{ objectFit: "contain" }}
+                unoptimized
+              />
+              <span style={{ fontSize: "16px", fontWeight: 900, color: "#0f284e" }}>santrack</span>
+            </div>
+            <p style={{ fontSize: "6px", fontWeight: 600, color: "#64748b", margin: 0 }}>
+              Trace Today. Safer Tomorrow.
+            </p>
+            <p
+              style={{
+                fontSize: "7px",
+                fontWeight: 800,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "#209E48",
+                marginTop: "4px",
+                marginBottom: 0,
+              }}
+            >
+              DIGITAL CERTIFICATE ISSUED BY SANTRACK
+            </p>
+            <p
+              style={{
+                fontSize: "6px",
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "#64748b",
+                margin: "1px 0 0",
+              }}
+            >
+              RWANDA&apos;S TRUSTED TRACEABILITY PLATFORM
+            </p>
+          </div>
+
+          {/* Right: Signature & Authority */}
+          <div style={{ textAlign: "center", width: "150px" }}>
+            <DigitalSignatureSvg />
+            <div style={{ width: "100%", height: "1px", background: "#0f284e", marginTop: "-4px", marginBottom: "3px" }} />
+            <p style={{ fontSize: "8.5px", fontWeight: 800, color: "#0f284e", margin: 0 }}>
+              {signatoryName}
+            </p>
+            <p style={{ fontSize: "7px", fontWeight: 600, color: "#64748b", margin: "1px 0 0" }}>
+              Rwanda FDA / SANTRACK Authority
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ─── Modal ──────────────────────────────────────────────────────────────────
+
 export function LicenseCertificateModal({
   open,
   onOpenChange,
@@ -35,43 +745,92 @@ export function LicenseCertificateModal({
 
   if (!license) return null;
 
-  const meta = license.premiseMetadata ?? {};
-  const isPremise = !!(license.facilityId || license.categoryCode?.includes("PREMISE"));
+  const handlePrint = () => {
+    const certEl = document.getElementById("santrack-certificate-document");
+    if (!certEl) return;
 
-  const locationParts = meta.location
-    ? [
-        meta.location.village,
-        meta.location.cell,
-        meta.location.sector,
-        meta.location.district,
-        meta.location.province,
-      ].filter(Boolean)
-    : [];
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;width:0;height:0;border:0;left:-9999px;top:-9999px;";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) return;
+
+    // Copy all stylesheets into the iframe so fonts / colors render correctly
+    const styleLinks = Array.from(document.querySelectorAll("link[rel='stylesheet'], style"))
+      .map((el) => el.outerHTML)
+      .join("\n");
+
+    doc.open();
+    doc.write(`<!DOCTYPE html><html><head>
+      <meta charset="utf-8"/>
+      <style>
+        @page { size: A4 landscape; margin: 8mm; }
+        html, body { margin: 0; padding: 0; background: #fff; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      </style>
+      ${styleLinks}
+    </head><body style="margin:0;padding:0;">${certEl.outerHTML}</body></html>`);
+    doc.close();
+
+    iframe.contentWindow?.focus();
+    iframe.contentWindow?.print();
+
+    // Clean up the iframe after printing
+    setTimeout(() => document.body.removeChild(iframe), 2000);
+  };
+
+  const handleDownloadPdf = handlePrint;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogPopup className="max-w-3xl max-h-[94vh] flex flex-col p-0 overflow-hidden bg-white border border-border shadow-2xl rounded-xl">
-        <DialogTitle className="sr-only">License Certificate</DialogTitle>
+      <DialogPopup
+        className="max-w-5xl w-full max-h-[95vh] flex flex-col p-0 overflow-hidden !bg-white !text-slate-900 border border-slate-200 shadow-2xl rounded-2xl"
+        style={{ fontFamily: "var(--font-exo), 'Exo', system-ui, sans-serif" }}
+      >
+        <DialogTitle className="sr-only">
+          Digital License Certificate — {license.licenseNumber}
+        </DialogTitle>
         <DialogDescription className="sr-only">
-          Official license certificate for {license.licenseNumber}
+          SANTRACK digital license certificate for {license.organizationName},{" "}
+          license number {license.licenseNumber}.
         </DialogDescription>
 
-        {/* ── Toolbar (hidden on print) ── */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-white print:hidden shrink-0">
-          <span className="text-sm font-semibold text-foreground">Official License Certificate</span>
+        {/* ── Toolbar ── */}
+        <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-200 bg-white print:hidden shrink-0">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="w-4 h-4 text-[#209E48]" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
+              Digital License Certificate
+            </span>
+            <span className="text-slate-300 text-xs">·</span>
+            <span className="text-xs font-mono font-bold text-[#209E48] bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded">
+              {license.licenseNumber}
+            </span>
+          </div>
           <div className="flex items-center gap-2">
             <Button
-              onClick={() => window.print()}
+              onClick={handleDownloadPdf}
               size="sm"
               variant="outline"
-              className="gap-1.5 text-xs"
+              className="gap-1.5 text-xs bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
             >
-              <Printer className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 text-slate-600" />
+              Download PDF
+            </Button>
+            <Button
+              onClick={handlePrint}
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 shadow-sm"
+            >
+              <Printer className="w-3.5 h-3.5 text-slate-600" />
               Print
             </Button>
             <Button
               variant="ghost"
               size="sm"
+              className="text-slate-500 hover:text-slate-900 hover:bg-slate-100"
               onClick={() => onOpenChange(false)}
             >
               <X className="w-4 h-4" />
@@ -79,219 +838,10 @@ export function LicenseCertificateModal({
           </div>
         </div>
 
-        {/* ── Certificate scroll area ── */}
-        <div className="flex-1 overflow-y-auto bg-slate-50 p-6 flex justify-center print:p-0 print:bg-white">
-          <div
-            ref={printRef}
-            className="w-full max-w-2xl bg-white print:max-w-none print:shadow-none"
-            style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
-          >
-            {/* ══ OUTER BORDER ══ */}
-            <div className="border-4 border-[#003580]">
-              {/* ── INNER RULE ── */}
-              <div className="border border-[#003580]/40 m-1.5">
-
-                {/* ══ HEADER BAND ══ */}
-                <div className="bg-[#003580] px-6 py-4 flex items-center justify-between gap-4">
-                  {/* Left — SANTRACK wordmark */}
-                  <div className="flex flex-col">
-                    <span className="text-white font-extrabold text-xl tracking-tight leading-none" style={{ fontFamily: "system-ui, sans-serif" }}>
-                      SAN<span className="text-[#F9D71C]">TRACK</span>
-                    </span>
-                    <span className="text-white/70 text-[9px] uppercase tracking-widest mt-0.5" style={{ fontFamily: "system-ui, sans-serif" }}>
-                      Industry Traceability Platform
-                    </span>
-                  </div>
-
-                  {/* Centre — authority name */}
-                  <div className="text-center flex-1">
-                    <p className="text-white font-bold text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: "system-ui, sans-serif" }}>
-                      Republic of Rwanda
-                    </p>
-                    <p className="text-white/80 text-[10px] uppercase tracking-widest" style={{ fontFamily: "system-ui, sans-serif" }}>
-                      National Licensing &amp; Traceability Authority
-                    </p>
-                  </div>
-
-                  {/* Right — Rwanda flag block */}
-                  <div className="flex flex-col items-end gap-0.5">
-                    {/* simplified flag stripe */}
-                    <div className="w-14 h-9 rounded-sm overflow-hidden border border-white/30 flex flex-col shrink-0">
-                      <div className="flex-1 bg-[#20603D]" />
-                      <div className="flex-1 bg-[#FAD201]" />
-                      <div className="flex-1 bg-[#20603D]" />
-                      <div className="flex-1 bg-[#1B61AD]" />
-                    </div>
-                    <span className="text-white/70 text-[8px] uppercase tracking-wider" style={{ fontFamily: "system-ui, sans-serif" }}>Rwanda</span>
-                  </div>
-                </div>
-
-                {/* ══ TITLE BLOCK ══ */}
-                <div className="text-center py-5 border-b border-[#003580]/20 px-6">
-                  <h1 className="text-2xl font-extrabold uppercase tracking-wide text-[#003580]">
-                    License Certificate
-                  </h1>
-                  <p className="text-sm font-semibold text-[#003580]/70 mt-1 tracking-wide">
-                    {license.categoryName}
-                  </p>
-                </div>
-
-                {/* ══ BODY ══ */}
-                <div className="px-7 py-5 space-y-4" style={{ fontFamily: "system-ui, sans-serif" }}>
-
-                  {/* ── Licence Number Banner ── */}
-                  <div className="flex items-center justify-between bg-[#003580]/5 border border-[#003580]/20 rounded px-4 py-3">
-                    <div>
-                      <p className="text-[9px] uppercase tracking-[0.2em] text-[#003580]/50 font-bold mb-0.5">
-                        Official Licence Number
-                      </p>
-                      <p className="font-mono text-lg font-bold text-[#003580] tracking-widest">
-                        {license.licenseNumber}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider"
-                        style={{
-                          background: license.status === "ACTIVE" ? "#dcfce7" : "#fef9c3",
-                          borderColor: license.status === "ACTIVE" ? "#16a34a" : "#ca8a04",
-                          color: license.status === "ACTIVE" ? "#15803d" : "#a16207",
-                        }}>
-                        <span className="w-1.5 h-1.5 rounded-full inline-block"
-                          style={{ background: license.status === "ACTIVE" ? "#16a34a" : "#ca8a04" }} />
-                        {license.status}
-                        {license.provisional && " · Provisional"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* ── Three-column info grid ── */}
-                  <div className="grid grid-cols-3 gap-0 border border-[#003580]/20 rounded overflow-hidden text-xs">
-                    {/* Licensee */}
-                    <div className="p-3.5 border-r border-[#003580]/20">
-                      <p className="text-[9px] uppercase tracking-[0.2em] text-[#003580]/50 font-bold mb-1.5">
-                        Licence Holder
-                      </p>
-                      <p className="font-bold text-[#1a1a2e] leading-snug text-[13px]">
-                        {license.organizationName}
-                      </p>
-                      <p className="text-[#003580]/60 mt-1">
-                        Activity: <span className="font-semibold text-[#1a1a2e]">{license.activity}</span>
-                      </p>
-                    </div>
-
-                    {/* Facility / Premise */}
-                    <div className="p-3.5 border-r border-[#003580]/20">
-                      <p className="text-[9px] uppercase tracking-[0.2em] text-[#003580]/50 font-bold mb-1.5">
-                        {isPremise ? "Registered Facility" : "Licence Category"}
-                      </p>
-                      {isPremise ? (
-                        <>
-                          <p className="font-bold text-[#1a1a2e] leading-snug text-[13px]">
-                            {license.facilityName || meta.facilityName || "Main Facility"}
-                          </p>
-                          {locationParts.length > 0 && (
-                            <p className="text-[#003580]/60 mt-1 leading-snug">
-                              {locationParts.join(", ")}
-                            </p>
-                          )}
-                          {meta.cadastralUpi && (
-                            <p className="text-[#003580]/50 mt-0.5 font-mono text-[10px]">
-                              UPI: {meta.cadastralUpi}
-                            </p>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <p className="font-bold text-[#1a1a2e] leading-snug text-[13px]">
-                            {license.categoryName}
-                          </p>
-                          <p className="font-mono text-[#003580]/50 text-[10px] mt-1">
-                            {license.categoryCode}
-                          </p>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Dates */}
-                    <div className="p-3.5">
-                      <p className="text-[9px] uppercase tracking-[0.2em] text-[#003580]/50 font-bold mb-1.5">
-                        Validity Period
-                      </p>
-                      <div className="space-y-1.5">
-                        <div>
-                          <p className="text-[9px] text-[#003580]/50 uppercase tracking-wider">Issued</p>
-                          <p className="font-semibold text-[#1a1a2e] text-[12px]">{fmtDate(license.issuedOn)}</p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] text-[#003580]/50 uppercase tracking-wider">Expires</p>
-                          <p className="font-semibold text-[#1a1a2e] text-[12px]">{fmtDate(license.expiresOn)}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── Products Produced ── */}
-                  {meta.productsProduced && (
-                    <div className="border border-[#003580]/20 rounded overflow-hidden text-xs">
-                      <div className="bg-[#003580]/5 px-3.5 py-2 border-b border-[#003580]/20">
-                        <p className="text-[9px] uppercase tracking-[0.2em] text-[#003580]/60 font-bold">
-                          Authorised Scope of Products / Activities
-                        </p>
-                      </div>
-                      <p className="px-3.5 py-3 text-[#1a1a2e] leading-relaxed">
-                        {meta.productsProduced}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* ── Issued-by block ── */}
-                  {license.issuedByName && (
-                    <div className="border border-[#003580]/20 rounded overflow-hidden text-xs">
-                      <div className="bg-[#003580]/5 px-3.5 py-2 border-b border-[#003580]/20">
-                        <p className="text-[9px] uppercase tracking-[0.2em] text-[#003580]/60 font-bold">
-                          Issuing Authority
-                        </p>
-                      </div>
-                      <p className="px-3.5 py-3 font-semibold text-[#1a1a2e]">
-                        {license.issuedByName}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* ══ FOOTER — verify note + signature ══ */}
-                  <div className="flex items-end justify-between pt-4 border-t border-[#003580]/20 mt-2">
-                    {/* Verification note — no external image, no raw URL */}
-                    <div className="text-[10px] text-[#003580]/60 leading-relaxed">
-                      <p className="font-bold text-[#003580]/80 mb-0.5">Verify this certificate</p>
-                      <p>Visit <span className="font-semibold text-[#003580]">santrack.gov.rw/verify</span></p>
-                      <p className="mt-0.5">and enter licence number <span className="font-mono font-semibold text-[#003580]">{license.licenseNumber}</span></p>
-                    </div>
-
-                    {/* Signature block */}
-                    <div className="text-right text-[10px] text-[#1a1a2e]">
-                      <div className="w-40 border-b border-[#1a1a2e]/40 mb-1.5 ml-auto" />
-                      <p className="font-bold text-[11px]">
-                        {license.issuedByName || "Director General, Rwanda FDA"}
-                      </p>
-                      <p className="text-[#003580]/50 mt-0.5">Digitally Authenticated</p>
-                      <p className="text-[#003580]/50">SANTRACK National Registry</p>
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* ══ FOOTER BAND ══ */}
-                <div className="bg-[#003580] px-6 py-2.5 flex items-center justify-between">
-                  <p className="text-white/60 text-[9px] uppercase tracking-widest" style={{ fontFamily: "system-ui, sans-serif" }}>
-                    Issued via SANTRACK — Rwanda&apos;s Trusted Traceability Platform
-                  </p>
-                  <p className="text-white/60 text-[9px] font-mono" style={{ fontFamily: "monospace" }}>
-                    {license.licenseNumber}
-                  </p>
-                </div>
-
-              </div>{/* inner rule */}
-            </div>{/* outer border */}
+        {/* ── Certificate canvas area ── */}
+        <div className="flex-1 overflow-auto bg-slate-100/90 p-4 sm:p-6 flex justify-center items-start print:p-0 print:bg-white print:block print:overflow-visible">
+          <div ref={printRef} className="w-full flex justify-center print:block">
+            <CertificateDocument license={license} />
           </div>
         </div>
       </DialogPopup>

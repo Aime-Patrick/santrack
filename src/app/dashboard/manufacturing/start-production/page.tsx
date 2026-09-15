@@ -1,10 +1,8 @@
 import { redirect } from "next/navigation";
 
 /**
- * Retired multi-step wizard, redirected to the unified Production workspace.
- *
- * Production logging is now handled directly in one step on /dashboard/manufacturing/production.
+ * Retired multi-step wizard — production runs live on the Manufacturing pipeline.
  */
-export default function StartProductionRedirect() {
-  redirect("/dashboard/manufacturing/production");
+export default function StartProductionRedirectPage() {
+  redirect("/dashboard/manufacturing");
 }

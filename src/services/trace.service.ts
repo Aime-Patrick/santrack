@@ -256,6 +256,9 @@ export interface VerifyResult {
   recalled: boolean;
   blocked: boolean;
   verdict: string;
+  /** Public checks of this code including this one. Optional until API rollout. */
+  scanCount?: number;
+  firstScan?: boolean;
 }
 
 export const traceService = {

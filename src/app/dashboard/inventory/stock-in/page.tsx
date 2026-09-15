@@ -31,6 +31,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { QrScanInput } from "@/components/ui/qr-scanner";
+import { ScanTargetHint } from "@/components/trace/scan-target-hint";
 import { useStockInPreview, useConfirmStockIn } from "@/hooks/stock-in";
 import type { StockInReceipt } from "@/services/stock-in.service";
 import { getApiErrorMessage } from "@/lib/api";
@@ -120,13 +121,14 @@ function ScanStep({ onScan }: { onScan: (code: string) => void }) {
         </div>
         <h2 className="text-lg font-semibold">Scan incoming container</h2>
         <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-          Point your camera at the QR code on the pallet, carton, or box you are receiving.
+          Aim at the QR on the <span className="font-medium text-foreground">box, carton, or pallet</span> — not the bottle labels inside.
         </p>
       </div>
+      <ScanTargetHint expect="package" />
       <QrScanInput
         onScan={onScan}
-        placeholder="Scan or type the container code…"
-        scanning="a container (pallet, carton, or box)"
+        placeholder="Scan package QR (box / pallet)…"
+        scanning="a package (pallet, carton, or box)"
         aspect="wide"
         compact
       />
@@ -381,9 +383,9 @@ export default function StockInPage() {
           <PackageOpen className="size-4" />
         </div>
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Stock In</h1>
+          <h1 className="text-xl font-bold tracking-tight">Receive Transfer</h1>
           <p className="text-sm text-muted-foreground">
-            Receive an incoming container into your inventory.
+            Scan an incoming container from a dispatch to receive it into your inventory.
           </p>
         </div>
       </div>

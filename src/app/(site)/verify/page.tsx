@@ -29,21 +29,6 @@ import { cn } from "@/lib/utils";
  * Product catalogue barcodes (GTIN/SKU) are not unique to one pack.
  */
 
-function RwandaMark({ className }: { className?: string }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex h-6 items-center gap-1 rounded-full bg-white px-2.5 shadow-xs",
-        className,
-      )}
-    >
-      <i className="h-3.5 w-1 rounded-full bg-rwanda-blue" />
-      <i className="h-3.5 w-1 rounded-full bg-rwanda-yellow" />
-      <i className="h-3.5 w-1 rounded-full bg-rwanda-green" />
-    </span>
-  );
-}
-
 export default function ConsumerVerifyPage() {
   const t = useTranslations("verify");
   const router = useRouter();
@@ -338,7 +323,7 @@ export default function ConsumerVerifyPage() {
       {/* ── Main centered content ── */}
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center px-6 py-12">
 
-        {/* ── Brand ── */}
+        {/* Brand */}
         <header className="mb-10 flex flex-col items-center gap-3">
           <div className="text-center">
             <p className="text-lg font-semibold tracking-[0.18em] text-white/50">
@@ -347,7 +332,6 @@ export default function ConsumerVerifyPage() {
           </div>
         </header>
 
-        {/* ── Hero copy ── */}
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-extrabold leading-tight tracking-tight">
             {t("title")}

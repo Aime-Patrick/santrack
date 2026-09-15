@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, Suspense } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { type ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
@@ -248,6 +250,12 @@ function DraftDetailDialog({
         </DialogDescription>
 
         <div className="mt-4 space-y-4">
+          {license.status === "CHANGES_REQUESTED" && license.statusReason && (
+            <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">
+              <span className="font-medium">Regulator requested:</span>{" "}
+              {license.statusReason}
+            </div>
+          )}
           {categoriesLoading ? (
             <div className="flex items-center justify-center py-8">
               <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
@@ -329,22 +337,77 @@ function DraftDetailDialog({
           )}
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCancel}
-              disabled={cancelMutation.isPending || busy}
-            >
-              Cancel Application
-            </Button>
+            {license.status === "DRAFT" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+                disabled={cancelMutation.isPending || busy}
+              >
+                Cancel Application
+              </Button>
+            )}
             <Button size="sm" onClick={handleSubmit} disabled={!canSubmit}>
               {busy ? <LoaderCircle className="mr-1 size-3 animate-spin" /> : <Send className="mr-1 size-3" />}
-              Submit for Review
+              {license.status === "CHANGES_REQUESTED" ? "Resubmit for Review" : "Submit for Review"}
             </Button>
           </div>
         </div>
       </DialogPopup>
     </Dialog>
+  );
+}
+
+function ProductRegistrationActions({
+  registration,
+}: {
+  registration: ProductRegistration;
+}) {
+  const submitMutation = useSubmitProductRegistration();
+  const cancelMutation = useCancelProductRegistration();
+
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-7 px-2.5 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10"
+        disabled={submitMutation.isPending}
+        onClick={async () => {
+          try {
+            await submitMutation.mutateAsync(registration.id);
+            toast.success(
+              registration.status === "CHANGES_REQUESTED"
+                ? "Resubmitted for review"
+                : "Submitted for review",
+            );
+          } catch (error) {
+            toast.error(getApiErrorMessage(error, "Could not submit"));
+          }
+        }}
+      >
+        {registration.status === "CHANGES_REQUESTED" ? "Resubmit" : "Submit"}
+      </Button>
+      {registration.status === "DRAFT" && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs text-danger hover:bg-danger/10 hover:text-danger"
+          disabled={cancelMutation.isPending}
+          onClick={async () => {
+            if (!confirm("Cancel this draft product registration?")) return;
+            try {
+              await cancelMutation.mutateAsync(registration.id);
+              toast.success("Registration cancelled");
+            } catch (error) {
+              toast.error(getApiErrorMessage(error, "Could not cancel"));
+            }
+          }}
+        >
+          <X className="size-3" />
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -370,7 +433,7 @@ function LicenseRowActions({ license }: { license: License }) {
     }
   };
 
-  if (license.status === "DRAFT") {
+  if (license.status === "DRAFT" || license.status === "CHANGES_REQUESTED") {
     return (
       <>
         <div className="flex items-center justify-end gap-1">
@@ -381,7 +444,7 @@ function LicenseRowActions({ license }: { license: License }) {
             onClick={() => setShowDraftDetail(true)}
           >
             <Pencil className="size-3" />
-            <span>Continue</span>
+            <span>{license.status === "CHANGES_REQUESTED" ? "Fix & resubmit" : "Continue"}</span>
           </Button>
           <Button
             variant="ghost"
@@ -392,24 +455,26 @@ function LicenseRowActions({ license }: { license: License }) {
           >
             <History className="size-3" />
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs text-danger hover:text-danger hover:bg-danger/10"
-            onClick={async () => {
-              if (!confirm("Cancel this draft application?")) return;
-              try {
-                await cancelMutation.mutateAsync(license.id);
-                toast.success("Application cancelled");
-              } catch (error) {
-                toast.error(getApiErrorMessage(error, "Could not cancel application"));
-              }
-            }}
-            disabled={cancelMutation.isPending}
-            title="Cancel application"
-          >
-            <X className="size-3" />
-          </Button>
+          {license.status === "DRAFT" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs text-danger hover:text-danger hover:bg-danger/10"
+              onClick={async () => {
+                if (!confirm("Cancel this draft application?")) return;
+                try {
+                  await cancelMutation.mutateAsync(license.id);
+                  toast.success("Application cancelled");
+                } catch (error) {
+                  toast.error(getApiErrorMessage(error, "Could not cancel application"));
+                }
+              }}
+              disabled={cancelMutation.isPending}
+              title="Cancel application"
+            >
+              <X className="size-3" />
+            </Button>
+          )}
         </div>
 
         <DraftDetailDialog
@@ -468,13 +533,14 @@ function LicenseRowActions({ license }: { license: License }) {
           size="sm"
           className={cn(
             "h-7 px-2.5 text-xs gap-1.5",
-            isUnderReview && "border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5 hover:bg-amber-500/10"
+            isUnderReview &&
+              "border-warning/40 bg-warning/10 text-warning-foreground hover:bg-warning/15",
           )}
           onClick={() => setShowTracker(true)}
         >
           {isUnderReview ? (
             <>
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+              <span className="size-1.5 animate-ping rounded-full bg-warning" />
               <span>Track</span>
             </>
           ) : (
@@ -667,9 +733,26 @@ function LicenseDetailDialog({
 }
 
 export default function UnifiedLicensingHubPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+          Loading licences…
+        </div>
+      }
+    >
+      <LicensingHubWorkspace />
+    </Suspense>
+  );
+}
+
+function LicensingHubWorkspace() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: me } = useMe();
   const { data: licenses, isLoading: licensesLoading } = useMyLicenses();
-  const { data: productRegistrations, isLoading: prodRegLoading } = useMyProductRegistrations();
+  const { data: productRegistrations, isLoading: prodRegLoading } =
+    useMyProductRegistrations();
 
   const canManageCategories =
     me?.role === "SYSTEM_ADMIN" ||
@@ -680,6 +763,21 @@ export default function UnifiedLicensingHubPage() {
   const [showPremiseDialog, setShowPremiseDialog] = useState(false);
   const [showProductDialog, setShowProductDialog] = useState(false);
   const [showCategoriesDialog, setShowCategoriesDialog] = useState(false);
+
+  const licenseTabs = ["business", "premises", "products"] as const;
+  type LicenseTab = (typeof licenseTabs)[number];
+  const [tab, setTab] = useState<LicenseTab>(() => {
+    const wanted = searchParams.get("tab");
+    return licenseTabs.includes(wanted as LicenseTab)
+      ? (wanted as LicenseTab)
+      : "business";
+  });
+
+  const onTabChange = (next: string) => {
+    if (!licenseTabs.includes(next as LicenseTab)) return;
+    setTab(next as LicenseTab);
+    router.replace(`/dashboard/licenses?tab=${next}`, { scroll: false });
+  };
 
   // Group licenses into Business Licenses vs Premise Registrations
   const businessLicenses = licenses?.filter((l) => !l.facilityId && !l.categoryCode.includes("PREMISE")) ?? [];
@@ -748,7 +846,7 @@ export default function UnifiedLicensingHubPage() {
       header: "Premise / Facility",
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
-          <Building2 className="size-4 text-emerald-600 shrink-0" />
+          <Building2 className="size-4 shrink-0 text-success" />
           <div>
             <p className="font-medium text-foreground text-sm">
               {row.original.facilityName || row.original.licenseNumber}
@@ -810,7 +908,7 @@ export default function UnifiedLicensingHubPage() {
       header: "Market Auth Reg No.",
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
-          <Package className="size-4 text-blue-600 shrink-0" />
+          <Package className="size-4 shrink-0 text-primary" />
           <span className="font-mono font-medium text-foreground text-sm">
             {row.getValue("registrationNumber")}
           </span>
@@ -854,41 +952,59 @@ export default function UnifiedLicensingHubPage() {
         <span className="text-xs text-muted-foreground">{row.original.expiresOn ?? "—"}</span>
       ),
     },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => {
+        const reg = row.original;
+        if (reg.status !== "DRAFT" && reg.status !== "CHANGES_REQUESTED") {
+          return null;
+        }
+        return <ProductRegistrationActions registration={reg} />;
+      },
+    },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Unified Hub Header */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-white shadow-sm">
-            <ShieldCheck className="size-5" />
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
+            <ShieldCheck className="size-4" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Licensing & Regulatory Hub</h1>
-            <p className="text-xs text-muted-foreground">
-              Unified compliance center: Business operating permits, premise licenses & product market authorizations
+            <h1 className="text-xl font-bold tracking-tight">Licences &amp; permits</h1>
+            <p className="text-sm text-muted-foreground">
+              Operating licences, premise registrations, and product authorizations.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link href="/dashboard/compliance" />}
+          >
+            View standing
+          </Button>
           {canManageCategories && (
             <Button
               variant="outline"
-              className="shadow-sm gap-1.5 text-xs h-9"
+              size="sm"
+              className="gap-1.5"
               onClick={() => setShowCategoriesDialog(true)}
             >
               <Layers className="size-4 text-primary" />
-              Manage Categories
+              Manage categories
             </Button>
           )}
 
-          {/* Unified "+ Apply / Register" Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <Button className="shadow-sm">
+                <Button size="sm">
                   <Plus className="mr-1.5 size-4" /> Apply / Register
                   <ChevronDown className="ml-1.5 size-3.5 opacity-70" />
                 </Button>
@@ -901,8 +1017,8 @@ export default function UnifiedLicensingHubPage() {
               >
                 <FileText className="mr-2 size-4 text-primary" />
                 <div>
-                  <p className="text-sm font-medium">Business Operating License</p>
-                  <p className="text-[11px] text-muted-foreground">Manufacturing, Trade, Warehousing</p>
+                  <p className="text-sm font-medium">Business operating licence</p>
+                  <p className="text-[11px] text-muted-foreground">Manufacturing, trade, warehousing</p>
                 </div>
               </DropdownMenuItem>
 
@@ -910,10 +1026,10 @@ export default function UnifiedLicensingHubPage() {
                 className="cursor-pointer py-2"
                 onClick={() => setShowPremiseDialog(true)}
               >
-                <Building2 className="mr-2 size-4 text-emerald-600" />
+                <Building2 className="mr-2 size-4 text-success" />
                 <div>
-                  <p className="text-sm font-medium">Premise Registration (Inyubako)</p>
-                  <p className="text-[11px] text-muted-foreground">Factory plant, MCC, slaughterhouse</p>
+                  <p className="text-sm font-medium">Premise registration</p>
+                  <p className="text-[11px] text-muted-foreground">Factory, MCC, processing site</p>
                 </div>
               </DropdownMenuItem>
 
@@ -921,10 +1037,10 @@ export default function UnifiedLicensingHubPage() {
                 className="cursor-pointer py-2"
                 onClick={() => setShowProductDialog(true)}
               >
-                <Package className="mr-2 size-4 text-blue-600" />
+                <Package className="mr-2 size-4 text-primary" />
                 <div>
-                  <p className="text-sm font-medium">Regulated Product Registration</p>
-                  <p className="text-[11px] text-muted-foreground">Market auth, CoA lab test & RSB</p>
+                  <p className="text-sm font-medium">Product registration</p>
+                  <p className="text-[11px] text-muted-foreground">Market auth, CoA &amp; label</p>
                 </div>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -932,17 +1048,16 @@ export default function UnifiedLicensingHubPage() {
         </div>
       </div>
 
-      {/* Unified Tabbed Layout */}
-      <Tabs defaultValue="business" className="space-y-4">
+      <Tabs value={tab} onValueChange={onTabChange} className="space-y-4">
         <TabsList className="bg-muted/60 p-1">
           <TabsTrigger value="business" className="gap-2 text-xs">
-            <ShieldCheck className="size-3.5" /> Business Licenses ({businessLicenses.length})
+            <ShieldCheck className="size-3.5" /> Business ({businessLicenses.length})
           </TabsTrigger>
           <TabsTrigger value="premises" className="gap-2 text-xs">
-            <Building2 className="size-3.5" /> Premise Registrations ({premiseLicenses.length})
+            <Building2 className="size-3.5" /> Premises ({premiseLicenses.length})
           </TabsTrigger>
           <TabsTrigger value="products" className="gap-2 text-xs">
-            <Package className="size-3.5" /> Product Registrations ({productRegistrations?.length ?? 0})
+            <Package className="size-3.5" /> Products ({productRegistrations?.length ?? 0})
           </TabsTrigger>
         </TabsList>
 

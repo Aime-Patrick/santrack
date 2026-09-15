@@ -261,9 +261,12 @@ export const identityPoolService = {
 
     for (let i = 0; i < rows.length; i += BATCH) {
       const batch = rows.slice(i, i + BATCH);
+      const { renderTrustQrBlob } = await import("@/lib/trust-qr");
+      const { verifyUrlForPayload } = await import("@/lib/label-studio");
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
       const blobs = await Promise.all(
         batch.map(({ payload }) =>
-          barcodeService.renderBlob({ symbology: "QR", value: payload, scale: 6, format: "png" }),
+          renderTrustQrBlob(verifyUrlForPayload(payload, origin), { size: 720, margin: 1 }),
         ),
       );
       blobs.forEach((blob, j) => {

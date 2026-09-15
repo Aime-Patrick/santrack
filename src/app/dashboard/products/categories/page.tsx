@@ -204,17 +204,26 @@ export default function ProductCategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
-          <Tags className="size-4" />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
+            <Tags className="size-4" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Categories &amp; brands</h1>
+            <p className="text-sm text-muted-foreground">
+              Taxonomy and marks products pick from when you add them to the catalogue.
+            </p>
+          </div>
         </div>
-        <div className="flex-1">
-          <h1 className="text-xl font-bold tracking-tight">Catalogue</h1>
-          <p className="text-sm text-muted-foreground">
-            What a product is, and whose mark it carries — the two lists the
-            product form picks from
-          </p>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          nativeButton={false}
+          render={<Link href="/dashboard/products" />}
+        >
+          Back to products
+        </Button>
       </div>
 
       <Tabs defaultValue="categories">

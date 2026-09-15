@@ -166,6 +166,11 @@ function CaseDetailSheet({ caseId, onOpenChange }: { caseId: number | null; onOp
   const [referralReason, setReferralReason] = useState("");
   const [inspectionNotes, setInspectionNotes] = useState("");
   const nextStatus = caseRecord?.status === "RESOLVED" ? "CLOSED" : "RESOLVED";
+  const canAskBusiness =
+    !!caseRecord &&
+    caseRecord.status !== "CLOSED" &&
+    caseRecord.status !== "AWAITING_BUSINESS" &&
+    caseRecord.status !== "RESOLVED";
 
   // Linked-records timeline: one merged ledger per subject the case touches.
   const [ledgerSubject, setLedgerSubject] = useState<LedgerSubject>("case");
@@ -340,7 +345,26 @@ function CaseDetailSheet({ caseId, onOpenChange }: { caseId: number | null; onOp
               )}
             </div>
             {caseRecord.status !== "CLOSED" && (
-              <div className="border-t border-border p-4">
+              <div className="space-y-2 border-t border-border p-4">
+                {canAskBusiness && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    disabled={changeStatus.isPending}
+                    onClick={() =>
+                      changeStatus.mutate({
+                        id: caseRecord.id,
+                        status: "AWAITING_BUSINESS",
+                        note: "Please submit corrective-action evidence.",
+                      })
+                    }
+                  >
+                    {changeStatus.isPending ? (
+                      <LoaderCircle className="mr-2 size-4 animate-spin" />
+                    ) : null}
+                    Awaiting business
+                  </Button>
+                )}
                 <Button className="w-full" disabled={changeStatus.isPending} onClick={() => changeStatus.mutate({ id: caseRecord.id, status: nextStatus })}>
                   {changeStatus.isPending ? <LoaderCircle className="mr-2 size-4 animate-spin" /> : <CheckCircle2 className="mr-2 size-4" />}
                   {nextStatus === "CLOSED" ? "Close case" : "Mark ready to close"}

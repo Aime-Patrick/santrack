@@ -110,7 +110,7 @@ export function useDecideProductRegistration() {
     }: {
       id: number;
       decision: {
-        decision: "APPROVE" | "REJECT";
+        decision: "APPROVE" | "REQUEST_CHANGES" | "REJECT";
         reason?: string;
         expiresOn?: string;
       };
@@ -131,6 +131,7 @@ export function productStatusColor(status: ProductRegistrationStatus): string {
     case "REJECTED":
     case "CANCELLED":
       return "border-red-600/30 bg-red-500/10 text-red-700 dark:text-red-400";
+    case "CHANGES_REQUESTED":
     case "SUSPENDED":
     case "EXPIRED":
       return "border-amber-600/30 bg-amber-500/10 text-amber-700 dark:text-amber-400";
@@ -150,6 +151,8 @@ export function productStatusLabel(status: ProductRegistrationStatus): string {
       return "Submitted";
     case "REJECTED":
       return "Rejected";
+    case "CHANGES_REQUESTED":
+      return "Changes requested";
     case "SUSPENDED":
       return "Suspended";
     case "EXPIRED":

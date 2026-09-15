@@ -78,6 +78,28 @@ body {
   border-color: var(--color-border);
 }
 
+@keyframes trust-seal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.82) rotate(-6deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes trust-seal-ring {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.28);
+  }
+}
+
 /* ── Hide scrollbars globally while keeping scroll functionality ── */
 * {
   scrollbar-width: none;
@@ -110,6 +132,31 @@ body {
 
 [data-slot="sidebar-content"]::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.40);
+}
+
+/* ── Label studio canvas: sidebar-style thin scrollbar ── */
+[data-label-viewport] {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(95, 107, 122, 0.28) transparent;
+}
+
+[data-label-viewport]::-webkit-scrollbar {
+  display: block;
+  width: 3px;
+  height: 3px;
+}
+
+[data-label-viewport]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-label-viewport]::-webkit-scrollbar-thumb {
+  background-color: rgba(95, 107, 122, 0.28);
+  border-radius: 999px;
+}
+
+[data-label-viewport]::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(95, 107, 122, 0.45);
 }
 
 /* ── Animated Rwanda flag border ── */
@@ -189,3 +236,82 @@ body {
     transform: translateY(115px);
   }
 }
+
+/* ── Certificate print styles (A4 landscape) ── */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 6mm;
+  }
+
+  /* Reset document background & overflow */
+  html,
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide entire application layout when printing */
+  main,
+  aside,
+  nav,
+  header,
+  footer,
+  .print\:hidden,
+  [data-slot="sidebar"],
+  [role="presentation"],
+  .fixed.inset-0.bg-black\/80 {
+    display: none !important;
+  }
+
+  /* When the certificate modal is open, ensure ONLY the certificate is rendered */
+  [role="dialog"] {
+    position: static !important;
+    transform: none !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    display: block !important;
+  }
+
+  /* Certificate document fills the landscape page perfectly without spillover */
+  #santrack-certificate-document {
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+
+  /* Crisp image and QR rendering */
+  img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Ensure colors and borders print faithfully */
+  * {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+}
+
+

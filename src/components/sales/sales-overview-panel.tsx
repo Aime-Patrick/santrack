@@ -106,32 +106,61 @@ const columns: ColumnDef<TableFeatures, Sale>[] = [
   },
 ];
 
-export function SalesOverviewPanel() {
+export function SalesOverviewPanel({ preferPos = false }: { preferPos?: boolean }) {
   const { data, isLoading } = useSales();
   const sales = data?.content ?? [];
   const total = data?.total ?? 0;
 
   const businessSales = sales.filter((s) => s.type === "BUSINESS").length;
   const consumerSales = sales.filter((s) => s.type === "CONSUMER").length;
-  const totalRevenue = sales.reduce((sum, s) => sum + (s.totalAmount ? Number(s.totalAmount) : 0), 0);
+  const totalRevenue = sales.reduce(
+    (sum, s) => sum + (s.totalAmount ? Number(s.totalAmount) : 0),
+    0,
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-prose text-sm text-muted-foreground">
-          Record a sale now (scan at the till, or sell by piece / carton / box to
-          another business). For quotes and invoices, use the Orders tab.
+          Completed sales that already left stock. For the till, use Point of sale. For quotes and
+          invoices, use the tabs above.
         </p>
-        <Button render={<Link href="/dashboard/sales/new" />}>
-          <Plus className="mr-2 size-4" />
-          New Sale
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {preferPos ? (
+            <>
+              <Button nativeButton={false} render={<Link href="/dashboard/sales/pos" />}>
+                <Plus className="mr-2 size-4" />
+                Open point of sale
+              </Button>
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={<Link href="/dashboard/sales/new" />}
+              >
+                Business sale
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button nativeButton={false} render={<Link href="/dashboard/sales/new" />}>
+                <Plus className="mr-2 size-4" />
+                New sale
+              </Button>
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={<Link href="/dashboard/sales/pos" />}
+              >
+                Point of sale
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <MetricCard
-          title="Total Sales"
+          title="Total sales"
           value={total}
           icon={<ShoppingCart className="size-4" />}
           iconBg="bg-primary"
@@ -145,16 +174,16 @@ export function SalesOverviewPanel() {
           caption="Total sales value"
         />
         <MetricCard
-          title="Business Sales"
+          title="Business sales"
           value={businessSales}
           badge={total > 0 ? `${Math.round((businessSales / total) * 100)}%` : undefined}
           badgeType="neutral"
           icon={<Building2 className="size-4" />}
           iconBg="bg-primary"
-          caption="Dispatch triggered"
+          caption="To another business"
         />
         <MetricCard
-          title="Consumer Sales"
+          title="Consumer sales"
           value={consumerSales}
           badge={total > 0 ? `${Math.round((consumerSales / total) * 100)}%` : undefined}
           badgeType="neutral"
@@ -164,22 +193,35 @@ export function SalesOverviewPanel() {
         />
       </div>
 
-      {/* Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Sales History</CardTitle>
-          <CardDescription>{total} sales recorded</CardDescription>
+          <CardTitle>Sales history</CardTitle>
+          <CardDescription>
+            {total} sale{total === 1 ? "" : "s"} recorded
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex h-32 items-center justify-center text-muted-foreground">
-              Loading sales...
+              Loading sales…
+            </div>
+          ) : sales.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-12 text-center">
+              <ShoppingCart className="size-8 text-border" />
+              <div>
+                <p className="text-sm font-medium text-foreground">No sales recorded yet</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {preferPos
+                    ? "Open Point of sale to scan items at the counter."
+                    : "Record a sale to another business, or use Point of sale for the till."}
+                </p>
+              </div>
             </div>
           ) : (
             <DataTable
               columns={columns}
               data={sales}
-              filterPlaceholder="Search by reference..."
+              filterPlaceholder="Search by reference…"
               filterColumn="reference"
               pageSize={10}
               noBorder

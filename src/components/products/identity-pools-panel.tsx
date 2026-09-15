@@ -13,6 +13,7 @@ import {
   ImageDown,
   Sparkles,
   Printer,
+  Plus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -46,9 +55,11 @@ import { cn } from "@/lib/utils";
 export function IdentityPoolsPanel({
   productId,
   productName,
+  onPrepare,
 }: {
   productId: number;
   productName: string;
+  onPrepare: () => void;
 }) {
   const { data, isLoading, refetch, isRefetching } = useIdentityPools(productId);
   const pools = data?.content ?? [];
@@ -56,15 +67,14 @@ export function IdentityPoolsPanel({
 
   return (
     <div className="space-y-6">
-      <RequestIdentitiesCard productId={productId} productName={productName} />
-
       <Card>
         <CardHeader className="pb-3 border-b">
           <div className="flex items-center justify-between gap-3">
             <div>
               <CardTitle className="text-base font-semibold">Code runs</CardTitle>
               <CardDescription>
-                Download labels, then confirm them on a production run.
+                Prepared identity pools for this product. Print labels, then confirm
+                them on a production run.
               </CardDescription>
             </div>
             <Button
@@ -87,7 +97,7 @@ export function IdentityPoolsPanel({
               <Loader2 className="size-4 animate-spin text-primary" /> Loading…
             </div>
           ) : pools.length === 0 ? (
-            <EmptyState />
+            <EmptyState onPrepare={onPrepare} />
           ) : (
             <Table>
               <TableHeader>
@@ -112,12 +122,16 @@ export function IdentityPoolsPanel({
   );
 }
 
-function RequestIdentitiesCard({
+export function PrepareCodesDialog({
   productId,
   productName,
+  open,
+  onOpenChange,
 }: {
   productId: number;
   productName: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
   const [count, setCount] = useState("");
   const request = useRequestIdentities();
@@ -125,41 +139,56 @@ function RequestIdentitiesCard({
   const parsed = Number(count);
   const valid = Number.isInteger(parsed) && parsed > 0;
 
+  const resetAndClose = () => {
+    setCount("");
+    onOpenChange(false);
+  };
+
   return (
-    <Card className="border-border shadow-xs">
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white shadow-xs">
-            <QrCode className="size-4" />
-          </div>
-          <div>
-            <CardTitle className="text-base font-semibold">
-              Generate codes
-            </CardTitle>
-            <CardDescription>
-              Mint printable identities for {productName}.
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) setCount("");
+        onOpenChange(next);
+      }}
+    >
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
+              <QrCode className="size-4" />
+            </span>
+            Prepare codes
+          </DialogTitle>
+          <DialogDescription>
+            Mint a new pool of printable QR identities for {productName}. These
+            are not stock yet — print labels, then use Produce on a manufacturing
+            run.
+          </DialogDescription>
+        </DialogHeader>
+
         <form
-          className="flex flex-wrap items-end gap-3"
+          className="space-y-4 py-1"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!valid) return;
+            if (!valid || request.isPending) return;
             request.mutate(
               { productId, count: parsed },
-              { onSuccess: () => setCount("") },
+              {
+                onSuccess: () => {
+                  setCount("");
+                  onOpenChange(false);
+                },
+              },
             );
           }}
         >
-          <div className="w-44 space-y-1.5">
-            <Label htmlFor="count" className="text-xs font-medium">
-              How many
+          <div className="space-y-1.5">
+            <Label htmlFor="prepare-count" className="text-xs font-medium">
+              How many codes
             </Label>
             <Input
-              id="count"
+              id="prepare-count"
               inputMode="numeric"
               placeholder="e.g. 5000"
               value={count}
@@ -167,26 +196,37 @@ function RequestIdentitiesCard({
                 setCount(e.target.value.replace(/[^0-9]/g, ""))
               }
               className="h-10 font-mono"
+              autoFocus
             />
+            <p className="text-[11px] leading-4 text-muted-foreground">
+              Each code is a permanent unit identity (one QR per physical unit).
+            </p>
           </div>
-          <Button
-            type="submit"
-            disabled={!valid || request.isPending}
-            className="h-10"
-          >
-            {request.isPending ? (
-              <>
-                <Loader2 className="mr-2 size-4 animate-spin" /> Minting…
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 size-4" /> Generate
-              </>
-            )}
-          </Button>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={resetAndClose}
+              disabled={request.isPending}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!valid || request.isPending}>
+              {request.isPending ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" /> Preparing…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 size-4" /> Prepare codes
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -302,7 +342,7 @@ function PoolRow({ pool, slug }: { pool: IdentityPool; slug: string }) {
             className="h-8 px-2.5 text-xs"
             disabled={!ready}
             nativeButton={false}
-            render={<Link href="/dashboard/manufacturing/production" />}
+            render={<Link href="/dashboard/manufacturing" />}
           >
             <Factory className="size-3.5" />
             <span className="ml-1.5">Produce</span>
@@ -344,7 +384,7 @@ function PoolStatusBadge({ pool }: { pool: IdentityPool }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({ onPrepare }: { onPrepare: () => void }) {
   return (
     <div className="py-10 text-center">
       <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary-light">
@@ -352,8 +392,12 @@ function EmptyState() {
       </div>
       <p className="font-medium">No code runs yet</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        Enter a quantity above to generate identities.
+        Prepare a pool of QR identities, then print labels for production.
       </p>
+      <Button size="sm" className="mt-4 gap-1.5" onClick={onPrepare}>
+        <Plus className="size-3.5" />
+        Prepare codes
+      </Button>
     </div>
   );
 }

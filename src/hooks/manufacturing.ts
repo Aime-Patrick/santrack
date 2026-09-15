@@ -55,10 +55,9 @@ export function useCompleteProduction() {
     mutationFn: ({ id, data }: { id: number; data?: { producedQuantity?: number; expiresOn?: string; notes?: string } }) =>
       productionService.complete(id, data),
     onSuccess: () => {
-      // Completion moves the lot to PENDING_QC, so the batch views are stale too.
       qc.invalidateQueries({ queryKey: ["production-orders"] });
       qc.invalidateQueries({ queryKey: ["batches"] });
-      toast.success("Production completed — lot awaiting quality control");
+      toast.success("Production run completed");
     },
     onError: (e) => toast.error(apiMessage(e, "Could not complete the run")),
   });

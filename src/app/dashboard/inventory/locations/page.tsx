@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { type ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Plus, MapPin, CheckCircle, XCircle } from "lucide-react";
+import { ArrowUpDown, Plus, MapPin, CheckCircle, XCircle, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,8 @@ import { Dialog, DialogPopup, DialogHeader, DialogFooter, DialogTitle, DialogDes
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLocations, useCreateLocation } from "@/hooks/locations";
 import type { Location } from "@/services/location.service";
+import { barcodeService } from "@/services/barcode.service";
+import { toast } from "sonner";
 
 const typeColors: Record<string, string> = {
   FACTORY: "border-transparent bg-primary text-white",
@@ -81,14 +83,77 @@ const LOCATION_TYPES = [
   { value: "VEHICLE", label: "Vehicle" },
 ];
 
+/**
+ * Downloads a ZIP of Code 128 bay labels — one PNG per active location.
+ *
+ * Each label encodes the LOC-XXXXXX code, which the scan resolver recognises
+ * as a LOCATION kind. Sticking the printed label on a bay or shelf makes every
+ * dispatch, relocation and regulator inspection flow work with a single scan.
+ */
+async function downloadLocationLabels(locations: Location[]): Promise<void> {
+  const active = locations.filter((l) => l.active);
+  if (active.length === 0) {
+    toast.error("No active locations to print");
+    return;
+  }
+
+  const { default: JSZip } = await import("jszip");
+  const zip = new JSZip();
+
+  const BATCH = 10;
+  for (let i = 0; i < active.length; i += BATCH) {
+    const chunk = active.slice(i, i + BATCH);
+    const blobs = await Promise.all(
+      chunk.map((loc) =>
+        barcodeService.renderBlob({
+          symbology: "CODE_128",
+          value: loc.code || `LOC-${loc.id}`,
+          scale: 3,
+          height: 20,
+          showText: true,
+          format: "png",
+        }),
+      ),
+    );
+    blobs.forEach((blob, j) => {
+      const locCode = chunk[j].code || `LOC-${chunk[j].id}`;
+      zip.file(`${locCode}-${chunk[j].name.replace(/\s+/g, "_")}.png`, blob);
+    });
+
+  }
+
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+  const url = URL.createObjectURL(zipBlob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "location-labels.zip";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast.success(`Downloaded ${active.length} location label${active.length !== 1 ? "s" : ""}`);
+}
+
 export default function LocationsPage() {
   const { data, isLoading } = useLocations();
   const createLocation = useCreateLocation();
   const [open, setOpen] = useState(false);
+  const [printing, setPrinting] = useState(false);
   const locations = data ?? [];
   const total = locations.length;
   const activeCount = locations.filter((l) => l.active).length;
   const warehouseCount = locations.filter((l) => l.type === "WAREHOUSE" || l.type === "DISTRIBUTION_CENTER").length;
+
+  const handlePrintLabels = async () => {
+    setPrinting(true);
+    try {
+      await downloadLocationLabels(locations);
+    } catch {
+      toast.error("Could not generate location labels");
+    } finally {
+      setPrinting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -102,7 +167,17 @@ export default function LocationsPage() {
             <p className="text-sm text-muted-foreground">Manage physical locations across your organization.</p>
           </div>
         </div>
-        <Button onClick={() => setOpen(true)}><Plus className="mr-2 size-4" /> Add location</Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => void handlePrintLabels()}
+            disabled={printing || locations.length === 0}
+          >
+            <Printer className="mr-2 size-4" />
+            {printing ? "Generating…" : "Print Bay Labels"}
+          </Button>
+          <Button onClick={() => setOpen(true)}><Plus className="mr-2 size-4" /> Add location</Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

@@ -24,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { QrScanInput } from "@/components/ui/qr-scanner";
+import { ScanTargetHint } from "@/components/trace/scan-target-hint";
 import { SymbologyPicker } from "@/components/barcode/symbology-picker";
 import { useBarcodePreview } from "@/hooks/barcodes";
 import { useLocations } from "@/hooks/locations";
@@ -262,13 +263,19 @@ export function PackDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={`Pack into ${container.code}`}
-      description="Scan each item going in. They keep their own identities — packing records containment, it does not merge them."
-      confirmLabel={`Pack ${scanned.length} item${scanned.length === 1 ? "" : "s"}`}
+      description="Scan each UNIT on the bottle going into this package. Packing only records “inside” — every bottle keeps its own QR."
+      confirmLabel={`Pack ${scanned.length} unit${scanned.length === 1 ? "" : "s"}`}
       disabled={scanned.length === 0}
       pending={pending}
       onConfirm={() => onConfirm(scanned)}
     >
-      <QrScanInput onScan={add} placeholder="Scan or type an item code…" />
+      <ScanTargetHint expect="unit" />
+      <QrScanInput
+        compact
+        onScan={add}
+        placeholder="Scan unit QR on the bottle…"
+        scanning="a unit (bottle), not the box"
+      />
 
       {scanned.length > 0 && (
         <div className="max-h-52 space-y-1.5 overflow-y-auto rounded-lg border border-border p-2">

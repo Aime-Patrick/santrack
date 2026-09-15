@@ -3,10 +3,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { analyticsService } from "@/services/analytics.service";
 
-export function useExecutiveSummary() {
+export function useExecutiveSummary(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["analytics", "executive"],
     queryFn: analyticsService.executive,
+    enabled: options?.enabled ?? true,
   });
 }
 

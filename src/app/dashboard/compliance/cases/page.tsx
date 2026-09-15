@@ -49,17 +49,27 @@ export default function ComplianceCasesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
-          <ScrollText className="size-4" />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
+            <ScrollText className="size-4" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Regulatory cases</h1>
+            <p className="text-sm text-muted-foreground">
+              What the regulator opened against this business — and what it is
+              waiting on from you.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">Regulatory cases</h1>
-          <p className="text-sm text-muted-foreground">
-            What the regulator has opened against this business — and what it is
-            waiting on from you.
-          </p>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          nativeButton={false}
+          render={<Link href="/dashboard/compliance" />}
+        >
+          Compliance overview
+        </Button>
       </div>
 
       <BusinessCaseInbox />

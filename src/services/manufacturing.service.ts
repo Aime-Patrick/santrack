@@ -18,6 +18,7 @@ export interface ProductionOrder {
   completedAt: string | null;
   batchId: number | null;
   batchCode: string | null;
+  batchStatus: string | null;
   notes: string;
   createdAt: string;
   materials?: MaterialRow[];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AlertTriangle, Loader2, X } from "lucide-react";
 import { api, getApiErrorMessage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 type Issue = "SUSPECTED_COUNTERFEIT" | "ILLNESS" | "DAMAGED" | "EXPIRED" | "OTHER";
 
-export function ReportProductIssue({ token }: { token: string }) {
+export function ReportProductIssue({ token, compact = false }: { token: string; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [issue, setIssue] = useState<Issue>("SUSPECTED_COUNTERFEIT");
   const [note, setNote] = useState("");
@@ -18,8 +18,14 @@ export function ReportProductIssue({ token }: { token: string }) {
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [reference, setReference] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
 
   async function submit() {
+    if (issue === "OTHER" && !note.trim()) {
+      setError("Please describe the issue.");
+      setState("error");
+      return;
+    }
     setState("sending"); setError("");
     const form = new FormData();
     form.set("token", token); form.set("issue", issue);
@@ -56,16 +62,19 @@ export function ReportProductIssue({ token }: { token: string }) {
     return (
       <Button
         onClick={() => setOpen(true)}
-        className="h-12 w-full rounded-2xl bg-primary text-xs font-bold text-white hover:bg-primary-dark"
+        variant={compact ? "outline" : "default"}
+        className={compact
+          ? "h-8 w-auto rounded-md border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-600 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+          : "h-12 w-full rounded-2xl bg-primary text-xs font-bold text-white hover:bg-primary-dark"}
       >
-        <AlertTriangle className="mr-2 size-4" />
-        Report a problem with this product
+        {!compact ? <AlertTriangle className="mr-2 size-4" /> : null}
+        {compact ? "Report a problem" : "Report a problem with this product"}
       </Button>
     );
   }
 
   return (
-    <div className="space-y-3 text-left">
+    <div className={compact ? "w-full max-w-lg space-y-3 text-left" : "space-y-3 text-left"}>
       <div className="flex items-center justify-between">
         <p className="text-sm font-bold text-slate-900">Report a product problem</p>
         <Button
@@ -96,21 +105,45 @@ export function ReportProductIssue({ token }: { token: string }) {
       <Textarea
         value={note}
         onChange={(event) => setNote(event.target.value)}
-        placeholder="What happened? (optional)"
+        placeholder={issue === "OTHER" ? "Please describe the issue *" : "What happened? (optional)"}
+        required={issue === "OTHER"}
         className="min-h-20 rounded-xl text-base"
       />
+      {issue === "OTHER" && !note.trim() ? (
+        <p className="text-xs font-medium text-danger">Describe the issue so we can review it.</p>
+      ) : null}
       <Input
         value={locationHint}
         onChange={(event) => setLocationHint(event.target.value)}
         placeholder="Area or shop name (optional)"
         className="rounded-xl text-base"
       />
-      <Input
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
-        className="rounded-xl text-base"
-      />
+      <div className="space-y-2">
+        <div>
+          <p className="text-sm font-semibold text-slate-800">Photo of the product <span className="font-normal text-slate-400">(optional)</span></p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">Add a clear photo of the label, packaging, damage, or product if it helps explain the problem.</p>
+        </div>
+        <div className="flex items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-3 py-2.5">
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
+            className="sr-only"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="h-9 shrink-0 rounded-lg bg-white text-xs font-semibold"
+            onClick={() => photoInputRef.current?.click()}
+          >
+            Choose photo
+          </Button>
+          <span className="min-w-0 truncate text-xs text-slate-500">
+            {photo ? photo.name : "No photo selected"}
+          </span>
+        </div>
+      </div>
       {error && <p className="text-sm font-semibold text-danger">{error}</p>}
       <div className="flex gap-2 pt-1">
         <Button

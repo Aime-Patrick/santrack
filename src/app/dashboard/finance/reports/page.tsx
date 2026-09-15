@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, BarChart3, TrendingUp, TrendingDown, Scale, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -109,16 +110,26 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-white">
             <BarChart3 className="size-4" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Finance Reports</h1>
-            <p className="text-sm text-muted-foreground">Trial balance, balance sheet, and receivables.</p>
+            <h1 className="text-xl font-bold tracking-tight">Finance reports</h1>
+            <p className="text-sm text-muted-foreground">
+              Trial balance, balance sheet, and receivables.
+            </p>
           </div>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          nativeButton={false}
+          render={<Link href="/dashboard/finance/accounts" />}
+        >
+          Accounting
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

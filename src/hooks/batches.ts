@@ -4,10 +4,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { batchService, type CreateBatchInput } from "@/services/batch.service";
 import { toast } from "sonner";
 
-export function useBatches(productId?: number) {
+export function useBatches(productId?: number, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["batches", productId],
     queryFn: () => batchService.list(productId),
+    enabled: options?.enabled ?? true,
   });
 }
 

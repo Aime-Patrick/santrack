@@ -1,17 +1,22 @@
-import type { ButtonHTMLAttributes } from "react";
-import { LoaderCircle } from "lucide-react";
+import type { ButtonHTMLAttributes, ComponentProps } from "react";
+import Link from "next/link";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 
 /**
  * The one primary-action style for every auth form (login, register,
  * forgot-password, reset-password, change-password): the Rwanda flag
  * gradient. Kept in one place so no form drifts into its own button.
  */
-export const AUTH_PRIMARY_BUTTON =
-  "w-full h-11 sm:h-12 rounded-lg font-semibold text-white text-sm sm:text-base " +
-  "tracking-wide bg-gradient-to-r from-[#0066d6] via-[#10b981] via-60% to-[#eab308] " +
+const AUTH_PRIMARY_ACTION =
+  "rounded-lg font-semibold text-white tracking-wide " +
+  "bg-gradient-to-r from-[#0066d6] via-[#10b981] via-60% to-[#eab308] " +
   "hover:opacity-95 hover:shadow-lg hover:shadow-sky-500/20 active:scale-[0.99] " +
   "transition-all duration-200 flex items-center justify-center " +
-  "cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed";
+  "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066d6] focus-visible:ring-offset-2";
+
+export const AUTH_PRIMARY_BUTTON =
+  `h-11 w-full text-sm sm:h-12 sm:text-base ${AUTH_PRIMARY_ACTION} ` +
+  "disabled:cursor-not-allowed disabled:opacity-70";
 
 interface AuthPrimaryButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
@@ -37,5 +42,29 @@ export function AuthPrimaryButton({
         children
       )}
     </button>
+  );
+}
+
+type AuthPrimaryLinkProps = ComponentProps<typeof Link> & {
+  compact?: boolean;
+  showBackIcon?: boolean;
+};
+
+/** Rwanda-gradient navigation action for links that should match auth submit buttons. */
+export function AuthPrimaryLink({
+  compact = false,
+  showBackIcon = false,
+  className = "",
+  children,
+  ...props
+}: AuthPrimaryLinkProps) {
+  return (
+    <Link
+      {...props}
+      className={`${compact ? "h-9 px-4 text-xs" : "h-11 w-full px-5 text-sm sm:h-12 sm:text-base"} ${AUTH_PRIMARY_ACTION} ${className}`}
+    >
+      {showBackIcon ? <ArrowLeft className="mr-1.5 size-3.5" aria-hidden="true" /> : null}
+      {children}
+    </Link>
   );
 }

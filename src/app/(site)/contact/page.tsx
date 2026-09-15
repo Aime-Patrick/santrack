@@ -36,6 +36,7 @@ export default function ContactPage() {
   const [phone, setPhone] = useState("");
   const [organization, setOrganization] = useState("");
   const [industry, setIndustry] = useState("Food & Beverage");
+  const [industryOther, setIndustryOther] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -43,6 +44,10 @@ export default function ContactPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !message) {
+      toast.error(t("requiredFields"));
+      return;
+    }
+    if (industry === "Other" && !industryOther.trim()) {
       toast.error(t("requiredFields"));
       return;
     }
@@ -57,6 +62,8 @@ export default function ContactPage() {
       setEmail("");
       setPhone("");
       setOrganization("");
+      setIndustry("Food & Beverage");
+      setIndustryOther("");
       setMessage("");
     }, 800);
   };
@@ -138,7 +145,10 @@ export default function ContactPage() {
                     <select
                       id="industry"
                       value={industry}
-                      onChange={(e) => setIndustry(e.target.value)}
+                      onChange={(e) => {
+                        setIndustry(e.target.value);
+                        if (e.target.value !== "Other") setIndustryOther("");
+                      }}
                       className="w-full h-10 rounded-md border border-border bg-card px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                     >
                       <option value="Food & Beverage">{t("industryFood")}</option>
@@ -150,6 +160,21 @@ export default function ContactPage() {
                       <option value="Other">{t("industryOther")}</option>
                     </select>
                   </div>
+
+                  {industry === "Other" ? (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="industryOther" className="text-xs font-medium">
+                        {t("industryOther")} *
+                      </Label>
+                      <Input
+                        id="industryOther"
+                        value={industryOther}
+                        onChange={(e) => setIndustryOther(e.target.value)}
+                        placeholder="e.g. Packaging, industrial chemicals…"
+                        className="h-10 text-xs"
+                      />
+                    </div>
+                  ) : null}
 
                   <div className="space-y-1.5">
                     <Label htmlFor="message" className="text-xs font-medium">{t("fieldMessage")} *</Label>

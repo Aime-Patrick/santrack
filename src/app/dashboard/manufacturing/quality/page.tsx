@@ -2,11 +2,20 @@
 
 import { useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, ShieldCheck, CheckCircle, XCircle, ClipboardCheck, Clock } from "lucide-react";
+import {
+  ArrowUpDown,
+  ShieldCheck,
+  CheckCircle,
+  XCircle,
+  ClipboardCheck,
+  Clock,
+  Eye,
+  PackagePlus,
+  ArrowRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DataTable, type TableFeatures } from "@/components/ui/data-table";
 import {
@@ -25,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MetricCard } from "@/components/dashboard/stat-card";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   useQualityInspections,
   useCreateInspection,
@@ -38,12 +48,10 @@ import Link from "next/link";
 /**
  * Quality control — the gate between a finished run and product identity.
  *
- * This page used to list verdicts without being able to record one, which left
- * the centre of the canonical lifecycle unreachable: a lot sits at PENDING_QC
- * and no unit can be registered against it until someone approves it.
+ * A lot must be APPROVED before any unit can be registered against it.
+ * After approval the next step is Register Package (packaging workflow).
  */
 
-/** The verdicts the API accepts, and what each does to the lot. */
 const VERDICTS = [
   {
     value: "APPROVED",
@@ -85,72 +93,117 @@ const batchStatusColors: Record<string, string> = {
   CLOSED: "border-transparent bg-slate-500 text-white",
 };
 
-const columns: ColumnDef<TableFeatures, QualityInspection>[] = [
-  {
-    accessorKey: "productionOrderNumber",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="h-8 px-2">
-        Order #
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => {
-      const value = row.getValue("productionOrderNumber") as string | null;
-      return <span className="font-mono text-sm">{value ?? "—"}</span>;
+// ── Inspection log columns ────────────────────────────────────────────────────
+
+function buildColumns(
+  onView: (row: QualityInspection) => void,
+): ColumnDef<TableFeatures, QualityInspection>[] {
+  return [
+    {
+      accessorKey: "productionOrderNumber",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-8 px-2"
+        >
+          Order #
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const value = row.getValue("productionOrderNumber") as string | null;
+        return <span className="font-mono text-sm">{value ?? "—"}</span>;
+      },
     },
-  },
-  {
-    accessorKey: "batchCode",
-    header: "Lot",
-    cell: ({ row }) => {
-      const code = row.original.batchCode;
-      return code ? <span className="font-mono text-sm">{code}</span> : "—";
+    {
+      accessorKey: "batchCode",
+      header: "Lot",
+      cell: ({ row }) => {
+        const code = row.original.batchCode;
+        return code ? <span className="font-mono text-sm">{code}</span> : "—";
+      },
     },
-  },
-  {
-    accessorKey: "result",
-    header: "Verdict",
-    cell: ({ row }) => {
-      const result = row.getValue("result") as string;
-      return (
-        <Badge variant="outline" className={resultColors[result] ?? "border-border bg-muted/60 text-muted-foreground"}>
-          {result}
-        </Badge>
-      );
+    {
+      accessorKey: "result",
+      header: "Verdict",
+      cell: ({ row }) => {
+        const result = row.getValue("result") as string;
+        return (
+          <Badge
+            variant="outline"
+            className={resultColors[result] ?? "border-border bg-muted/60 text-muted-foreground"}
+          >
+            {result}
+          </Badge>
+        );
+      },
     },
-  },
-  {
-    accessorKey: "inspectorName",
-    header: "Inspector",
-    cell: ({ row }) => <span className="text-sm">{row.getValue("inspectorName")}</span>,
-  },
-  {
-    accessorKey: "notes",
-    header: "Notes",
-    cell: ({ row }) => (
-      <span className="text-sm text-muted-foreground">{row.getValue("notes") || "—"}</span>
-    ),
-  },
-  {
-    accessorKey: "testedAt",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="h-8 px-2">
-        Inspected
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => (
-      <span className="text-sm">{new Date(row.getValue("testedAt") as string).toLocaleDateString()}</span>
-    ),
-  },
-];
+    {
+      accessorKey: "inspectorName",
+      header: "Inspector",
+      cell: ({ row }) => <span className="text-sm">{row.getValue("inspectorName")}</span>,
+    },
+    {
+      accessorKey: "notes",
+      header: "Notes",
+      cell: ({ row }) => {
+        const raw = (row.getValue("notes") as string | null) ?? "";
+        // Strip HTML tags for the table preview
+        const plain = raw.replace(/<[^>]+>/g, "").trim();
+        return (
+          <span className="max-w-[200px] truncate text-sm text-muted-foreground">
+            {plain || "—"}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "testedAt",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-8 px-2"
+        >
+          Inspected
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <span className="text-sm">
+          {new Date(row.getValue("testedAt") as string).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+          onClick={() => onView(row.original)}
+          title="View details"
+        >
+          <Eye className="size-3.5" />
+        </Button>
+      ),
+    },
+  ];
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function QualityInspectionsPage() {
   const { data, isLoading } = useQualityInspections();
   const { data: batches } = useBatches();
   const createInspection = useCreateInspection();
 
-  const [open, setOpen] = useState(false);
+  const [verdictOpen, setVerdictOpen] = useState(false);
+  const [preselectedBatchId, setPreselectedBatchId] = useState<string>("");
+  const [viewTarget, setViewTarget] = useState<QualityInspection | null>(null);
 
   const inspections = data?.content ?? [];
   const total = data?.total ?? 0;
@@ -158,9 +211,18 @@ export default function QualityInspectionsPage() {
   const rejected = inspections.filter((i) => i.result === "REJECTED").length;
 
   const awaiting = (batches ?? []).filter((b) => b.status === "PENDING_QC");
+  const approvedBatches = (batches ?? []).filter((b) => b.status === "APPROVED");
+
+  function openVerdictFor(batch?: Batch) {
+    setPreselectedBatchId(batch ? String(batch.id) : "");
+    setVerdictOpen(true);
+  }
+
+  const columns = buildColumns((row) => setViewTarget(row));
 
   return (
     <div className="space-y-6">
+      {/* ── Header ── */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-lg bg-success text-white">
@@ -173,11 +235,12 @@ export default function QualityInspectionsPage() {
             </p>
           </div>
         </div>
-        <Button onClick={() => setOpen(true)}>
+        <Button onClick={() => openVerdictFor()}>
           <ClipboardCheck className="mr-2 size-4" /> Record verdict
         </Button>
       </div>
 
+      {/* ── Metrics ── */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <MetricCard
           title="Awaiting inspection"
@@ -209,20 +272,21 @@ export default function QualityInspectionsPage() {
         />
       </div>
 
-      {awaiting.length > 0 ? (
+      {/* ── Waiting on you ── */}
+      {awaiting.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Waiting on you</CardTitle>
             <CardDescription>
-              These runs are finished. Nothing can be packed or shipped from them until a verdict
-              is recorded.
+              These runs are finished. Nothing can be packed or shipped from them until a verdict is
+              recorded.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             {awaiting.map((batch) => (
               <button
                 key={batch.id}
-                onClick={() => setOpen(true)}
+                onClick={() => openVerdictFor(batch)}
                 className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-left transition-colors hover:border-primary"
               >
                 <span className="font-mono text-sm">{batch.batchCode}</span>
@@ -231,14 +295,39 @@ export default function QualityInspectionsPage() {
             ))}
           </CardContent>
         </Card>
-      ) : null}
+      )}
 
+      {/* ── Next step: register packages for approved lots ── */}
+      {approvedBatches.length > 0 && (
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <PackagePlus className="size-5 shrink-0 text-emerald-700" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-900">
+                {approvedBatches.length} approved {approvedBatches.length === 1 ? "lot" : "lots"}{" "}
+                ready for packaging
+              </p>
+              <p className="text-xs text-emerald-700">
+                Register packages and assign product identities to proceed.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/dashboard/manufacturing"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-800 transition-colors"
+          >
+            Go to pipeline <ArrowRight className="size-3.5" />
+          </Link>
+        </div>
+      )}
+
+      {/* ── Inspection log ── */}
       <Card>
         <CardHeader>
           <CardTitle>Inspection log</CardTitle>
           <CardDescription>
-            {total} verdicts. Rejection is not terminal — a lot can be reworked and looked at
-            again, right up until any of it has been dispatched.
+            {total} verdicts. Rejection is not terminal — a lot can be reworked and looked at again,
+            right up until any of it has been dispatched.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -259,73 +348,93 @@ export default function QualityInspectionsPage() {
         </CardContent>
       </Card>
 
+      {/* ── Dialogs ── */}
       <VerdictDialog
-        open={open}
-        onOpenChange={setOpen}
+        open={verdictOpen}
+        onOpenChange={(next) => {
+          if (!next) setPreselectedBatchId("");
+          setVerdictOpen(next);
+        }}
         batches={batches ?? []}
+        preselectedBatchId={preselectedBatchId}
         onSubmit={(payload) =>
-          createInspection.mutate(payload, { onSuccess: () => setOpen(false) })
+          createInspection.mutate(payload, { onSuccess: () => setVerdictOpen(false) })
         }
         pending={createInspection.isPending}
+      />
+
+      <InspectionDetailDialog
+        inspection={viewTarget}
+        onClose={() => setViewTarget(null)}
       />
     </div>
   );
 }
 
+// ── Verdict dialog ────────────────────────────────────────────────────────────
+
 function VerdictDialog({
   open,
   onOpenChange,
   batches,
+  preselectedBatchId,
   onSubmit,
   pending,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   batches: Batch[];
+  preselectedBatchId: string;
   onSubmit: (data: { batchId: number; result: string; notes?: string }) => void;
   pending: boolean;
 }) {
-  const [batchId, setBatchId] = useState("");
+  const [batchId, setBatchId] = useState(preselectedBatchId);
   const [result, setResult] = useState("");
   const [notes, setNotes] = useState("");
 
-  const chosen = batches.find((b) => String(b.id) === batchId);
-  const selectedId = batchId ? Number(batchId) : null;
-  const { data: eligibility, isFetching: checking } =
-    useInspectionEligibility(selectedId);
+  // Sync preselected batch whenever the dialog opens with a specific batch
+  const effectiveBatchId = batchId || preselectedBatchId;
+
+  const chosen = batches.find((b) => String(b.id) === effectiveBatchId);
+  const selectedId = effectiveBatchId ? Number(effectiveBatchId) : null;
+  const { data: eligibility, isFetching: checking } = useInspectionEligibility(selectedId);
   const blocked = eligibility != null && !eligibility.allowed;
 
-  // A recalled or closed lot is past inspecting; the API refuses those, so do
-  // not offer them.
   const inspectable = batches.filter((b) =>
     ["PENDING_QC", "APPROVED", "REJECTED", "REWORK", "QUARANTINED", "ACTIVE"].includes(b.status),
   );
+
+  function reset() {
+    setBatchId("");
+    setResult("");
+    setNotes("");
+  }
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) {
-          setBatchId("");
-          setResult("");
-          setNotes("");
-        }
+        if (!next) reset();
         onOpenChange(next);
       }}
     >
-      <DialogPopup>
+      <DialogPopup className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Record a quality verdict</DialogTitle>
           <DialogDescription>
-            Choose the lot and the result. After goods are shipped or sold, use a
-            recall instead of changing this verdict.
+            Choose the lot and the result. After goods are shipped or sold, use a recall instead of
+            changing this verdict.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          {/* Lot */}
           <div className="space-y-2">
             <Label>Lot</Label>
-            <Select value={batchId} onValueChange={(v) => setBatchId(v ?? "")}>
+            <Select
+              value={effectiveBatchId}
+              onValueChange={(v) => setBatchId(v ?? "")}
+            >
               <SelectTrigger className="h-11 w-full">
                 <SelectValue placeholder="Select a lot">
                   {chosen ? () => `${chosen.batchCode} — ${chosen.productName}` : undefined}
@@ -352,7 +461,7 @@ function VerdictDialog({
                 ))}
               </SelectContent>
             </Select>
-            {chosen ? (
+            {chosen && (
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-muted-foreground">Status</span>
                 <Badge
@@ -365,11 +474,11 @@ function VerdictDialog({
                   {chosen.status === "PENDING_QC" ? "Pending QC" : chosen.status}
                 </Badge>
               </div>
-            ) : null}
-            {checking ? (
+            )}
+            {checking && (
               <p className="text-xs text-muted-foreground">Checking this lot…</p>
-            ) : null}
-            {blocked && eligibility?.reason ? (
+            )}
+            {blocked && eligibility?.reason && (
               <div className="rounded-lg border border-warning/40 bg-amber-50 px-3 py-2 text-sm text-foreground">
                 <p>{eligibility.reason}</p>
                 <Link
@@ -379,16 +488,13 @@ function VerdictDialog({
                   Go to Recalls
                 </Link>
               </div>
-            ) : null}
+            )}
           </div>
 
+          {/* Verdict */}
           <div className="space-y-2">
             <Label>Verdict</Label>
-            <Select
-              value={result}
-              onValueChange={(v) => setResult(v ?? "")}
-              disabled={blocked}
-            >
+            <Select value={result} onValueChange={(v) => setResult(v ?? "")} disabled={blocked}>
               <SelectTrigger className="h-11 w-full">
                 <SelectValue placeholder="Select a verdict" />
               </SelectTrigger>
@@ -400,16 +506,21 @@ function VerdictDialog({
                 ))}
               </SelectContent>
             </Select>
+            {result && (
+              <p className="text-xs text-muted-foreground">
+                {VERDICTS.find((v) => v.value === result)?.effect}
+              </p>
+            )}
           </div>
 
+          {/* Notes — rich text */}
           <div className="space-y-2">
-            <Label htmlFor="verdict-notes">Notes</Label>
-            <Input
-              id="verdict-notes"
-              className="h-11"
+            <Label>Notes</Label>
+            <RichTextEditor
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optional notes"
+              onChange={setNotes}
+              placeholder="Optional inspection notes — findings, measurements, references…"
+              minHeight={100}
               disabled={blocked}
             />
           </div>
@@ -420,16 +531,87 @@ function VerdictDialog({
             Cancel
           </Button>
           <Button
-            disabled={!batchId || !result || pending || blocked || checking}
+            disabled={!effectiveBatchId || !result || pending || blocked || checking}
             onClick={() =>
               onSubmit({
-                batchId: Number(batchId),
+                batchId: Number(effectiveBatchId),
                 result,
                 notes: notes.trim() || undefined,
               })
             }
           >
             {pending ? "Recording..." : "Record verdict"}
+          </Button>
+        </DialogFooter>
+      </DialogPopup>
+    </Dialog>
+  );
+}
+
+// ── Inspection detail dialog ──────────────────────────────────────────────────
+
+function InspectionDetailDialog({
+  inspection,
+  onClose,
+}: {
+  inspection: QualityInspection | null;
+  onClose: () => void;
+}) {
+  if (!inspection) return null;
+
+  const result = inspection.result;
+  const color = resultColors[result] ?? "border-border bg-muted/60 text-muted-foreground";
+
+  return (
+    <Dialog open={!!inspection} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogPopup className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            Inspection #{inspection.id}
+            <Badge variant="outline" className={color}>
+              {result}
+            </Badge>
+          </DialogTitle>
+          <DialogDescription>
+            {inspection.batchCode
+              ? `Lot ${inspection.batchCode}`
+              : inspection.productionOrderNumber
+              ? `Order ${inspection.productionOrderNumber}`
+              : "No lot reference"}
+            {" · "}
+            Inspected by {inspection.inspectorName}
+            {" · "}
+            {new Date(inspection.testedAt).toLocaleString()}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 py-2">
+          {inspection.notes ? (
+            <div
+              className={[
+                "rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm leading-relaxed",
+                // Same prose styles as RichTextEditor content area
+                "[&_h2]:mb-1 [&_h2]:mt-3 [&_h2]:text-base [&_h2]:font-bold",
+                "[&_h3]:mb-1 [&_h3]:mt-2.5 [&_h3]:text-sm [&_h3]:font-semibold",
+                "[&_p]:mb-1.5",
+                "[&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2",
+                "[&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2",
+                "[&_li]:mb-0.5",
+                "[&_blockquote]:border-l-2 [&_blockquote]:border-primary/40 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_blockquote]:italic [&_blockquote]:my-2",
+                "[&_hr]:my-3 [&_hr]:border-border",
+                "[&_strong]:font-semibold",
+                "[&_em]:italic",
+              ].join(" ")}
+              dangerouslySetInnerHTML={{ __html: inspection.notes }}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground italic">No notes recorded.</p>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Close
           </Button>
         </DialogFooter>
       </DialogPopup>

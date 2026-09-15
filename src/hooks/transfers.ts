@@ -19,10 +19,16 @@ export function useOutgoingTransfers(page = 0, size = 20) {
   });
 }
 
-export function useIncomingTransfers(pendingOnly = false, page = 0, size = 20) {
+export function useIncomingTransfers(
+  pendingOnly = false,
+  page = 0,
+  size = 20,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: ["transfers", "incoming", pendingOnly, page, size],
     queryFn: () => transferService.listIncoming(pendingOnly, page, size),
+    enabled: options?.enabled ?? true,
   });
 }
 

@@ -275,7 +275,7 @@ export function DashboardHeader() {
   const userInitials = getInitials(userDisplayName);
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between border-b border-border/80 bg-white px-6">
+    <header className="flex h-12 shrink-0 items-center justify-between border-b border-border/80 bg-card px-3 md:px-4">
       {/* ── Left: Trigger & Breadcrumb ── */}
       <div className="flex items-center gap-3">
         <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground hover:bg-muted" />

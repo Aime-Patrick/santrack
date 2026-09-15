@@ -427,9 +427,9 @@ export default function OpeningStockPage() {
 
       {!scanSessionActive && (
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Opening Stock</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Declare Stock</h1>
           <p className="text-sm text-muted-foreground">
-            Add stock that is already in the warehouse.
+            Record stock that is physically in your warehouse but not yet in the system.
           </p>
         </div>
       )}
@@ -443,7 +443,7 @@ export default function OpeningStockPage() {
           >
             <ArrowLeft className="mr-1.5 size-4" /> Back to setup
           </button>
-          <p className="text-sm font-medium text-muted-foreground">Opening Stock · Scan</p>
+          <p className="text-sm font-medium text-muted-foreground">Declare Stock · Scan</p>
         </div>
       )}
 

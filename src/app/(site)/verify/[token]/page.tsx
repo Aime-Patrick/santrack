@@ -3,38 +3,19 @@
 import { use } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ShieldCheck,
-  ShieldAlert,
-  ShieldX,
-  Package,
-  Factory,
-  Building2,
-  Calendar,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  ArrowLeft,
-  Lock,
-  ScanLine,
-  KeyRound,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Loader2, ShieldAlert, ShieldCheck, ScanLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import type { VerifyResult } from "@/services/trace.service";
 import { ReportProductIssue } from "@/components/verify/report-product-issue";
+import { TrustSeal, type TrustSealTone } from "@/components/verify/trust-seal";
 
 function useVerify(token: string) {
   return useQuery<VerifyResult>({
     queryKey: ["verify", token],
     queryFn: () =>
-      api
-        .get(`/api/verify/${encodeURIComponent(token)}`)
-        .then((r) => r.data),
-    enabled: !!token,
+      api.get(`/api/verify/${encodeURIComponent(token)}`).then((response) => response.data),
+    enabled: Boolean(token),
     retry: false,
   });
 }
@@ -44,36 +25,16 @@ function normalizeClientToken(raw: string): string {
   try {
     token = decodeURIComponent(token);
   } catch {
-    // keep
+    // Keep the raw value when it is not encoded.
   }
   token = token.trim();
   if (token.includes("/verify/")) {
-    token =
-      token.split("/verify/").pop()?.split("?")[0].split("#")[0].trim() ?? token;
+    token = token.split("/verify/").pop()?.split("?")[0].split("#")[0].trim() ?? token;
   }
-  if (
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      token,
-    )
-  ) {
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token)) {
     return token.toLowerCase();
   }
   return token;
-}
-
-function RwandaMark({ className }: { className?: string }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex h-6 items-center gap-1 rounded-full bg-white px-2.5 shadow-xs",
-        className,
-      )}
-    >
-      <i className="h-3.5 w-1 rounded-full bg-rwanda-blue" />
-      <i className="h-3.5 w-1 rounded-full bg-rwanda-yellow" />
-      <i className="h-3.5 w-1 rounded-full bg-rwanda-green" />
-    </span>
-  );
 }
 
 export default function VerifyTokenPage({
@@ -85,501 +46,390 @@ export default function VerifyTokenPage({
   const { data, isLoading, error } = useVerify(token);
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 pb-16 pt-5">
-      {/* ── Flag edge ── */}
-      <div className="flex h-1.5">
+    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      {/* Atmosphere — soft flag wash, not a flat grey sheet */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] opacity-90"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 60% at 50% -10%, color-mix(in oklab, var(--color-primary) 18%, transparent), transparent 70%), linear-gradient(180deg, color-mix(in oklab, var(--color-rwanda-yellow) 8%, transparent), transparent 40%)",
+        }}
+        aria-hidden
+      />
+
+      <div className="relative flex h-1.5" aria-hidden="true">
         <span className="flex-1 bg-rwanda-blue" />
         <span className="flex-1 bg-rwanda-yellow" />
         <span className="flex-1 bg-rwanda-green" />
       </div>
 
-      <div className="mx-auto max-w-lg">
-        {/* Top Back Navigation */}
-        <div className="flex items-center justify-between py-4">
+      <div className="relative mx-auto w-full max-w-lg px-5 pb-20 pt-6 sm:px-8">
+        <header className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <TrustSeal size="sm" tone="neutral" />
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-foreground">
+                SanTrack Seal
+              </p>
+              <p className="text-[11px] text-muted-foreground">Public authenticity check</p>
+            </div>
+          </div>
           <Link
             href="/verify"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 transition-colors hover:text-primary"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary underline-offset-4 hover:underline"
           >
-            <ArrowLeft className="size-3.5" />
-            <span>Scan another</span>
-          </Link>
-          <div className="flex items-center gap-1.5">
-            <RwandaMark />
-          </div>
-        </div>
-
-        {/* Loading State */}
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center py-28 text-center">
-            <Loader2 className="size-7 animate-spin text-primary" />
-            <p className="mt-4 text-xs font-extrabold uppercase tracking-[0.2em] text-slate-500">
-              Checking the registry…
-            </p>
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && (
-          <NotFoundState
-            token={token}
-            message="This code could not be resolved. It may be invalid or corrupted."
-          />
-        )}
-
-        {/* Success / Result Content */}
-        {data && <VerifyCertificate token={token} result={data} />}
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// States
-// ---------------------------------------------------------------------------
-
-function NotFoundState({ token, message }: { token: string; message: string }) {
-  return (
-    <div className="flex flex-col items-center pt-2 text-center">
-      <div className="w-full rounded-[1.75rem] bg-danger text-white">
-        <div className="space-y-3 p-7 text-center">
-          <ShieldX className="mx-auto size-9" />
-          <h2 className="text-2xl font-extrabold tracking-tight">
-            Not in the registry
-          </h2>
-          <p className="mx-auto max-w-xs text-[13px] leading-relaxed text-white/85">
-            {message}
-          </p>
-        </div>
-      </div>
-
-      <p className="mt-4 max-w-full break-all rounded-full bg-slate-900 px-4 py-2 font-mono text-[11px] text-white">
-        {token}
-      </p>
-
-      <p className="mx-auto mt-6 max-w-sm text-xs leading-relaxed text-slate-600">
-        If you purchased this product, do not use it. Report it to the Rwanda
-        Standards Board and keep the label.
-      </p>
-
-      <div className="mt-5 flex w-full gap-2.5">
-        <Link href="/verify" className="flex-1">
-          <Button
-            variant="outline"
-            className="h-11 w-full rounded-2xl border-slate-200 bg-white text-xs font-bold text-slate-800"
-          >
+            <ScanLine className="size-3.5" />
             Scan another
-          </Button>
-        </Link>
-        <div className="flex-1">
-          <ReportProductIssue token={token} />
-        </div>
+          </Link>
+        </header>
+
+        <main className="mt-8">
+          {isLoading ? <LoadingState /> : null}
+          {error ? (
+            <NotFoundState
+              token={token}
+              message="This code could not be matched to a registered product."
+            />
+          ) : null}
+          {data ? <VerifyCertificate token={token} result={data} /> : null}
+        </main>
       </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Digital Certificate (borderless)
-// ---------------------------------------------------------------------------
+function LoadingState() {
+  return (
+    <section className="flex min-h-[22rem] flex-col items-center justify-center text-center">
+      <TrustSeal size="lg" tone="neutral" animate />
+      <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="size-4 animate-spin text-primary" aria-hidden />
+        Checking this seal…
+      </div>
+    </section>
+  );
+}
 
-type HeroStyle = {
-  panel: string;
-  chip: string;
-};
-
-const HERO_STYLES: Record<string, HeroStyle> = {
-  recalled: { panel: "bg-danger text-white", chip: "bg-white text-danger" },
-  expired: {
-    panel: "bg-warning text-warning-foreground",
-    chip: "bg-white text-warning-foreground",
-  },
-  verified: { panel: "bg-success text-white", chip: "bg-white text-success" },
-  inTransit: { panel: "bg-primary text-white", chip: "bg-white text-primary" },
-};
-
-function VerifyCertificate({
+function NotFoundState({
   token,
-  result,
+  message,
+  scanCount,
+  firstScan,
 }: {
   token: string;
-  result: VerifyResult;
+  message: string;
+  scanCount?: number;
+  firstScan?: boolean;
 }) {
+  return (
+    <section className="rounded-xl border border-danger/30 bg-danger/5 px-5 py-8 sm:px-7">
+      <TrustSeal size="lg" tone="danger" animate label="Not in the registry" />
+      <div className="mt-6 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-danger">
+        <ShieldAlert className="size-3.5" />
+        Code not recognised
+      </div>
+      <h1 className="mt-3 text-center text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+        We could not verify this product
+      </h1>
+      <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-muted-foreground">
+        {message}
+      </p>
+
+      {typeof scanCount === "number" && scanCount > 0 ? (
+        <p className="mx-auto mt-4 max-w-sm text-center text-xs text-muted-foreground">
+          {firstScan
+            ? "This is the first time this unknown code was checked."
+            : `This unknown code has been checked ${scanCount} times.`}
+        </p>
+      ) : null}
+
+      <div className="mx-auto mt-6 max-w-full break-all rounded-lg border border-border bg-card px-3 py-2.5 font-mono text-[11px] text-muted-foreground">
+        {token}
+      </div>
+      <p className="mt-4 text-center text-xs text-muted-foreground">
+        Do not buy or use the product until its seal is confirmed.
+      </p>
+
+      <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+        <Link
+          href="/verify"
+          className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          Scan another product
+        </Link>
+        <ReportProductIssue token={token} compact />
+      </div>
+    </section>
+  );
+}
+
+function VerifyCertificate({ token, result }: { token: string; result: VerifyResult }) {
   if (!result.known) {
     return (
       <NotFoundState
         token={token}
-        message={
-          result.verdict ||
-          "This code has no matching record in the national traceability registry."
-        }
+        message={result.verdict || "This code has no matching record in the product registry."}
+        scanCount={result.scanCount}
+        firstScan={result.firstScan}
       />
     );
   }
 
-  const isRecalled = result.recalled;
-  const isExpired = result.expired;
   const isSold =
     result.itemStatus === "SOLD" ||
     result.verdict?.toLowerCase().includes("sold") ||
     result.verdict?.toLowerCase().includes("consumer");
   const isInTransit = result.itemStatus === "IN_TRANSIT";
-  const isGood = !isRecalled && !isExpired && (!result.blocked || isSold);
+  const isVerified = !result.recalled && !result.expired && (!result.blocked || isSold);
+  const tone: TrustSealTone = result.recalled
+    ? "danger"
+    : result.expired || !isVerified
+      ? "warning"
+      : isInTransit
+        ? "info"
+        : "success";
 
-  const hero: HeroStyle = isRecalled
-    ? HERO_STYLES.recalled
-    : isExpired
-      ? HERO_STYLES.expired
-      : isSold
-        ? HERO_STYLES.verified
-        : isInTransit
-          ? HERO_STYLES.inTransit
-          : isGood
-            ? HERO_STYLES.verified
-            : HERO_STYLES.expired;
-
-  const verdictLabel = isRecalled
+  const statusLabel = result.recalled
     ? "Recalled"
-    : isExpired
+    : result.expired
       ? "Expired"
       : isSold
-        ? "Verified · Sold"
+        ? "Verified · sold"
         : isInTransit
-          ? "Verified · In transit"
-          : isGood
-            ? "Verified"
-            : "Under inspection";
+          ? "Verified · in transit"
+          : result.itemStatus === "GENERATED"
+            ? "Not activated"
+            : result.itemStatus === "ASSIGNED"
+              ? "Production pending"
+              : isVerified
+                ? "Genuine seal"
+                : "Needs review";
 
-  const headline = isRecalled
-    ? "Do not use this product"
-    : isExpired
-      ? "This product has expired"
+  const summary = result.recalled
+    ? "This batch has an active recall. Do not buy, use, or consume it."
+    : result.expired
+      ? `This product passed its expiry date on ${formatDate(result.expiresOn)}.`
       : isSold
-        ? "Genuine — already purchased"
+        ? "This seal matches a registered unit that has already been marked sold."
         : isInTransit
-          ? "Genuine — in transit"
-          : "Genuine product";
+          ? "This seal matches a registered unit currently in transit."
+          : result.itemStatus === "GENERATED"
+            ? "This seal is real, but it has not been assigned to a production lot yet. It does not verify a finished product."
+            : result.itemStatus === "ASSIGNED"
+              ? "This seal is assigned to a production run, but the product has not been cleared yet."
+              : isVerified
+                ? "This seal matches one registered unit in the SanTrack registry."
+                : "This record needs review before the product can be cleared.";
 
-  const blurb = isRecalled
-    ? "This batch has been recalled from the market. Do not purchase or consume it, and report any stock you still hold."
-    : isExpired
-      ? `This product passed its expiry date on ${formatDate(result.expiresOn)}. Do not use it.`
-      : isSold
-        ? "Verified authentic and scanned as sold to a consumer."
-        : isInTransit
-          ? "Verified authentic and moving between certified facilities."
-          : (result.verdict || "This product is verified authentic. Details below.");
+  const batchLabel =
+    result.batchCode ||
+    (result.itemStatus === "GENERATED"
+      ? "Not assigned yet"
+      : result.itemStatus === "ASSIGNED"
+        ? "Pending production"
+        : "Unavailable");
 
-  const HeroIcon = isRecalled
-    ? ShieldX
-    : isExpired
-      ? ShieldAlert
-      : isSold || isGood
-        ? ShieldCheck
-        : ShieldAlert;
+  const scanCount = result.scanCount ?? 0;
+  const scanSignal =
+    result.firstScan || scanCount === 1
+      ? {
+          title: "First check of this seal",
+          detail: "No earlier public scan is on record for this exact code.",
+          caution: false,
+        }
+      : scanCount >= 8
+        ? {
+            title: `Checked ${scanCount} times`,
+            detail:
+              "A sealed unit in a shop is usually checked rarely. A high count can mean a display bottle — or a copied label. Ask the seller to open a fresh sealed unit.",
+            caution: true,
+          }
+        : scanCount >= 2
+          ? {
+              title: `Checked ${scanCount} times`,
+              detail: "Earlier public checks of this exact seal are already on record.",
+              caution: false,
+            }
+          : null;
 
   return (
-    <div className="space-y-7 pb-10">
-      {/* ── Verdict hero (solid, no card chrome) ── */}
-      <section
-        className={cn(
-          "overflow-hidden rounded-[1.75rem] shadow-lg",
-          hero.panel,
-        )}
-      >
-        <div className="flex items-start gap-4 p-6">
-          <span
+    <div className="space-y-6">
+      <section className="rounded-xl border border-border bg-card/90 px-5 py-8 shadow-xs backdrop-blur-sm sm:px-8">
+        <TrustSeal
+          size="xl"
+          tone={tone}
+          animate
+          label={result.code ? `Seal · ${result.code}` : "Registered seal"}
+        />
+
+        <div
+          className={cn(
+            "mt-6 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.16em]",
+            tone === "success" && "text-success",
+            tone === "info" && "text-primary",
+            tone === "warning" && "text-warning-foreground",
+            tone === "danger" && "text-danger",
+          )}
+        >
+          {tone === "danger" || tone === "warning" ? (
+            <ShieldAlert className="size-3.5" />
+          ) : (
+            <ShieldCheck className="size-3.5" />
+          )}
+          {statusLabel}
+        </div>
+
+        <h1 className="mt-3 text-center text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+          {result.productName || "Registered product"}
+        </h1>
+        {result.productSku ? (
+          <p className="mt-2 text-center font-mono text-xs text-muted-foreground">{result.productSku}</p>
+        ) : null}
+        <p
+          className={cn(
+            "mx-auto mt-4 max-w-md text-center text-sm leading-6",
+            tone === "danger" ? "font-medium text-danger" : "text-muted-foreground",
+          )}
+        >
+          {summary}
+        </p>
+
+        {scanSignal ? (
+          <div
             className={cn(
-              "flex size-13 shrink-0 items-center justify-center rounded-2xl shadow-md",
-              hero.chip,
+              "mx-auto mt-6 max-w-md rounded-lg border px-4 py-3 text-center",
+              scanSignal.caution
+                ? "border-warning/40 bg-warning/10"
+                : "border-border bg-muted/50",
             )}
           >
-            <HeroIcon className="size-6" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] opacity-80">
-              {verdictLabel}
-            </p>
-            <h2 className="mt-1 text-2xl font-extrabold leading-tight tracking-tight">
-              {headline}
-            </h2>
-            <p className="mt-2 text-[13px] leading-relaxed opacity-85">
-              {blurb}
-            </p>
+            <p className="text-xs font-semibold text-foreground">{scanSignal.title}</p>
+            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{scanSignal.detail}</p>
           </div>
+        ) : null}
+
+        <div className="mt-8 grid gap-4 border-t border-border pt-5 sm:grid-cols-2">
+          <RecordField label="Serial code" value={result.code || "Not provided"} mono />
+          <RecordField label="Batch" value={batchLabel} mono />
         </div>
       </section>
 
-      {/* ── Product identity ── */}
-      <section>
-        <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-400">
-          Product
-        </p>
-        <h3 className="mt-1.5 text-2xl font-extrabold tracking-tight text-slate-900">
-          {result.productName || "Unknown product"}
-        </h3>
-        {result.productSku && (
-          <p className="mt-1 font-mono text-xs text-slate-500">
-            {result.productSku}
-          </p>
-        )}
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
+        {result.manufacturer ? <RecordRow label="Manufacturer" value={result.manufacturer} /> : null}
+        {result.facilityName ? (
+          <RecordRow label="Production location" value={result.facilityName} />
+        ) : null}
+        {result.manufacturedOn ? (
+          <RecordRow label="Production date" value={formatDate(result.manufacturedOn)} />
+        ) : null}
+        {result.expiresOn ? (
+          <RecordRow label="Expiry date" value={formatDate(result.expiresOn)} emphasis={result.expired} />
+        ) : null}
+        <RecordRow label="Record status" value={statusLabel} />
       </section>
 
-      {/* ── Record rows ── */}
-      <section className="divide-y divide-slate-200">
-        {result.code && (
-          <InfoRow icon={Package} label="Serial code" value={result.code} mono />
-        )}
-        <InfoRow
-          icon={CheckCircle2}
-          label="Verification status"
-          value={verdictLabel}
-          suffix={
-            <Badge
-              className={cn(
-                "h-5 rounded-full px-2 text-[10px] font-extrabold uppercase",
-                isRecalled
-                  ? "bg-danger text-white"
-                  : isExpired
-                    ? "bg-warning text-warning-foreground"
-                    : "bg-success text-white",
-              )}
-            >
-              {isRecalled ? "Recalled" : isExpired ? "Expired" : "Verified"}
-            </Badge>
-          }
-        />
-        {result.manufacturer && (
-          <InfoRow
-            icon={Factory}
-            label="Manufacturer"
-            value={result.manufacturer}
+      <details className="group rounded-xl border border-border bg-card px-5 py-4">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-foreground [&::-webkit-details-marker]:hidden">
+          Seal checks
+          <span
+            className="text-lg font-normal leading-none text-faint transition-transform group-open:rotate-45"
+            aria-hidden
+          >
+            +
+          </span>
+        </summary>
+        <div className="mt-4 space-y-4 border-t border-border pt-4">
+          <CheckRow
+            label="Authenticity signature"
+            ok
+            detail="Serial registered in the SanTrack unit identity registry"
           />
-        )}
-        {result.facilityName && (
-          <InfoRow
-            icon={Building2}
-            label="Production location"
-            value={result.facilityName}
-          />
-        )}
-        {result.batchCode && (
-          <InfoRow
-            icon={Package}
-            label="Batch"
-            value={result.batchCode}
-            suffix={
-              result.batchStatus ? (
-                <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] font-bold text-slate-700">
-                  {result.batchStatus}
-                </span>
-              ) : null
+          <CheckRow
+            label="Recall clearance"
+            ok={!result.recalled}
+            detail={
+              result.recalled
+                ? "Batch flagged for an active recall"
+                : "No recall notice on this batch"
             }
           />
-        )}
-        {result.manufacturedOn && (
-          <InfoRow
-            icon={Calendar}
-            label="Production date"
-            value={formatDate(result.manufacturedOn)}
+          <CheckRow
+            label="Shelf life"
+            ok={!result.expired}
+            detail={
+              result.expired
+                ? `Expired on ${formatDate(result.expiresOn)}`
+                : result.expiresOn
+                  ? `Valid through ${formatDate(result.expiresOn)}`
+                  : "No expiry date recorded"
+            }
           />
-        )}
-        {result.expiresOn && (
-          <InfoRow
-            icon={Clock}
-            label="Expiry date"
-            value={formatDate(result.expiresOn)}
-            highlight={isExpired}
-          />
-        )}
-      </section>
-
-      {/* ── Compliance checks (no box) ── */}
-      <section className="space-y-3.5">
-        <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-400">
-          Compliance &amp; standards
-        </p>
-        <StatusRow
-          icon={CheckCircle2}
-          label="Authenticity signature"
-          ok
-          detail="Digital serial registered with the national traceability registry"
-        />
-        <StatusRow
-          icon={isRecalled ? XCircle : CheckCircle2}
-          label="Safety & recall clearance"
-          ok={!isRecalled}
-          detail={
-            isRecalled
-              ? "Batch flagged for an active recall"
-              : "No recall notices on this batch"
-          }
-        />
-        <StatusRow
-          icon={isExpired ? XCircle : CheckCircle2}
-          label="Shelf life"
-          ok={!isExpired}
-          detail={
-            isExpired
-              ? `Expired on ${formatDate(result.expiresOn)}`
-              : result.expiresOn
-                ? `Valid through ${formatDate(result.expiresOn)}`
-                : "Standard shelf life"
-          }
-        />
-      </section>
-
-      {/* ── Manufacturer's licence compliance ── */}
-      {result.manufacturer && (
-        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-400 mb-3">
-            Manufacturer status
-          </p>
-          <div className="flex items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-              <Factory className="size-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-slate-900">{result.manufacturer}</p>
-              <p className="text-xs text-slate-500">Registered in the national traceability registry</p>
-            </div>
-            <Badge className="ml-auto bg-success text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
-              Licensed
-            </Badge>
-          </div>
-        </section>
-      )}
-
-      {/* ── Authenticated user extended access ── */}
-      <section className="rounded-2xl border border-primary/20 bg-[#f0f7ff] p-4">
-        <div className="flex items-start gap-3">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary/15">
-            <Lock className="size-3.5 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-primary">Full operational data available</p>
-            <p className="mt-0.5 text-[11px] text-slate-600 leading-relaxed">
-              Regulators, manufacturers, distributors, and retailers can scan this same code in the
-              SANTRACK dashboard to view the complete chain of custody, production records, quality
-              inspections, and compliance history.
-            </p>
-            <Link
-              href={`/dashboard/manufacturing/trace?code=${encodeURIComponent(token)}`}
-              className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold text-white hover:bg-primary/90 transition-colors"
-            >
-              <ScanLine className="size-3" />
-              Open in SANTRACK dashboard
-            </Link>
-          </div>
         </div>
-      </section>
+      </details>
 
-      {/* ── QR security note ── */}
-      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <div className="flex items-start gap-3">
-          <KeyRound className="size-4 text-slate-400 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-              QR code security
-            </p>
-            <p className="text-[11px] text-slate-500 leading-relaxed">
-              This QR code is dynamically signed. The information shown is always current —
-              a recalled batch shows a recall warning even on labels printed before the recall.
-              Cloned or tampered codes are rejected by the registry.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Actions ── */}
-      <section className="flex items-center justify-between gap-2.5">
-        <Link href="/verify" className="flex-1">
-          <Button
-            variant="outline"
-            className="h-12 w-full rounded-2xl border-slate-200 bg-white text-xs font-bold text-slate-800 hover:bg-slate-50"
-          >
-            <ArrowLeft className="mr-1.5 size-3.5" />
-            Scan another
-          </Button>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <Link
+          href="/verify"
+          className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          Scan another product
         </Link>
-        <div className="flex-1">
-          <ReportProductIssue token={token} />
-        </div>
-      </section>
+        <ReportProductIssue token={token} compact />
+      </div>
 
-      <p className="pt-1 text-center font-mono text-[10px] text-slate-400">
-        Certificate token · {token}
+      <p className="text-center text-[11px] text-faint">
+        Public verification · each unit seal is unique · {token.slice(0, 18)}
+        {token.length > 18 ? "…" : ""}
       </p>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function InfoRow({
-  icon: Icon,
-  label,
-  value,
-  suffix,
-  highlight,
-  mono,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  suffix?: React.ReactNode;
-  highlight?: boolean;
-  mono?: boolean;
-}) {
+function RecordField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3">
-      <div className="flex min-w-0 items-center gap-2.5 text-slate-500">
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary-light">
-          <Icon className="size-3.5 text-primary" />
-        </span>
-        <span className="text-xs font-semibold">{label}</span>
-      </div>
-      <div className="flex min-w-0 items-center gap-2 text-right">
-        <span
-          className={cn(
-            "truncate text-[13px] font-bold",
-            mono && "font-mono text-xs",
-            highlight ? "text-danger" : "text-slate-900",
-          )}
-        >
-          {value}
-        </span>
-        {suffix}
-      </div>
+    <div className="min-w-0 text-center sm:text-left">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-faint">{label}</p>
+      <p
+        className={cn(
+          "mt-1 truncate text-sm font-semibold text-foreground",
+          mono && "font-mono text-xs font-medium",
+        )}
+      >
+        {value}
+      </p>
     </div>
   );
 }
 
-function StatusRow({
-  icon: Icon,
+function RecordRow({
   label,
-  ok,
-  detail,
+  value,
+  emphasis,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
   label: string;
-  ok: boolean;
-  detail: string;
+  value: string;
+  emphasis?: boolean;
 }) {
+  return (
+    <div className="flex items-baseline justify-between gap-6 border-b border-border px-5 py-4 text-sm last:border-b-0">
+      <span className="shrink-0 text-muted-foreground">{label}</span>
+      <span className={cn("text-right font-medium text-foreground", emphasis && "text-danger")}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function CheckRow({ label, detail, ok }: { label: string; detail: string; ok: boolean }) {
   return (
     <div className="flex items-start gap-3">
       <span
-        className={cn(
-          "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full",
-          ok ? "bg-success" : "bg-danger",
-        )}
-      >
-        <Icon className="size-3 text-white" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <span className="text-[13px] font-bold text-slate-800">{label}</span>
-        <p className="text-xs leading-relaxed text-slate-500">{detail}</p>
+        className={cn("mt-1 size-2 shrink-0 rounded-full", ok ? "bg-success" : "bg-danger")}
+        aria-hidden
+      />
+      <div>
+        <p className="text-sm font-semibold text-foreground">{label}</p>
+        <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{detail}</p>
       </div>
     </div>
   );
@@ -587,7 +437,9 @@ function StatusRow({
 
 function formatDate(value: string | null | undefined): string {
   if (!value) return "—";
-  return new Date(value).toLocaleDateString(undefined, {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",

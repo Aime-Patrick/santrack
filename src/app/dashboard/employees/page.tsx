@@ -47,9 +47,19 @@ function PeopleWorkspace() {
             <p className="text-sm text-muted-foreground">Who works here, how they are organised, and what they are hired as.</p>
           </div>
         </div>
-        <Button render={<Link href="/dashboard/employees/new" />}>
-          <Plus className="mr-2 size-4" /> Add employee
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<Link href="/dashboard/employees/payroll-runs" />}
+          >
+            Payroll
+          </Button>
+          <Button size="sm" nativeButton={false} render={<Link href="/dashboard/employees/new" />}>
+            <Plus className="mr-1.5 size-4" /> Add employee
+          </Button>
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={select} className="space-y-4">

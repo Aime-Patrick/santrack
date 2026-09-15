@@ -6,6 +6,7 @@ import { PasswordChangeGuard } from "@/components/auth/password-change-guard";
 import { RouteGuard } from "@/components/auth/route-guard";
 import { DesignModeProvider } from "@/components/providers/design-mode-provider";
 import { RoleSwitcher } from "@/components/layout/role-switcher";
+import { WorkflowBar } from "@/components/layout/workflow-bar";
 
 export default function DashboardLayout({
   children,
@@ -16,12 +17,15 @@ export default function DashboardLayout({
     <DesignModeProvider>
       <PasswordChangeGuard>
         <OrgGuard>
-          <SidebarProvider defaultOpen={true} className="min-h-screen bg-[#f8fafc] dark:bg-background p-2 md:p-3">
+          <SidebarProvider defaultOpen={true} className="h-svh overflow-hidden bg-background">
             <AppSidebar />
-            <SidebarInset className="relative flex flex-col flex-1 min-h-[calc(100vh-1.5rem)] rounded-2xl border border-border/80 bg-white shadow-xs overflow-hidden">
-              <DashboardHeader />
+            <SidebarInset className="relative flex h-svh min-h-0 flex-1 flex-col overflow-hidden bg-card">
+              <div className="shrink-0">
+                <DashboardHeader />
+                <WorkflowBar />
+              </div>
 
-              <div className="flex-1 overflow-y-auto bg-white p-6 md:p-8">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-card p-3 md:p-4">
                 <RouteGuard>{children}</RouteGuard>
               </div>
             </SidebarInset>

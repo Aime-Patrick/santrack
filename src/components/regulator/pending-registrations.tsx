@@ -787,6 +787,33 @@ function RegistrationReviewDialog({
                       {req.requestedFields.length} field{req.requestedFields.length !== 1 ? "s" : ""} requested
                     </p>
                   )}
+                  {req.status === "RESPONDED" && (
+                    <div className="mt-2 space-y-2 rounded-md border border-emerald-200/80 bg-white/70 p-2.5">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                        Applicant reply
+                      </p>
+                      {req.responseData && Object.keys(req.responseData).length > 0 ? (
+                        <div className="space-y-2">
+                          {Object.entries(req.responseData).map(([key, value]) => (
+                            <div key={key}>
+                              <p className="text-[11px] font-medium text-muted-foreground">{key}</p>
+                              <div
+                                className="prose prose-sm mt-0.5 max-w-none text-foreground [&_p]:my-1"
+                                dangerouslySetInnerHTML={{ __html: value }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">No written response provided.</p>
+                      )}
+                      {req.responseAttachmentFilename && (
+                        <p className="text-muted-foreground">
+                          Attachment: <span className="font-medium text-foreground">{req.responseAttachmentFilename}</span>
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

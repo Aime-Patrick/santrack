@@ -155,6 +155,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
   // Step 1 — business type
   const [type, setType] = useState<OrgType | null>(null);
   const [industrySector, setIndustrySector] = useState<IndustrySector | null>(null);
+  const [industrySectorOther, setIndustrySectorOther] = useState("");
 
   // Step 2 — contact & location
   const [email, setEmail] = useState("");
@@ -206,9 +207,9 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
     : "none";
 
   // Step 3 — documents & ownership
-  // docs always starts with the mandatory RDB entry; optional entries are user-added
+  // RDB starts optional; it becomes required when the applicant enters a TIN.
   const [docs, setDocs] = useState<DocEntry[]>([
-    { type: "RDB_CERTIFICATE", label: "RDB Registration Certificate", required: true, file: null },
+    { type: "RDB_CERTIFICATE", label: "RDB Registration Certificate", required: false, file: null },
   ]);
   const [owners, setOwners] = useState<OwnerDraft[]>([]);
   const [ownershipOpen, setOwnershipOpen] = useState(false);
@@ -247,14 +248,17 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
     if (me?.organization) router.replace("/dashboard");
   }, [me, router]);
 
-  // Per-step validation
-  // Step 3: RDB file is now required
+  // Step 3: RDB is required only when a TIN was provided (formal businesses).
+  // Informal / home businesses without TIN can continue and add documents later.
   const rdbHasFile = docs.find((d) => d.type === "RDB_CERTIFICATE")?.file != null;
+  const phoneDigits = phone.replace(/\D/g, "");
+  const hasPhone = phoneDigits.length >= 9;
+  const hasTin = tin.trim().length >= 5;
   const stepValid = [
-    tin.trim().length >= 5 && name.trim().length >= 2,  // 0
-    type !== null,                                         // 1
+    name.trim().length >= 2 && hasPhone, // 0 — phone required; TIN optional for informal / home businesses
+    type !== null && industrySector !== null && (industrySector !== "OTHER" || industrySectorOther.trim().length >= 2), // 1
     province.trim() !== "" && district.trim() !== "",     // 2
-    rdbHasFile,                                            // 3 — RDB upload required
+    hasTin ? rdbHasFile : true, // 3 — RDB required only when TIN was entered
   ];
 
   function navigate(next: number) {
@@ -277,12 +281,19 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
         : await createOrganization.mutateAsync({
             name,
             type,
-            tin,
+            tin: hasTin ? tin.trim() : undefined,
             email: email.trim() || undefined,
-            phone: phone.trim() || undefined,
+            phone: phoneDigits ? `+250${phoneDigits.replace(/^250/, "")}` : undefined,
             licenseType: ORG_TYPES.find((t) => t.value === type)?.label,
             dateIncorporated: dateIncorporated || undefined,
-            description: description.trim() || undefined,
+            description: [
+              industrySector === "OTHER" && industrySectorOther.trim()
+                ? `Industry sector (other): ${industrySectorOther.trim()}`
+                : null,
+              description.trim() || null,
+            ]
+              .filter(Boolean)
+              .join("\n\n") || undefined,
             province,
             district,
             sector: sector.trim() || undefined,
@@ -449,7 +460,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                   {step === 3 && "Documents & ownership"}
                 </h1>
                 <p className="mt-1 text-xs sm:text-sm text-slate-500">
-                  {step === 0 && "Basic registration details — validated against the national registry."}
+                  {step === 0 && "Start with your name and phone. TIN can wait if you do not have one yet."}
                   {step === 1 && "Choose your business type and industry sector."}
                   {step === 2 && "How the regulator reaches you and where you operate."}
                   {step === 3 && "Supporting certificates and ownership structure for compliance."}
@@ -466,23 +477,49 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
             {/* ─ Step 0: Identity ─ */}
             {step === 0 && (
               <motion.div key="s0" {...vars} transition={{ duration: 0.25, ease: "easeOut" }} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="organizationName" className={LABEL_CLASS}>
+                    Business / company name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="organizationName"
+                    placeholder="e.g. Uwase Home Yoghurt"
+                    autoFocus
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className={INPUT_CLASS}
+                  />
+                </div>
+
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <label htmlFor="organizationName" className={LABEL_CLASS}>
-                      Company name <span className="text-red-500">*</span>
+                    <label htmlFor="phone-identity" className={LABEL_CLASS}>
+                      Phone number <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      id="organizationName"
-                      placeholder="e.g. Sunrise Dairy Ltd"
-                      autoFocus
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className={INPUT_CLASS}
-                    />
+                    <div className="flex">
+                      <span className="flex items-center rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-500">
+                        +250
+                      </span>
+                      <input
+                        id="phone-identity"
+                        type="tel"
+                        inputMode="numeric"
+                        placeholder="7XX XXX XXX"
+                        autoComplete="tel-national"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value.replace(/[^\d\s]/g, ""))}
+                        className={cn(INPUT_CLASS, "rounded-l-none font-mono")}
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Used to reach you while registration is reviewed — required if you have no TIN yet.
+                    </p>
                   </div>
+
                   <div className="space-y-1.5">
                     <label htmlFor="tin" className={LABEL_CLASS}>
-                      RDB Registration Number <span className="text-red-500">*</span>
+                      TIN / RDB number{" "}
+                      <span className="font-normal text-slate-400">(optional)</span>
                     </label>
                     <input
                       id="tin"
@@ -492,13 +529,17 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                       onChange={(e) => setTin(e.target.value)}
                       className={cn(INPUT_CLASS, "font-mono")}
                     />
-                    <p className="text-[11px] text-slate-400">Used by the regulator to validate your business.</p>
+                    <p className="text-[11px] text-slate-400">
+                      Leave blank if you do not have one yet. You can add it later.
+                    </p>
                   </div>
                 </div>
+
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <label htmlFor="dateIncorporated" className={LABEL_CLASS}>
-                      Date of incorporation
+                      Date of incorporation{" "}
+                      <span className="font-normal text-slate-400">(optional)</span>
                     </label>
                     <input
                       id="dateIncorporated"
@@ -562,7 +603,10 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                           type="button"
                           role="radio"
                           aria-checked={selected}
-                          onClick={() => setIndustrySector(s.value)}
+                          onClick={() => {
+                            setIndustrySector(s.value);
+                            if (s.value !== "OTHER") setIndustrySectorOther("");
+                          }}
                           className={cn(
                             "relative rounded-lg border p-2.5 text-left transition-all cursor-pointer",
                             selected
@@ -579,6 +623,21 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                       );
                     })}
                   </div>
+                  {industrySector === "OTHER" ? (
+                    <div className="mt-2 space-y-1.5">
+                      <label htmlFor="industry-sector-other" className={LABEL_CLASS}>
+                        Please specify your industry
+                      </label>
+                      <input
+                        id="industry-sector-other"
+                        type="text"
+                        value={industrySectorOther}
+                        onChange={(event) => setIndustrySectorOther(event.target.value)}
+                        placeholder="e.g. Packaging materials, industrial chemicals…"
+                        className={INPUT_CLASS}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               </motion.div>
             )}
@@ -604,19 +663,23 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label htmlFor="phone" className={LABEL_CLASS}>Phone number</label>
+                    <label htmlFor="phone" className={LABEL_CLASS}>
+                      Phone number <span className="text-red-500">*</span>
+                    </label>
                     <div className="flex">
                       <span className="flex items-center rounded-l-lg border border-r-0 border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-500">+250</span>
                       <input
                         id="phone"
                         type="tel"
+                        inputMode="numeric"
                         placeholder="7XX XXX XXX"
-                        autoComplete="tel"
+                        autoComplete="tel-national"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className={cn(INPUT_CLASS, "rounded-l-none")}
+                        onChange={(e) => setPhone(e.target.value.replace(/[^\d\s]/g, ""))}
+                        className={cn(INPUT_CLASS, "rounded-l-none font-mono")}
                       />
                     </div>
+                    <p className="text-[11px] text-slate-400">Same number from step 1 — update it if needed.</p>
                   </div>
                 </div>
 
@@ -792,7 +855,10 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                   transition={{ duration: 0.35, ease: [0.32, 0, 0.18, 1] }}
                 >
                   <AnimatePresence initial={false}>
-                    {docs.map((doc) => (
+                    {docs.map((doc) => {
+                      const isRdb = doc.type === "RDB_CERTIFICATE";
+                      const docRequired = isRdb ? hasTin : doc.required;
+                      return (
                       <motion.div
                         key={doc.type}
                         layout="position"
@@ -802,7 +868,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                         transition={{ duration: 0.22, ease: "easeOut" }}
                         className={cn(
                           "rounded-xl border bg-slate-50 p-4",
-                          doc.required
+                          docRequired
                             ? "border-[#067eda]/30 ring-1 ring-[#067eda]/10"
                             : "border-slate-200",
                         )}
@@ -811,13 +877,14 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                         <div className="flex items-center gap-2 mb-3">
                           <FileText className="size-4 shrink-0 text-slate-400" />
                           <span className="text-xs font-semibold text-slate-700 leading-tight">{doc.label}</span>
-                          {doc.required ? (
+                          {docRequired ? (
                             <span className="ml-auto rounded-full bg-[#067eda]/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#067eda]">
                               required
                             </span>
                           ) : (
                             <>
                               <span className="ml-auto text-[10px] text-slate-400">optional</span>
+                              {!isRdb ? (
                               <button
                                 type="button"
                                 aria-label={`Remove ${doc.label}`}
@@ -826,6 +893,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                               >
                                 <X className="size-3" />
                               </button>
+                              ) : null}
                             </>
                           )}
                         </div>
@@ -855,13 +923,19 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                         </label>
 
                         {/* Required hint when file is missing */}
-                        {doc.required && !doc.file && (
+                        {docRequired && !doc.file && (
                           <p className="mt-1.5 text-[11px] text-slate-400">
                             Upload required to submit your application.
                           </p>
                         )}
+                        {isRdb && !hasTin && (
+                          <p className="mt-1.5 text-[11px] text-slate-400">
+                            Optional until you have a TIN / RDB number.
+                          </p>
+                        )}
                       </motion.div>
-                    ))}
+                      );
+                    })}
                   </AnimatePresence>
                 </motion.div>
 

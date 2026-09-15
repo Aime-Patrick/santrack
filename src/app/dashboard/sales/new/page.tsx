@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { QrScanInput } from "@/components/ui/qr-scanner";
+import { ScanTargetHint } from "@/components/trace/scan-target-hint";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useItem } from "@/hooks/items";
 import { useSell } from "@/hooks/sales";
@@ -488,11 +489,11 @@ export default function NewSalePage() {
             <CardHeader className="pb-2">
               <CardTitle>Scan into cart</CardTitle>
               <CardDescription>
-                Point at the bottle or carton QR. Product and units come from
-                the scan.
+                Unit QR sells one bottle. Package QR sells the whole sealed box/pallet (contents included).
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
+              <ScanTargetHint expect="either" />
               <QrScanInput
                 onScan={(code) => {
                   setScanFeedback(null);
@@ -508,7 +509,8 @@ export default function NewSalePage() {
                   }
                   setPendingCode(code);
                 }}
-                placeholder="Scan item or package QR…"
+                placeholder="Scan unit or sealed package QR…"
+                scanning="a unit or a sealed package"
               />
               {scanning && pendingCode ? (
                 <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary-light px-3 py-2 text-sm text-foreground">

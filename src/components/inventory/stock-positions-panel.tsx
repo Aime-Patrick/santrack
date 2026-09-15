@@ -43,9 +43,10 @@ import {
 import { MetricCard } from "@/components/dashboard/stat-card";
 import { useInventoryPositions } from "@/hooks/inventory";
 import { useLocations } from "@/hooks/locations";
+import { useCapabilities } from "@/hooks/permissions";
 import type { InventoryPosition } from "@/services/inventory.service";
 
-function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
+function buildColumns(canTransfer: boolean, canRunProduction: boolean): ColumnDef<TableFeatures, InventoryPosition>[] {
   return [
     {
       accessorKey: "productName",
@@ -63,7 +64,7 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
         const pos = row.original;
         return (
           <div className="flex items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <Package className="size-4" />
             </div>
             <div>
@@ -86,7 +87,7 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           className="h-8 px-2"
         >
-          Available Stock
+          Available
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
@@ -94,7 +95,7 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
         const units = row.original.availableUnits ?? 0;
         return (
           <div>
-            <span className="font-mono text-base font-bold text-emerald-600">
+            <span className="font-mono text-base font-bold text-success">
               {units.toLocaleString()}
             </span>
             <span className="ml-1 text-xs text-muted-foreground">units</span>
@@ -125,7 +126,7 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
         return (
           <Badge
             variant="outline"
-            className="border-amber-500/30 bg-amber-50 font-mono text-xs text-amber-600"
+            className="border-warning/40 bg-warning/10 font-mono text-xs text-warning-foreground"
           >
             {blocked.toLocaleString()} units
           </Badge>
@@ -134,7 +135,7 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
     },
     {
       accessorKey: "inTransitUnits",
-      header: "In Transit",
+      header: "In transit",
       cell: ({ row }) => {
         const transit = row.original.inTransitUnits ?? 0;
         if (transit === 0)
@@ -142,7 +143,7 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
         return (
           <Badge
             variant="outline"
-            className="border-blue-500/30 bg-primary-light font-mono text-xs text-blue-600"
+            className="border-primary/30 bg-primary/10 font-mono text-xs text-primary"
           >
             {transit.toLocaleString()} units
           </Badge>
@@ -161,9 +162,9 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
           return (
             <Badge
               variant="outline"
-              className="border-emerald-500/30 bg-emerald-50 font-medium text-emerald-600"
+              className="border-success/30 bg-success/10 font-medium text-success"
             >
-              In Stock
+              In stock
             </Badge>
           );
         }
@@ -171,7 +172,7 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
           return (
             <Badge
               variant="outline"
-              className="border-amber-500/30 bg-amber-50 font-medium text-amber-600"
+              className="border-warning/40 bg-warning/10 font-medium text-warning-foreground"
             >
               Quarantined
             </Badge>
@@ -181,18 +182,18 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
           return (
             <Badge
               variant="outline"
-              className="border-blue-500/30 bg-primary-light font-medium text-blue-600"
+              className="border-primary/30 bg-primary/10 font-medium text-primary"
             >
-              In Transit
+              In transit
             </Badge>
           );
         }
         return (
           <Badge
             variant="outline"
-            className="border-rose-500/30 bg-red-50 font-medium text-rose-600"
+            className="border-danger/30 bg-danger/10 font-medium text-danger"
           >
-            Out of Stock
+            Out of stock
           </Badge>
         );
       },
@@ -228,34 +229,36 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
                   View stock codes
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                {canTransfer && (
+                  <DropdownMenuItem
+                    nativeButton={false}
+                    render={
+                      <Link href="/dashboard/inventory?tab=transfer&view=dispatch" />
+                    }
+                  >
+                    <Truck className="mr-2 size-4" /> Transfer stock
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   nativeButton={false}
-                  render={
-                    <Link href="/dashboard/manufacturing/stock-transfer" />
-                  }
+                  render={<Link href="/dashboard/manufacturing/trace" />}
                 >
-                  <Truck className="mr-2 size-4" /> Transfer stock
+                  <PackageCheck className="mr-2 size-4" /> Scan &amp; pack
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  nativeButton={false}
-                  render={<Link href="/dashboard/manufacturing/pack" />}
-                >
-                  <PackageCheck className="mr-2 size-4" /> Pack into cartons
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  nativeButton={false}
-                  render={
-                    <Link href="/dashboard/manufacturing/register-package" />
-                  }
-                >
-                  <PackagePlus className="mr-2 size-4" /> Register container
-                </DropdownMenuItem>
+                {canRunProduction && (
+                  <DropdownMenuItem
+                    nativeButton={false}
+                    render={<Link href="/dashboard/manufacturing" />}
+                  >
+                    <PackagePlus className="mr-2 size-4" /> Production pipeline
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   nativeButton={false}
                   render={<Link href="/dashboard/inventory/opening-stock" />}
                 >
-                  <Plus className="mr-2 size-4" /> Onboard opening stock
+                  <Plus className="mr-2 size-4" /> Declare opening stock
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -268,11 +271,19 @@ function buildColumns(): ColumnDef<TableFeatures, InventoryPosition>[] {
 
 export function StockPositionsPanel() {
   const [locationFilter, setLocationFilter] = useState("");
+  const permissions = useCapabilities();
+  const canTransfer = permissions.can("MOVE_STOCK");
+  const canRunProduction = permissions.can("RUN_PRODUCTION");
+  const canDeclareOpening = permissions.can("REGISTER_IDENTITY");
+
   const { data: positions, isLoading } = useInventoryPositions(
     locationFilter ? Number(locationFilter) : undefined,
   );
   const { data: locations } = useLocations();
-  const columns = useMemo(() => buildColumns(), []);
+  const columns = useMemo(
+    () => buildColumns(canTransfer, canRunProduction),
+    [canTransfer, canRunProduction],
+  );
 
   const totalAvailable =
     positions?.reduce((acc, p) => acc + (p.availableUnits || 0), 0) ?? 0;
@@ -287,41 +298,43 @@ export function StockPositionsPanel() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <MetricCard
-          title="Available Units"
+          title="Available units"
           value={totalAvailable.toLocaleString()}
           icon={<Boxes className="size-4" />}
-          iconBg="bg-emerald-500"
+          iconBg="bg-success"
           caption="Ready for dispatch &amp; sale"
         />
         <MetricCard
-          title="Active Products"
+          title="Products in stock"
           value={inStockProducts}
           icon={<Package className="size-4" />}
           iconBg="bg-primary"
-          caption={`Out of ${positions?.length ?? 0} listed products`}
+          caption={`Of ${positions?.length ?? 0} listed`}
+          href="/dashboard/inventory?tab=items"
         />
         <MetricCard
           title="Quarantined"
           value={totalBlocked.toLocaleString()}
           icon={<ShieldAlert className="size-4" />}
-          iconBg={
-            totalBlocked > 0 ? "bg-amber-500" : "bg-muted text-muted-foreground"
-          }
+          iconBg={totalBlocked > 0 ? "bg-warning text-foreground" : "bg-muted text-muted-foreground"}
           caption="Held for inspection"
+          href="/dashboard/manufacturing/trace"
         />
         <MetricCard
-          title="In Transit"
+          title="In transit"
           value={totalTransit.toLocaleString()}
           icon={<Truck className="size-4" />}
-          iconBg={
-            totalTransit > 0 ? "bg-blue-500" : "bg-muted text-muted-foreground"
-          }
-          caption="Moving between locations"
+          iconBg={totalTransit > 0 ? "bg-primary" : "bg-muted text-muted-foreground"}
+          caption="Moving between parties"
+          href={canTransfer ? "/dashboard/inventory?tab=transfer" : undefined}
         />
       </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          How much of each product you hold, and where pressure is.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
           <Select
             onValueChange={(v) =>
               setLocationFilter(v === "all" || v === null ? "" : v)
@@ -329,10 +342,10 @@ export function StockPositionsPanel() {
             value={locationFilter || "all"}
           >
             <SelectTrigger className="h-10 w-50">
-              <SelectValue placeholder="All Locations" />
+              <SelectValue placeholder="All locations" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Locations</SelectItem>
+              <SelectItem value="all">All locations</SelectItem>
               {locations?.map((l) => (
                 <SelectItem key={l.id} value={String(l.id)}>
                   {l.name}
@@ -340,35 +353,48 @@ export function StockPositionsPanel() {
               ))}
             </SelectContent>
           </Select>
-          <Button
-            className="h-10 shadow-sm"
-            nativeButton={false}
-            render={<Link href="/dashboard/inventory/opening-stock" />}
-          >
-            <Plus className="mr-2 size-4" /> Opening stock
-          </Button>
+          {canDeclareOpening && (
+            <Button
+              variant="outline"
+              className="h-10"
+              nativeButton={false}
+              render={<Link href="/dashboard/inventory/opening-stock" />}
+            >
+              <Plus className="mr-2 size-4" /> Declare opening stock
+            </Button>
+          )}
         </div>
       </div>
 
       <Card>
         <CardHeader className="border-b pb-4">
-          <CardTitle className="text-base font-semibold">
-            Stock positions by product
-          </CardTitle>
+          <CardTitle className="text-base font-semibold">By product</CardTitle>
           <CardDescription>
-            {positions?.length ?? 0} product line(s)
+            {positions?.length ?? 0} product line
+            {(positions?.length ?? 0) === 1 ? "" : "s"}
+            {locationFilter ? " at this location" : ""}
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-4">
           {isLoading ? (
             <div className="flex h-36 items-center justify-center text-muted-foreground">
-              Loading inventory positions...
+              Loading stock…
+            </div>
+          ) : (positions?.length ?? 0) === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-12 text-center">
+              <Boxes className="size-8 text-border" />
+              <div>
+                <p className="text-sm font-medium text-foreground">No stock recorded yet</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Stock arrives from finished production or incoming transfers.
+                </p>
+              </div>
             </div>
           ) : (
             <DataTable
               columns={columns}
               data={positions ?? []}
-              filterPlaceholder="Filter by product name..."
+              filterPlaceholder="Filter by product name…"
               filterColumn="productName"
               pageSize={15}
               noBorder
