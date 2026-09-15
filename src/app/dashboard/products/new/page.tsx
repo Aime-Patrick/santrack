@@ -48,6 +48,16 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+/** Pick the usual retail print format from how many digits the GTIN has. */
+function symbologyFromGtin(raw: string): Symbology | undefined {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 8) return "EAN_8";
+  if (digits.length === 12) return "UPC_A";
+  if (digits.length === 13) return "EAN_13";
+  if (digits.length === 14) return "ITF_14";
+  return undefined;
+}
+
 export default function NewProductPage() {
   const router = useRouter();
   const createProduct = useCreateProduct();
@@ -82,6 +92,14 @@ export default function NewProductPage() {
   );
   const needsGtin =
     chosenSpec?.use === "RETAIL" || chosenSpec?.use === "PUBLICATION";
+
+  function applyGtin(next: string) {
+    form.setValue("gtin", next, { shouldDirty: true, shouldValidate: true });
+    const inferred = symbologyFromGtin(next);
+    if (inferred) {
+      form.setValue("barcodeSymbology", inferred, { shouldDirty: true });
+    }
+  }
 
   const onSubmit = (values: FormValues) => {
     const packUnit = values.packUnit?.trim() || undefined;
@@ -163,6 +181,9 @@ export default function NewProductPage() {
                       <FormControl>
                         <Input placeholder="Auto-generated if empty" {...field} />
                       </FormControl>
+                      <FormDescription>
+                        Internal stock code for your warehouse — not the retail GTIN.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -251,25 +272,6 @@ export default function NewProductPage() {
                     </FormItem>
                   )}
                 />
-
-                <FormField
-                  control={form.control}
-                  name="gtin"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>GTIN / Barcode</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. 6291041500215" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        The manufacturer barcode a till looks up — EAN, UPC or
-                        ISBN. Leave blank for a product that is never scanned at
-                        a point of sale.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
 
               <div className="grid gap-6 md:grid-cols-3">
@@ -323,44 +325,77 @@ export default function NewProductPage() {
                 />
               </div>
 
-              {/* Which code this product's label prints by default. A book
-                  takes an ISBN, "a bottle of shampoo an EAN-13", a machine part
-                  a Code 128 — a property of the trade, so it belongs on the
-                  catalogue entry rather than being decided at the printer
-                  every time. */}
-              <FormField
-                control={form.control}
-                name="barcodeSymbology"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Default code type</FormLabel>
-                    <FormDescription className="mb-4">
-                      What this product&apos;s catalogue label prints (EAN, &quot;Code 128&quot;, etc.).
-                      Leave blank if unsure — QR is for industry unique identity codes, not the default here.
-                    </FormDescription>
-                    <FormControl>
-                      <SymbologyPanelPicker
-                        value={(field.value || undefined) as Symbology | undefined}
-                        onChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* A retail or publication code encodes the GTIN, not the SKU.
-                  Saying so now beats a barcode that scans to nothing later. */}
-              {needsGtin && !gtin?.trim() && (
-                <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-warning-foreground">
-                  <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
-                  <span>
-                    {chosenSpec?.label} encodes the manufacturer barcode. Without
-                    a GTIN above, this product cannot print one — its labels will
-                    fall back to an internal code.
-                  </span>
+              <div className="space-y-4 rounded-xl border border-border/80 bg-muted/15 p-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Manufacturer barcode (GTIN)
+                  </h3>
+                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                    One number per product — the same EAN / UPC / ISBN on every pack.
+                    Unit QR identities for tracing are prepared separately later; do not
+                    enter the GTIN again there.
+                  </p>
                 </div>
-              )}
+
+                <FormField
+                  control={form.control}
+                  name="gtin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>GTIN</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g. 6291041500215"
+                          {...field}
+                          onChange={(e) => applyGtin(e.target.value)}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Leave blank only if this product is never scanned at a till.
+                        Entering digits auto-picks EAN-8 / UPC / EAN-13 / ITF-14.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="barcodeSymbology"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>How this barcode is printed</FormLabel>
+                      <FormDescription className="mb-3">
+                        Print format for the GTIN above (or an internal SKU code if you have no GTIN).
+                        Not a second barcode number.
+                      </FormDescription>
+                      <FormControl>
+                        <SymbologyPanelPicker
+                          value={(field.value || undefined) as Symbology | undefined}
+                          onChange={field.onChange}
+                          previewValue={gtin?.trim() || undefined}
+                          only={
+                            gtin?.trim()
+                              ? ["RETAIL", "PUBLICATION", "LOGISTICS"]
+                              : ["INTERNAL", "LOGISTICS"]
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {needsGtin && !gtin?.trim() && (
+                  <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-warning-foreground">
+                    <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
+                    <span>
+                      {chosenSpec?.label} needs the GTIN in the field above — one value for
+                      this product, reused on every pack.
+                    </span>
+                  </div>
+                )}
+              </div>
 
               <FormField
                 control={form.control}

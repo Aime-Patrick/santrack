@@ -72,6 +72,8 @@ export interface IdentityPool {
   productName: string | null;
   productSku: string | null;
   requestedCount: number;
+  /** Labels still GENERATED and claimable. Omitted on some detail payloads. */
+  availableCount?: number;
   status: PoolStatus;
   failureReason: string | null;
   requestedBy: string | null;

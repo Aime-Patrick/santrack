@@ -36,6 +36,8 @@ const USE_ORDER: SymbologyUse[] = [
 interface SymbologyPanelPickerProps {
   value: Symbology | undefined;
   onChange: (symbology: Symbology) => void;
+  /** When set (e.g. product GTIN), preview encodes this instead of the catalogue example. */
+  previewValue?: string;
   only?: SymbologyUse[];
   disabled?: boolean;
   className?: string;
@@ -50,6 +52,7 @@ interface SymbologyPanelPickerProps {
 export function SymbologyPanelPicker({
   value,
   onChange,
+  previewValue,
   only,
   disabled,
   className,
@@ -167,7 +170,7 @@ export function SymbologyPanelPicker({
               <div className="flex items-center justify-center p-3 rounded-lg border border-border/50 bg-slate-100 dark:bg-muted/10 h-32">
                 <BarcodePreview
                   symbology={selectedSpec.symbology}
-                  value={selectedSpec.example}
+                  value={previewValue?.trim() || selectedSpec.example}
                   scale={4}
                   showText={selectedSpec.printsText}
                   className="max-h-28 max-w-full object-contain"

@@ -1099,7 +1099,8 @@ function AssignPoolDialog({
   const pools = (poolsData?.content ?? []).filter((p) => p.status === "READY");
   const selected = pools.find((p) => String(p.id) === poolId);
   const planned = order?.plannedQuantity ?? 0;
-  const suggested = selected ? Math.min(selected.requestedCount, planned) : planned;
+  const free = selected?.availableCount ?? selected?.requestedCount ?? 0;
+  const suggested = selected ? Math.max(planned, 1) : planned;
 
   function reset() {
     setPoolId("");
@@ -1118,8 +1119,8 @@ function AssignPoolDialog({
         <DialogHeader>
           <DialogTitle>Link code pool — {order?.orderNumber}</DialogTitle>
           <DialogDescription>
-            Claim QR codes for this run. Codes are labels — stock is created only when you finish
-            the run.
+            Claim QR codes for this run. If the pool is short, SanTrack mints the
+            extra labels automatically. Stock is created only when you finish the run.
           </DialogDescription>
         </DialogHeader>
 
@@ -1161,16 +1162,20 @@ function AssignPoolDialog({
                 <SelectTrigger>
                   <SelectValue placeholder="Select a pool">
                     {selected
-                      ? `Pool #${selected.id} — ${selected.requestedCount.toLocaleString()} codes`
+                      ? `Pool #${selected.id} — ${free.toLocaleString()} free / ${selected.requestedCount.toLocaleString()} minted`
                       : undefined}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {pools.map((p) => (
-                    <SelectItem key={p.id} value={String(p.id)}>
-                      Pool #{p.id} — {p.requestedCount.toLocaleString()} codes ready
-                    </SelectItem>
-                  ))}
+                  {pools.map((p) => {
+                    const left = p.availableCount ?? 0;
+                    return (
+                      <SelectItem key={p.id} value={String(p.id)}>
+                        Pool #{p.id} — {left.toLocaleString()} free
+                        {left === 0 ? " (will mint more)" : ""}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -1179,13 +1184,16 @@ function AssignPoolDialog({
               <Input
                 type="number"
                 min={1}
-                max={selected?.requestedCount}
-                placeholder={String(suggested)}
+                placeholder={String(suggested || 1)}
                 value={count}
                 onChange={(e) => setCount(e.target.value)}
               />
               <p className="text-xs text-faint">
-                Leave blank to claim {suggested.toLocaleString()} (matches planned quantity).
+                Leave blank to claim {suggested.toLocaleString()} for this run
+                {free < suggested
+                  ? ` (pool has ${free.toLocaleString()} free — extras will be minted)`
+                  : ""}
+                .
               </p>
             </div>
           </div>
@@ -1203,7 +1211,9 @@ function AssignPoolDialog({
           </Button>
           <Button
             disabled={!poolId || pending}
-            onClick={() => onSubmit(Number(poolId), count ? Number(count) : undefined)}
+            onClick={() =>
+              onSubmit(Number(poolId), count ? Number(count) : suggested || undefined)
+            }
           >
             {pending ? "Linking…" : "Link pool"}
           </Button>
