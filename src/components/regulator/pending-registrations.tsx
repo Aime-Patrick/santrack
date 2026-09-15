@@ -654,7 +654,10 @@ function RegistrationReviewDialog({
               </p>
             ) : !documents || documents.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No documents uploaded with this application.
+                No documents on file. The applicant either skipped optional uploads
+                (RDB is only required when a TIN is entered) or an upload failed
+                during submission. Use &quot;Request information&quot; to ask them
+                to attach certificates.
               </p>
             ) : (
               <div className="space-y-2">

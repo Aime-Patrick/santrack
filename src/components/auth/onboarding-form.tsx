@@ -143,6 +143,8 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  /** Set after org create so document upload can be retried without recreating. */
+  const [createdOrgId, setCreatedOrgId] = useState<number | null>(null);
 
   const createOrganization = useCreateOrganization();
   const { data: me } = useMe({ enabled: !DESIGN_MODE });
@@ -275,50 +277,83 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
     if (!type) return;
     setFormError(null);
     setSubmitting(true);
+    let organizationId = createdOrgId;
     try {
-      const organization: OrganizationResponse = DESIGN_MODE
-        ? { id: 1, name, type, tin, onboardingStatus: "PENDING" }
-        : await createOrganization.mutateAsync({
-            name,
-            type,
-            tin: hasTin ? tin.trim() : undefined,
-            email: email.trim() || undefined,
-            phone: phoneDigits ? `+250${phoneDigits.replace(/^250/, "")}` : undefined,
-            licenseType: ORG_TYPES.find((t) => t.value === type)?.label,
-            dateIncorporated: dateIncorporated || undefined,
-            description: [
-              industrySector === "OTHER" && industrySectorOther.trim()
-                ? `Industry sector (other): ${industrySectorOther.trim()}`
-                : null,
-              description.trim() || null,
-            ]
-              .filter(Boolean)
-              .join("\n\n") || undefined,
-            province,
-            district,
-            sector: sector.trim() || undefined,
-            cell: cell.trim() || undefined,
-            village: village.trim() || undefined,
-            industrySector: industrySector ?? undefined,
-            ownership: owners.map((o) => ({
-              name: o.name,
-              email: o.email.trim() || undefined,
-              phone: o.phone.trim() || undefined,
-              percentage: Number(o.percentage),
-              idNumber: o.idNumber.trim() || undefined,
-            })),
-          });
+      if (organizationId == null) {
+        const organization: OrganizationResponse = DESIGN_MODE
+          ? { id: 1, name, type, tin, onboardingStatus: "PENDING" }
+          : await createOrganization.mutateAsync({
+              name,
+              type,
+              tin: hasTin ? tin.trim() : undefined,
+              email: email.trim() || undefined,
+              phone: phoneDigits ? `+250${phoneDigits.replace(/^250/, "")}` : undefined,
+              licenseType: ORG_TYPES.find((t) => t.value === type)?.label,
+              dateIncorporated: dateIncorporated || undefined,
+              description: [
+                industrySector === "OTHER" && industrySectorOther.trim()
+                  ? `Industry sector (other): ${industrySectorOther.trim()}`
+                  : null,
+                description.trim() || null,
+              ]
+                .filter(Boolean)
+                .join("\n\n") || undefined,
+              province,
+              district,
+              sector: sector.trim() || undefined,
+              cell: cell.trim() || undefined,
+              village: village.trim() || undefined,
+              industrySector: industrySector ?? undefined,
+              ownership: owners.map((o) => ({
+                name: o.name,
+                email: o.email.trim() || undefined,
+                phone: o.phone.trim() || undefined,
+                percentage: Number(o.percentage),
+                idNumber: o.idNumber.trim() || undefined,
+              })),
+            });
+        organizationId = organization.id;
+        setCreatedOrgId(organizationId);
+      }
 
       if (!DESIGN_MODE) {
-        await Promise.allSettled(
-          docs
-            .filter((d) => d.file)
-            .map((d) => onboardingService.uploadDocument(organization.id, d.file as File, d.type, "", "")),
-        );
+        // Uploads must succeed or the regulator review screen stays empty while
+        // the applicant still sees "Application Submitted". Do not swallow failures.
+        const toUpload = docs.filter((d) => d.file);
+        if (toUpload.length > 0) {
+          const results = await Promise.allSettled(
+            toUpload.map((d) =>
+              onboardingService.uploadDocument(
+                organizationId!,
+                d.file as File,
+                d.type,
+                "",
+                "",
+              ),
+            ),
+          );
+          const failed = results.filter((r) => r.status === "rejected");
+          if (failed.length > 0) {
+            const first = failed[0] as PromiseRejectedResult;
+            throw (
+              first.reason ??
+              new Error(
+                "Your application was saved, but one or more documents failed to upload. Fix the files and submit again.",
+              )
+            );
+          }
+        }
       }
       setDone(true);
     } catch (error) {
-      setFormError(getApiErrorMessage(error));
+      setFormError(
+        getApiErrorMessage(
+          error,
+          organizationId != null
+            ? "Documents failed to upload. Your application is saved — try submitting again with the files."
+            : undefined,
+        ),
+      );
     } finally {
       setSubmitting(false);
     }
