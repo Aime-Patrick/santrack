@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
+    "@dicebear/core": "^10.7.0",
+    "@dicebear/styles": "^10.6.0",
     "@hookform/resolvers": "^5.2.2",
     "@lidojs/design-core": "^2.0.0",
     "@lidojs/design-editor": "^1.2.2",

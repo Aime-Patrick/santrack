@@ -96,12 +96,10 @@ export default function LoginPage() {
             return;
           }
           if (!("user" in data)) return;
+          // Fresh login — allow the security nudge to show again this session.
+          sessionStorage.removeItem("santrack_mfa_nudge_dismissed");
           if (data.user.mustChangePassword) {
             router.replace("/change-password");
-            return;
-          }
-          if (data.user.mustEnableMfa) {
-            router.replace("/mfa/setup");
             return;
           }
           if (data.user.role === "SYSTEM_ADMIN" || data.user.organization) {

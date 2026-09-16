@@ -135,24 +135,24 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       {/* ── Page Header ── */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <Link href="/dashboard/products">
-            <Button variant="ghost" size="sm" className="gap-1 mt-0.5">
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <Link href="/dashboard/products" className="shrink-0">
+            <Button variant="ghost" size="sm" className="mt-0.5 gap-1">
               <ArrowLeft className="size-4" />
             </Button>
           </Link>
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white shadow-sm">
             <Package className="size-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              <h1 className="truncate text-2xl font-bold tracking-tight text-foreground">
                 {product.name}
               </h1>
-              <span className="font-mono text-xs font-semibold rounded bg-muted px-2 py-0.5 text-muted-foreground border">
+              <span className="rounded border bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-muted-foreground">
                 {product.sku}
               </span>
               {product.category && (
@@ -171,7 +171,7 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -248,26 +248,28 @@ export default function ProductDetailPage() {
           setActiveTab(next);
           router.replace(`/dashboard/products/${product.id}?tab=${next}`, { scroll: false });
         }}
-        className="space-y-4"
+        className="min-w-0 space-y-4"
       >
-        <TabsList className="rounded-xl border border-border/80 bg-muted/50 p-1">
-          <TabsTrigger value="details" className="gap-2">
-            <FileText className="size-4" />
-            Details
-          </TabsTrigger>
-          <TabsTrigger value="identities" className="gap-2">
-            <QrCode className="size-4" />
-            Code pools
-          </TabsTrigger>
-          <TabsTrigger value="batches" className="gap-2">
-            <Layers className="size-4" />
-            Batches ({batches.length})
-          </TabsTrigger>
-          <TabsTrigger value="labels" className="gap-2">
-            <Barcode className="size-4" />
-            Catalogue label
-          </TabsTrigger>
-        </TabsList>
+        <div className="max-w-full min-w-0 overflow-x-auto">
+          <TabsList className="h-auto min-w-max rounded-xl border border-border/80 bg-muted/50 p-1">
+            <TabsTrigger value="details" className="gap-2">
+              <FileText className="size-4" />
+              Details
+            </TabsTrigger>
+            <TabsTrigger value="identities" className="gap-2">
+              <QrCode className="size-4" />
+              Code pools
+            </TabsTrigger>
+            <TabsTrigger value="batches" className="gap-2">
+              <Layers className="size-4" />
+              Batches ({batches.length})
+            </TabsTrigger>
+            <TabsTrigger value="labels" className="gap-2">
+              <Barcode className="size-4" />
+              Catalogue label
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* ── Tab 1: Details ── */}
         <TabsContent value="details">

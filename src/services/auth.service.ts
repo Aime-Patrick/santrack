@@ -86,6 +86,32 @@ export const authService = {
     return api.patch<UserResponse>("/api/auth/me", dto).then((r) => r.data);
   },
 
+  setLibraryAvatar(avatarUrl: string | null): Promise<UserResponse> {
+    return api
+      .patch<UserResponse>("/api/auth/me/avatar", { avatarUrl })
+      .then((r) => r.data);
+  },
+
+  uploadAvatar(file: File): Promise<UserResponse> {
+    const body = new FormData();
+    body.append("file", file);
+    return api
+      .post<UserResponse>("/api/auth/me/avatar", body, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((r) => r.data);
+  },
+
+  clearAvatar(): Promise<UserResponse> {
+    return api.delete<UserResponse>("/api/auth/me/avatar").then((r) => r.data);
+  },
+
+  fetchAvatarBlob(): Promise<Blob> {
+    return api
+      .get<Blob>("/api/auth/me/avatar", { responseType: "blob" })
+      .then((r) => r.data);
+  },
+
   /** The role/capability reference table. Reference data, not the caller's. */
   capabilities(): Promise<CapabilityCatalogue> {
     return api

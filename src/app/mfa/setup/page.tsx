@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +12,7 @@ import { useBeginMfaSetup, useConfirmMfaSetup, useMe } from "@/hooks/auth";
 import { getAuthToken, hasSessionMarker } from "@/lib/auth";
 import { AuthPrimaryButton } from "@/components/auth/auth-primary-button";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { MfaSetupResult } from "@/services/auth.service";
@@ -35,8 +37,8 @@ export default function MfaSetupPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!isLoading && me && !me.mustEnableMfa && me.mfaEnabled) {
-      router.replace("/dashboard");
+    if (!isLoading && me?.mfaEnabled) {
+      router.replace("/dashboard/settings?tab=security");
     }
   }, [isLoading, me, router]);
 
@@ -59,7 +61,7 @@ export default function MfaSetupPage() {
     confirm.mutate(values.code, {
       onSuccess: () => {
         toast.success("Authenticator enabled");
-        router.replace("/dashboard");
+        router.replace("/dashboard/settings?tab=security");
       },
       onError: (error) =>
         toast.error(getApiErrorMessage(error, "Invalid code — try again")),
@@ -71,8 +73,8 @@ export default function MfaSetupPage() {
       <div className="w-full rounded-2xl border border-slate-100/90 bg-white p-7 shadow-[0_8px_30px_rgb(0,0,0,0.06)] sm:p-9">
         <h1 className="text-xl font-bold text-foreground">Enable authenticator</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          System admins and regulator staff must protect their account with a
-          one-time code app (Google Authenticator, Microsoft Authenticator, etc.).
+          Scan this QR code with an authenticator app (Google Authenticator,
+          Microsoft Authenticator, etc.), then enter a code to confirm.
         </p>
 
         {setup ? (
@@ -81,7 +83,7 @@ export default function MfaSetupPage() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={setup.qrDataUrl} alt="MFA QR code" className="size-48" />
             </div>
-            <p className="text-center font-mono text-xs text-muted-foreground break-all">
+            <p className="break-all text-center font-mono text-xs text-muted-foreground">
               {setup.secret}
             </p>
             <form onSubmit={onSubmit} className="space-y-4">
@@ -91,6 +93,7 @@ export default function MfaSetupPage() {
                   id="code"
                   inputMode="numeric"
                   autoComplete="one-time-code"
+                  placeholder="6-digit code"
                   className="font-mono tracking-widest"
                   {...form.register("code")}
                 />
@@ -101,8 +104,17 @@ export default function MfaSetupPage() {
                 )}
               </div>
               <AuthPrimaryButton type="submit" disabled={confirm.isPending}>
-                {confirm.isPending ? "Enabling…" : "Enable MFA"}
+                {confirm.isPending ? "Enabling…" : "Enable 2FA"}
               </AuthPrimaryButton>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                nativeButton={false}
+                render={<Link href="/dashboard/settings?tab=security" />}
+              >
+                Back to Security settings
+              </Button>
             </form>
           </div>
         ) : (

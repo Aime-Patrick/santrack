@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   User as UserIcon,
   Settings as SettingsIcon,
@@ -15,26 +16,38 @@ import {
   Lock,
   Loader2,
   Check,
+  ShieldCheck,
+  ShieldOff,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogPopup,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { useMe, useChangePassword, useUpdateProfile } from "@/hooks/auth";
+import { useMe, useChangePassword, useUpdateProfile, useDisableMfa } from "@/hooks/auth";
 import { TeamMembersPanel } from "@/components/dashboard/team-members-panel";
 import { isPasswordAllowed, PASSWORD_POLICY_MESSAGE } from "@/lib/password-policy";
 import { ROLE_LABELS } from "@/lib/user-roles";
 import { AuthoritySelfSetup } from "@/components/regulator/authority-self-setup";
 import { OversightScopeSettings } from "@/components/dashboard/oversight-scope-settings";
 import { getApiErrorMessage } from "@/lib/api";
-
-// ── sidebar nav definition ───────────────────────────────────────────────────
+import { UserAvatar } from "@/components/profile/user-avatar";
+import {
+  AvatarEditButton,
+  AvatarPickerDialog,
+} from "@/components/profile/avatar-picker-dialog";
 
 type SettingsTab =
   | "profile"
@@ -43,6 +56,20 @@ type SettingsTab =
   | "organization"
   | "members"
   | "platform";
+
+const SETTINGS_TABS = new Set<SettingsTab>([
+  "profile",
+  "general",
+  "security",
+  "organization",
+  "members",
+  "platform",
+]);
+
+function parseSettingsTab(value: string | null): SettingsTab | null {
+  if (!value) return null;
+  return SETTINGS_TABS.has(value as SettingsTab) ? (value as SettingsTab) : null;
+}
 
 interface NavItem {
   id: SettingsTab;
@@ -68,15 +95,13 @@ const NAV_ITEMS: NavItem[] = [
 
 function ProfilePanel({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]> }) {
   const update = useUpdateProfile();
+  const [avatarOpen, setAvatarOpen] = useState(false);
   const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm({
     defaultValues: { fullName: me.fullName ?? "" },
   });
 
   // Re-sync when me data refreshes
   useEffect(() => { reset({ fullName: me.fullName ?? "" }); }, [me.fullName, reset]);
-
-  const initials = (me.fullName ?? me.email)
-    .split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase();
 
   function onSubmit(data: { fullName: string }) {
     update.mutate(
@@ -92,26 +117,46 @@ function ProfilePanel({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-bold text-foreground">My Profile</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
+        <p className="mt-0.5 text-sm text-muted-foreground">
           Your personal identity on the platform.
         </p>
       </div>
 
+      <AvatarPickerDialog
+        user={me}
+        open={avatarOpen}
+        onOpenChange={setAvatarOpen}
+      />
+
       {/* Avatar block */}
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center gap-5">
-            <Avatar className="size-16 rounded-xl border-2 border-primary/20">
-              <AvatarFallback className="rounded-xl bg-primary text-primary-foreground text-lg font-bold">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-semibold text-base">{me.fullName ?? "—"}</p>
-              <p className="text-sm text-muted-foreground">{me.email}</p>
+          <div className="flex min-w-0 flex-wrap items-center gap-5">
+            <div className="relative shrink-0">
+              <UserAvatar
+                user={me}
+                className="size-16 border-2 border-primary/20"
+                fallbackClassName="text-lg"
+              />
+              <AvatarEditButton onClick={() => setAvatarOpen(true)} />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-base font-semibold">{me.fullName ?? "—"}</p>
+              <p className="truncate text-sm text-muted-foreground">{me.email}</p>
               <Badge variant="outline" className="mt-1.5 text-[11px]">
                 {ROLE_LABELS[me.role] ?? me.role}
               </Badge>
+              <div className="mt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setAvatarOpen(true)}
+                >
+                  Change photo
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -124,7 +169,7 @@ function ProfilePanel({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]
           <CardDescription>Update your display name.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-sm">
+          <form onSubmit={handleSubmit(onSubmit)} className="max-w-sm space-y-4">
             <div className="space-y-1.5">
               <Label>Display name</Label>
               <Input
@@ -146,18 +191,18 @@ function ProfilePanel({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]
 
             <div className="space-y-1.5">
               <Label>User ID</Label>
-              <Input value={String(me.id)} disabled className="bg-muted/40 font-mono text-muted-foreground text-xs" />
+              <Input value={String(me.id)} disabled className="bg-muted/40 font-mono text-xs text-muted-foreground" />
             </div>
 
             <Button
               type="submit"
               disabled={!isDirty || update.isPending}
-              className="bg-[#067eda] hover:bg-[#0569c0] text-white"
+              className="bg-[#067eda] text-white hover:bg-[#0569c0]"
             >
               {update.isPending ? (
-                <><Loader2 className="size-3.5 mr-1.5 animate-spin" /> Saving…</>
+                <><Loader2 className="mr-1.5 size-3.5 animate-spin" /> Saving…</>
               ) : (
-                <><Check className="size-3.5 mr-1.5" /> Save changes</>
+                <><Check className="mr-1.5 size-3.5" /> Save changes</>
               )}
             </Button>
           </form>
@@ -226,8 +271,13 @@ function GeneralPanel() {
 function SecurityPanel() {
   const { data: me } = useMe();
   const changePassword = useChangePassword();
+  const disableMfa = useDisableMfa();
+  const [disableOpen, setDisableOpen] = useState(false);
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
     defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
+  });
+  const disableForm = useForm({
+    defaultValues: { password: "", code: "" },
   });
   const newPwd = watch("newPassword");
 
@@ -244,11 +294,25 @@ function SecurityPanel() {
     );
   }
 
+  function onDisableMfa(data: { password: string; code: string }) {
+    disableMfa.mutate(
+      { password: data.password, code: data.code },
+      {
+        onSuccess: () => {
+          toast.success("Two-factor authentication disabled");
+          disableForm.reset();
+          setDisableOpen(false);
+        },
+        onError: (e) => toast.error(getApiErrorMessage(e)),
+      },
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-bold text-foreground">Security</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
+        <p className="mt-0.5 text-sm text-muted-foreground">
           Password and authenticator settings for your account.
         </p>
       </div>
@@ -257,36 +321,120 @@ function SecurityPanel() {
         <CardHeader>
           <CardTitle className="text-base">Two-factor authentication</CardTitle>
           <CardDescription>
-            System admins and regulator staff must enable an authenticator app.
+            Add an authenticator app for an extra sign-in step. Recommended for
+            every account — especially admins and regulator staff.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Status:{" "}
-            <span className="font-medium text-foreground">
-              {me?.mfaEnabled
-                ? "Enabled"
-                : me?.mustEnableMfa
-                  ? "Required — not enabled"
-                  : "Optional"}
-            </span>
-          </p>
-          {!me?.mfaEnabled && (
-            <Button
-              variant="outline"
-              size="sm"
-              nativeButton={false}
-              render={<Link href="/mfa/setup" />}
-            >
-              Set up authenticator
-            </Button>
-          )}
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Status:{" "}
+              <span className="font-medium text-foreground">
+                {me?.mfaEnabled ? "Enabled" : "Disabled"}
+              </span>
+            </p>
+            {me?.mfaEnabled ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-danger hover:bg-danger/10 hover:text-danger"
+                onClick={() => setDisableOpen(true)}
+              >
+                <ShieldOff className="size-3.5" />
+                Disable 2FA
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="gap-1.5"
+                nativeButton={false}
+                render={<Link href="/mfa/setup" />}
+              >
+                <ShieldCheck className="size-3.5" />
+                Enable 2FA
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
+      <Dialog
+        open={disableOpen}
+        onOpenChange={(open) => {
+          setDisableOpen(open);
+          if (!open) disableForm.reset();
+        }}
+      >
+        <DialogPopup className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Disable two-factor authentication</DialogTitle>
+            <DialogDescription>
+              Confirm with your current password and a code from your authenticator
+              app. You can turn 2FA back on anytime from this page.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="mt-4 space-y-4"
+            onSubmit={disableForm.handleSubmit(onDisableMfa)}
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="disable-password">Current password</Label>
+              <Input
+                id="disable-password"
+                type="password"
+                autoComplete="current-password"
+                placeholder="Enter your current password"
+                {...disableForm.register("password", { required: "Required" })}
+              />
+              {disableForm.formState.errors.password && (
+                <p className="text-xs text-destructive">
+                  {disableForm.formState.errors.password.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="disable-code">Authenticator code</Label>
+              <Input
+                id="disable-code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="6-digit code"
+                className="font-mono tracking-widest"
+                {...disableForm.register("code", {
+                  required: "Required",
+                  minLength: { value: 6, message: "Enter the 6-digit code" },
+                })}
+              />
+              {disableForm.formState.errors.code && (
+                <p className="text-xs text-destructive">
+                  {disableForm.formState.errors.code.message}
+                </p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDisableOpen(false)}
+                disabled={disableMfa.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={disableMfa.isPending}
+              >
+                {disableMfa.isPending ? "Disabling…" : "Disable 2FA"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogPopup>
+      </Dialog>
+
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
             <Lock className="size-4 text-muted-foreground" />
             Change password
           </CardTitle>
@@ -295,12 +443,13 @@ function SecurityPanel() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-sm">
+          <form onSubmit={handleSubmit(onSubmit)} className="max-w-sm space-y-4">
             <div className="space-y-1.5">
               <Label>Current password</Label>
               <Input
                 type="password"
                 autoComplete="current-password"
+                placeholder="Enter your current password"
                 {...register("currentPassword", { required: "Required" })}
               />
               {errors.currentPassword && (
@@ -313,6 +462,7 @@ function SecurityPanel() {
               <Input
                 type="password"
                 autoComplete="new-password"
+                placeholder="At least 12 characters, letter + number"
                 {...register("newPassword", {
                   required: "Required",
                   validate: (v) => isPasswordAllowed(v) || PASSWORD_POLICY_MESSAGE,
@@ -328,6 +478,7 @@ function SecurityPanel() {
               <Input
                 type="password"
                 autoComplete="new-password"
+                placeholder="Re-enter your new password"
                 {...register("confirmPassword", {
                   required: "Required",
                   validate: (v) => v === newPwd || "Passwords do not match",
@@ -460,12 +611,27 @@ function PlatformPanel() {
 
 export default function SettingsPage() {
   const { data: me, isLoading } = useMe();
-  const [active, setActive] = useState<SettingsTab>("profile");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabFromUrl = parseSettingsTab(searchParams.get("tab"));
+  const [active, setActive] = useState<SettingsTab>(tabFromUrl ?? "profile");
+
+  // Keep the panel in sync when deep-linking (?tab=security) or using back/forward.
+  const [seenUrlTab, setSeenUrlTab] = useState(tabFromUrl);
+  if (tabFromUrl !== seenUrlTab) {
+    setSeenUrlTab(tabFromUrl);
+    if (tabFromUrl) setActive(tabFromUrl);
+  }
+
+  function selectTab(tab: SettingsTab) {
+    setActive(tab);
+    router.replace(`/dashboard/settings?tab=${tab}`, { scroll: false });
+  }
 
   if (isLoading || !me) {
     return (
       <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin mr-2" /> Loading settings…
+        <Loader2 className="mr-2 size-4 animate-spin" /> Loading settings…
       </div>
     );
   }
@@ -487,23 +653,23 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex gap-8 min-h-full">
+    <div className="flex min-h-full gap-8">
       {/* ── Left sidebar ── */}
       <aside className="w-52 shrink-0">
         {/* Account group */}
         <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
           Account
         </p>
-        <nav className="space-y-0.5 mb-5">
+        <nav className="mb-5 space-y-0.5">
           {accountItems.map((item) => (
             <button
               key={item.id}
               type="button"
-              onClick={() => setActive(item.id)}
+              onClick={() => selectTab(item.id)}
               className={cn(
-                "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors text-left",
+                "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors",
                 active === item.id
-                  ? "bg-slate-100 text-foreground font-semibold"
+                  ? "bg-slate-100 font-semibold text-foreground"
                   : "text-muted-foreground hover:bg-slate-50 hover:text-foreground",
               )}
             >
@@ -523,11 +689,11 @@ export default function SettingsPage() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setActive(item.id)}
+                  onClick={() => selectTab(item.id)}
                   className={cn(
-                    "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors text-left",
+                    "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors",
                     active === item.id
-                      ? "bg-slate-100 text-foreground font-semibold"
+                      ? "bg-slate-100 font-semibold text-foreground"
                       : "text-muted-foreground hover:bg-slate-50 hover:text-foreground",
                   )}
                 >
@@ -541,7 +707,7 @@ export default function SettingsPage() {
       </aside>
 
       {/* ── Right content ── */}
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         {renderPanel()}
       </div>
     </div>

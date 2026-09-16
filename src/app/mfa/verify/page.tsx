@@ -44,12 +44,9 @@ export default function MfaVerifyPage() {
       {
         onSuccess: (data) => {
           sessionStorage.removeItem("santrack_mfa_token");
+          sessionStorage.removeItem("santrack_mfa_nudge_dismissed");
           if (data.user.mustChangePassword) {
             router.replace("/change-password");
-            return;
-          }
-          if (data.user.mustEnableMfa) {
-            router.replace("/mfa/setup");
             return;
           }
           router.replace("/dashboard");

@@ -36,6 +36,8 @@ function mockUser(role: UserRole, standing = false): UserResponse {
     mustChangePassword: false,
     mfaEnabled: false,
     mustEnableMfa: false,
+    avatarUrl: null,
+    avatarUploaded: false,
     capabilities: [
       ...PREVIEW_ROLE_CAPABILITIES[role],
       ...(standing
@@ -215,6 +217,42 @@ export function useUpdateProfile() {
     mutationFn: (dto: { fullName?: string }) => authService.updateProfile(dto),
     onSuccess: (updated) => {
       queryClient.setQueryData(authKeys.me, updated);
+    },
+  });
+}
+
+export function useSetLibraryAvatar() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (avatarUrl: string | null) =>
+      authService.setLibraryAvatar(avatarUrl),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(authKeys.me, updated);
+      queryClient.removeQueries({ queryKey: [...authKeys.me, "avatar-blob"] });
+    },
+  });
+}
+
+export function useUploadAvatar() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => authService.uploadAvatar(file),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(authKeys.me, updated);
+      queryClient.invalidateQueries({
+        queryKey: [...authKeys.me, "avatar-blob"],
+      });
+    },
+  });
+}
+
+export function useClearAvatar() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => authService.clearAvatar(),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(authKeys.me, updated);
+      queryClient.removeQueries({ queryKey: [...authKeys.me, "avatar-blob"] });
     },
   });
 }

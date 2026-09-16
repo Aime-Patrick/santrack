@@ -202,6 +202,10 @@ export interface UserResponse {
   mfaEnabled: boolean;
   /** True for system admins / regulator staff until TOTP is enrolled. */
   mustEnableMfa: boolean;
+  /** Local DiceBear ref (`dicebear:style:seed`) when set. */
+  avatarUrl: string | null;
+  /** True when a custom upload is stored (fetch via /api/auth/me/avatar). */
+  avatarUploaded: boolean;
   /**
    * Everything this person may do, resolved by the server from their role and
    * their organization's standing. The only thing the UI should gate on.

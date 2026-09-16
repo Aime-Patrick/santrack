@@ -28,7 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/profile/user-avatar";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useLogout } from "@/hooks/auth";
 import { useCapabilities } from "@/hooks/permissions";
@@ -39,14 +39,9 @@ import {
 } from "@/components/layout/global-search";
 import { cn } from "@/lib/utils";
 import { locales, localeNames, type Locale } from "@/i18n/config";
+import type { UserResponse } from "@/lib/api";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-function getInitials(fullName: string): string {
-  return (
-    fullName.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase() || "DA"
-  );
-}
 
 // ─── LocaleSwitcher ──────────────────────────────────────────────────────────
 
@@ -175,7 +170,10 @@ const NotificationsMenu = React.memo(function NotificationsMenu({
 // ─── UserProfileMenu ─────────────────────────────────────────────────────────
 
 interface UserProfileMenuProps {
-  initials: string;
+  user: Pick<
+    UserResponse,
+    "fullName" | "email" | "avatarUrl" | "avatarUploaded"
+  >;
   displayName: string;
   email: string;
   role: string;
@@ -184,7 +182,7 @@ interface UserProfileMenuProps {
 }
 
 const UserProfileMenu = React.memo(function UserProfileMenu({
-  initials,
+  user,
   displayName,
   email,
   role,
@@ -201,11 +199,11 @@ const UserProfileMenu = React.memo(function UserProfileMenu({
           />
         }
       >
-        <Avatar className="size-8 rounded-lg border border-primary/30">
-          <AvatarFallback className="rounded-lg bg-primary text-primary-foreground text-xs font-bold">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          user={user}
+          className="size-8 border border-primary/30"
+          fallbackClassName="text-xs"
+        />
         <div className="hidden md:flex flex-col text-left leading-tight">
           <span className="text-xs font-semibold text-foreground">{displayName}</span>
           <span className="text-[10px] font-medium text-muted-foreground">{role}</span>
@@ -215,12 +213,12 @@ const UserProfileMenu = React.memo(function UserProfileMenu({
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-2.5 font-normal bg-[#f0f7ff] rounded-lg mb-1">
             <div className="flex items-center gap-2.5 text-left text-xs">
-              <Avatar className="size-9 rounded-lg border-2 border-[#067eda]/30">
-                <AvatarFallback className="rounded-lg bg-[#067eda] text-white text-sm font-bold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 leading-tight">
+              <UserAvatar
+                user={user}
+                className="size-9 border-2 border-[#067eda]/30"
+                fallbackClassName="text-sm bg-[#067eda] text-white"
+              />
+              <div className="grid flex-1 leading-tight min-w-0">
                 <span className="truncate font-bold text-foreground text-xs">{displayName}</span>
                 <span className="truncate text-[10px] text-muted-foreground">{email}</span>
               </div>
@@ -272,7 +270,12 @@ export function DashboardHeader() {
   const userDisplayName = me?.fullName || "Design Admin";
   const userEmail = me?.email || "admin@santrack.rw";
   const userRole = me?.role || "SYS_ADMIN";
-  const userInitials = getInitials(userDisplayName);
+  const avatarUser = {
+    fullName: me?.fullName ?? userDisplayName,
+    email: me?.email ?? userEmail,
+    avatarUrl: me?.avatarUrl ?? null,
+    avatarUploaded: me?.avatarUploaded ?? false,
+  };
 
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b border-border/80 bg-card px-3 md:px-4">
@@ -315,7 +318,7 @@ export function DashboardHeader() {
         <LocaleSwitcher />
 
         <UserProfileMenu
-          initials={userInitials}
+          user={avatarUser}
           displayName={userDisplayName}
           email={userEmail}
           role={userRole}
