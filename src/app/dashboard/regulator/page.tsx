@@ -606,26 +606,32 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: st
 // Inline command strip — 2-row × 3-col value+label cards
 // ---------------------------------------------------------------------------
 
-const STRIP_CARDS = [
-  { key: "activeCases",           label: "Active cases",   valueClass: "text-primary"  },
-  { key: "overdueCases",          label: "Overdue",        valueClass: "text-destructive" },
-  { key: "unassignedCases",       label: "Need owner",     valueClass: "text-warning"  },
-  { key: "activeRecalls",         label: "Active recalls", valueClass: "text-destructive" },
-  { key: "marketReportsToTriage", label: "Market triage",  valueClass: "text-warning"  },
-  { key: "inspectionsToday",      label: "Inspections",    valueClass: "text-success"  },
+const STRIP_CHIPS = [
+  { key: "activeCases",           label: "Active cases",   chip: "bg-primary" },
+  { key: "overdueCases",          label: "Overdue",        chip: "bg-danger" },
+  { key: "unassignedCases",       label: "Need owner",     chip: "bg-[#d97706]" },
+  { key: "activeRecalls",         label: "Active recalls", chip: "bg-danger" },
+  { key: "marketReportsToTriage", label: "Market triage",  chip: "bg-[#d97706]" },
+  { key: "inspectionsToday",      label: "Inspections",    chip: "bg-success" },
 ] as const;
 
 function CommandStrip() {
   const { data, isLoading } = useRegulatoryCommand();
   return (
-    <div className="grid grid-cols-3 gap-x-5 gap-y-2">
-      {STRIP_CARDS.map(({ key, label, valueClass }) => (
-        <div key={key}>
-          <p className={`text-lg font-bold tabular-nums leading-none ${valueClass}`}>
+    <div className="flex max-w-xl flex-wrap items-center justify-end gap-1.5">
+      {STRIP_CHIPS.map(({ key, label, chip }) => (
+        <span
+          key={key}
+          className={cn(
+            "inline-flex items-baseline gap-1.5 rounded-full px-2.5 py-1 text-white",
+            chip,
+          )}
+        >
+          <span className="text-sm font-bold tabular-nums leading-none">
             {isLoading ? "—" : (data?.[key] ?? 0)}
-          </p>
-          <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">{label}</p>
-        </div>
+          </span>
+          <span className="text-[10px] font-medium leading-none">{label}</span>
+        </span>
       ))}
     </div>
   );

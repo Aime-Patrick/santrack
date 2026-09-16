@@ -156,25 +156,25 @@ export function RecentActivities() {
           const code = row.original.statusCode;
           if (status === "success") {
             return (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 border border-emerald-500/20 dark:text-emerald-400">
-                <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
+              <Badge variant="success" className="h-auto gap-1 px-2.5 py-0.5">
+                <CheckCircle2 className="size-3" />
                 {tCommon("success")}
-              </span>
+              </Badge>
             );
           }
           if (status === "failed") {
             return (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-red-700 border border-red-500/20 dark:text-red-400">
-                <XCircle className="size-3 text-red-600 dark:text-red-400" />
+              <Badge variant="danger" className="h-auto gap-1 px-2.5 py-0.5">
+                <XCircle className="size-3" />
                 {tCommon("failed")} {code >= 400 ? `(${code})` : ""}
-              </span>
+              </Badge>
             );
           }
           return (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 border border-amber-500/20 dark:text-amber-400">
-              <Clock className="size-3 text-amber-600 dark:text-amber-400" />
+            <Badge variant="warning" className="h-auto gap-1 px-2.5 py-0.5">
+              <Clock className="size-3" />
               {tCommon("pending")}
-            </span>
+            </Badge>
           );
         },
       },

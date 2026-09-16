@@ -449,11 +449,11 @@ export function statusColor(status: string): string {
     case "UNDER_REVIEW":
       return "bg-info text-white border-info";
     case "CHANGES_REQUESTED":
-      return "bg-warning text-white border-warning";
+      return "bg-[#d97706] text-white border-transparent";
     case "DRAFT":
       return "bg-muted text-muted-foreground border-border";
     case "EXPIRED":
-      return "bg-warning text-white border-warning";
+      return "bg-[#d97706] text-white border-transparent";
     case "SUSPENDED":
     case "REJECTED":
       return "bg-danger text-white border-danger";
