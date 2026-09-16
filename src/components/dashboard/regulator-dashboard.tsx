@@ -6,18 +6,10 @@ import {
   FileBadge,
   AlertTriangle,
   Clock,
-  ArrowRight,
   ShieldCheck,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { MetricCard } from "@/components/dashboard/stat-card";
+import { RegulatorCharts } from "@/components/dashboard/regulator-charts";
 import { useComplianceFindings, useRegulatorQueue } from "@/hooks/licensing";
 import { useRegulatoryCommand } from "@/hooks/regulatory-command";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -90,6 +82,13 @@ export function RegulatorDashboard() {
         />
       </div>
 
+      <RegulatorCharts
+        command={command}
+        queue={queue}
+        findings={findings?.findings}
+        loading={commandLoading || queueLoading}
+      />
+
       <div className="grid gap-4 md:grid-cols-3">
         <QuickLink
           href="/dashboard/industries"
@@ -123,40 +122,7 @@ export function RegulatorDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <Card className="border border-border/80 shadow-xs">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <div>
-                <CardTitle className="text-base">Next decisions</CardTitle>
-                <CardDescription>
-                  Jump to the licence queue or findings that need attention
-                </CardDescription>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                render={<Link href="/dashboard/regulator" />}
-              >
-                Review
-                <ArrowRight className="ml-1.5 size-3.5" />
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <p>
-                Use <span className="font-medium text-foreground">License Review</span>{" "}
-                to approve or refuse applications. Use{" "}
-                <span className="font-medium text-foreground">Industries</span>{" "}
-                for the register — not Licenses &amp; Permits (that is for
-                applicants).
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-        <div className="lg:col-span-2">
-          <RecentActivities />
-        </div>
-      </div>
+      <RecentActivities />
     </div>
   );
 }
