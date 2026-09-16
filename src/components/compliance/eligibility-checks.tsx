@@ -8,10 +8,7 @@ import { StatusBadge } from "./status-badge";
  * Readable titles for the eight check codes.
  *
  * A naming table, nothing more. The status beside each one is the server's and
- * is never derived here — including for the two checks that ship inert
- * (`PRODUCT_AUTHORIZATION`, `PER_PRODUCTION_APPROVAL`), which return
- * NOT_APPLICABLE from the API today and will start returning real verdicts
- * post-MVP without this screen changing.
+ * is never derived here.
  */
 const CHECK_TITLES: Record<string, string> = {
   ORGANIZATION_LICENCE: "Company licence",
@@ -21,7 +18,7 @@ const CHECK_TITLES: Record<string, string> = {
   LICENCE_VALIDITY_AT_REQUESTED_DATE: "Licence valid on the requested date",
   PRODUCT_TRACEABILITY: "Product traceability",
   BATCH_AND_RECALL_RESTRICTIONS: "Batch and recall restrictions",
-  PER_PRODUCTION_APPROVAL: "Per-production approval",
+  PER_PRODUCTION_APPROVAL: "Facility GMP inspection",
 };
 
 function titleFor(code: string): string {

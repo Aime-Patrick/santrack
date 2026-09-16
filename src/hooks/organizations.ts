@@ -340,12 +340,38 @@ export function useCreateInfoRequest() {
     }) => organizationService.createInfoRequest(orgId, input),
     onSuccess: (_data, { orgId }) => {
       qc.invalidateQueries({ queryKey: infoRequestKeys.forOrg(orgId) });
-      toast.success("Information request sent — applicant notified by email");
+      toast.success(
+        "Information request sent — any previous open request was closed",
+      );
     },
     onError: (error: unknown) => {
       toast.error(
         (error as { response?: { data?: { message?: string } } })?.response?.data
           ?.message ?? "Could not send information request",
+      );
+    },
+  });
+}
+
+/** Re-delivers email for an existing PENDING information request. Regulator only. */
+export function useResendInfoRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      orgId,
+      requestId,
+    }: {
+      orgId: number;
+      requestId: number;
+    }) => organizationService.resendInfoRequest(orgId, requestId),
+    onSuccess: (_data, { orgId }) => {
+      qc.invalidateQueries({ queryKey: infoRequestKeys.forOrg(orgId) });
+      toast.success("Information request email resent");
+    },
+    onError: (error: unknown) => {
+      toast.error(
+        (error as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Could not resend information request",
       );
     },
   });

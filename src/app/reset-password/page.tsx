@@ -11,12 +11,11 @@ import { getApiErrorMessage } from "@/lib/api";
 import { useResetPassword } from "@/hooks/auth";
 import { AuthPrimaryButton } from "@/components/auth/auth-primary-button";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { strongPasswordSchema } from "@/lib/password-policy";
 
 const schema = z
   .object({
-    newPassword: z
-      .string()
-      .min(8, "Password must be at least 8 characters"),
+    newPassword: strongPasswordSchema,
     confirmPassword: z.string().min(1, "Confirm your new password"),
   })
   .refine((v) => v.newPassword === v.confirmPassword, {

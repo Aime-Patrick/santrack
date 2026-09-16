@@ -90,8 +90,17 @@ export default function LoginPage() {
       { email: values.email, password: values.password },
       {
         onSuccess: (data) => {
+          if ("mfaRequired" in data && data.mfaRequired) {
+            sessionStorage.setItem("santrack_mfa_token", data.mfaToken);
+            router.replace("/mfa/verify");
+            return;
+          }
           if (data.user.mustChangePassword) {
             router.replace("/change-password");
+            return;
+          }
+          if (data.user.mustEnableMfa) {
+            router.replace("/mfa/setup");
             return;
           }
           if (data.user.role === "SYSTEM_ADMIN" || data.user.organization) {

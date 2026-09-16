@@ -7,6 +7,7 @@ import { clearAuthToken, getAuthToken } from "./auth";
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081",
+  withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
@@ -20,13 +21,24 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // A 401 on a request that presented a token means the session expired —
+    // A 401 on a request that presented a session means the session expired —
     // clear it and send the user back to login. A 401 on an anonymous request
     // (e.g. wrong password on /api/auth/login) is a form error, not a dead
     // session: redirecting there would hard-reload the page and wipe the
     // inline error the caller is about to render.
-    const hadToken = Boolean(error.config?.headers?.Authorization);
-    if (error.response?.status === 401 && hadToken && typeof window !== "undefined") {
+    const url = String(error.config?.url ?? "");
+    const isAuthAttempt =
+      /\/api\/auth\/(login|register|forgot-password|reset-password|mfa\/verify-login)/.test(
+        url,
+      );
+    const hadSession =
+      Boolean(error.config?.headers?.Authorization) || Boolean(getAuthToken());
+    if (
+      error.response?.status === 401 &&
+      hadSession &&
+      !isAuthAttempt &&
+      typeof window !== "undefined"
+    ) {
       clearAuthToken();
       window.location.href = "/login";
     }
@@ -187,6 +199,9 @@ export interface UserResponse {
   organization: OrganizationResponse | null;
   /** True until the user replaces an invite / admin-reset temporary password. */
   mustChangePassword: boolean;
+  mfaEnabled: boolean;
+  /** True for system admins / regulator staff until TOTP is enrolled. */
+  mustEnableMfa: boolean;
   /**
    * Everything this person may do, resolved by the server from their role and
    * their organization's standing. The only thing the UI should gate on.
@@ -204,6 +219,13 @@ export interface AuthResponse {
   token: string;
   user: UserResponse;
 }
+
+export interface MfaChallengeResponse {
+  mfaRequired: true;
+  mfaToken: string;
+}
+
+export type LoginResponse = AuthResponse | MfaChallengeResponse;
 
 export interface RegisterInput {
   fullName: string;
@@ -621,7 +643,7 @@ export interface RespondConsultationInput {
 // Registration Info Request
 // ---------------------------------------------------------------------------
 
-export type InfoRequestStatus = 'PENDING' | 'RESPONDED' | 'EXPIRED';
+export type InfoRequestStatus = 'PENDING' | 'RESPONDED' | 'EXPIRED' | 'SUPERSEDED';
 
 export interface InfoRequestField {
   key: string;

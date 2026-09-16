@@ -228,7 +228,11 @@ function ScanAndTraceWorkspace() {
   // Opening a product's label pools is a producer's job (REGISTER_IDENTITY).
   // Other roles — a regulator scanning during an inspection — get the same
   // explanation without the shortcut into Label Studio.
-  const canOpenLabelPools = useCapabilities().can("REGISTER_IDENTITY");
+  const caps = useCapabilities();
+  const canOpenLabelPools = caps.can("REGISTER_IDENTITY");
+  const canOpenProduction = caps.can("RUN_PRODUCTION");
+  const canPrintLabels = caps.can("PRINT_LABELS");
+  const showProducerShortcuts = canOpenProduction || canPrintLabels;
 
   const pack = usePackItems();
   const openSeal = useOpenPackage();
@@ -465,18 +469,25 @@ function ScanAndTraceWorkspace() {
           <div className="max-w-md space-y-1 px-4">
             <p className="font-semibold text-foreground">Scan to get started</p>
             <p className="text-sm text-muted-foreground">
-              Use a unit or package QR to pack, move, or sell. Use a lot code to see the full
-              journey for that batch.
+              {showProducerShortcuts
+                ? "Use a unit or package QR to pack, move, or sell. Use a lot code to see the full journey for that batch."
+                : "Scan a unit, package, or lot code to inspect its journey and current custody."}
             </p>
           </div>
-          <div className="flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
-            <Link href="/dashboard/manufacturing" className="rounded-md border border-border px-2.5 py-1 hover:text-foreground">
-              Production pipeline
-            </Link>
-            <Link href="/dashboard/labels/print" className="rounded-md border border-border px-2.5 py-1 hover:text-foreground">
-              Print labels
-            </Link>
-          </div>
+          {showProducerShortcuts && (
+            <div className="flex flex-wrap justify-center gap-2 text-xs text-muted-foreground">
+              {canOpenProduction && (
+                <Link href="/dashboard/manufacturing" className="rounded-md border border-border px-2.5 py-1 hover:text-foreground">
+                  Production pipeline
+                </Link>
+              )}
+              {canPrintLabels && (
+                <Link href="/dashboard/labels/print" className="rounded-md border border-border px-2.5 py-1 hover:text-foreground">
+                  Print labels
+                </Link>
+              )}
+            </div>
+          )}
         </div>
       ) : null}
 

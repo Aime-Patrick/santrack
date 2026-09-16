@@ -12,10 +12,9 @@ import { EligibilityChecklist, RemedyLink, firstFailing } from "./eligibility-ch
  * There are **three** outcomes, "not two", and the third is the one that gets
  * lost. `eligible` is the regulatory verdict and `blocking` is whether creation
  * is refused; they are separate fields because they answer separate questions.
- * Under ADVISORY an ineligible run is *permitted* — the order is created and a
- * compliance finding is written against it. Collapsing that into "blocked"
- * stops work the platform allows; collapsing it into "fine" hides a regulatory
- * failure the manufacturer is accountable for.
+ * Strict is the deployment default, but advisory may still be used in demo
+ * environments. Collapsing that into only "blocked" or only "fine" hides the
+ * compliance truth the regulator and manufacturer need to see.
  *
  * Both fields come from the API. Nothing here recomputes either, and the branch
  * below reads them rather than the enforcement mode, because the mode's effect
@@ -155,7 +154,7 @@ export function EligibilityOutcome({
             <span className="font-semibold">
               {enforcementLabel(result.enforcementMode)}
             </span>
-            , so the platform does not stop the run — but it did not pass, and
+            , so this environment does not stop the run — but it did not pass, and
             the failure will be recorded as a compliance finding against the
             order.
           </p>

@@ -48,6 +48,7 @@ import {
   useCancelConsultation,
   useCreateInfoRequest,
   useInfoRequests,
+  useResendInfoRequest,
 } from "@/hooks/organizations";
 import {
   useMyRegulatoryAuthority,
@@ -249,10 +250,12 @@ const FIELD_TYPES = [
 function SendInfoRequestDialog({
   orgId,
   orgName,
+  hasOpenRequest,
   onClose,
 }: {
   orgId: number;
   orgName: string;
+  hasOpenRequest: boolean;
   onClose: () => void;
 }) {
   const createRequest = useCreateInfoRequest();
@@ -319,6 +322,15 @@ function SendInfoRequestDialog({
           <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800">
             The applicant will receive an email with a secure link to submit the requested information. The link expires after the number of days you choose below.
           </div>
+
+          {hasOpenRequest && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+              An open information request already exists. Sending this one will
+              close the previous link (supersede) and email a new one. To retry
+              delivery of the current ask without changing it, use{" "}
+              <span className="font-semibold">Resend email</span> instead.
+            </div>
+          )}
 
           {/* Message */}
           <div className="space-y-1.5">
@@ -437,6 +449,7 @@ function RegistrationReviewDialog({
   const { data: documents, isLoading: docsLoading, error: docsError } = useRegistrationDocuments(org.id);
   const { data: consultations = [], isLoading: consultsLoading } = useConsultations(org.id);
   const { data: infoRequests = [] } = useInfoRequests(org.id);
+  const resendInfoRequest = useResendInfoRequest();
   const { data: myAuthority } = useMyRegulatoryAuthority(true);
 
   const [decision, setDecision] = useState<DecisionType | null>(null);
@@ -445,6 +458,9 @@ function RegistrationReviewDialog({
   const [openDoc, setOpenDoc] = useState<OrganizationDocument | null>(null);
   const [showSendConsultation, setShowSendConsultation] = useState(false);
   const [showInfoRequest, setShowInfoRequest] = useState(false);
+  const [resendingId, setResendingId] = useState<number | null>(null);
+
+  const hasOpenInfoRequest = infoRequests.some((req) => req.status === "PENDING");
 
   const reasonRequired = decision === "REJECT" || decision === "REQUEST_CHANGES";
   const reasonLabel =
@@ -766,7 +782,7 @@ function RegistrationReviewDialog({
                   "rounded-lg border p-3 text-xs",
                   req.status === "RESPONDED"
                     ? "border-emerald-200 bg-emerald-50"
-                    : req.status === "EXPIRED"
+                    : req.status === "EXPIRED" || req.status === "SUPERSEDED"
                     ? "border-slate-200 bg-slate-50 opacity-60"
                     : "border-amber-200 bg-amber-50",
                 )}>
@@ -775,9 +791,16 @@ function RegistrationReviewDialog({
                       "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
                       req.status === "RESPONDED" ? "bg-emerald-100 text-emerald-700" :
                       req.status === "EXPIRED" ? "bg-slate-100 text-slate-500" :
+                      req.status === "SUPERSEDED" ? "bg-slate-100 text-slate-500" :
                       "bg-amber-100 text-amber-700"
                     )}>
-                      {req.status === "RESPONDED" ? "✓ Responded" : req.status === "EXPIRED" ? "Expired" : "Awaiting response"}
+                      {req.status === "RESPONDED"
+                        ? "✓ Responded"
+                        : req.status === "EXPIRED"
+                        ? "Expired"
+                        : req.status === "SUPERSEDED"
+                        ? "Replaced"
+                        : "Awaiting response"}
                     </span>
                     <span className="text-muted-foreground">
                       Sent {new Date(req.createdAt).toLocaleDateString()}
@@ -789,6 +812,30 @@ function RegistrationReviewDialog({
                     <p className="mt-1 text-muted-foreground">
                       {req.requestedFields.length} field{req.requestedFields.length !== 1 ? "s" : ""} requested
                     </p>
+                  )}
+                  {req.status === "PENDING" && (
+                    <div className="mt-2 flex justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 gap-1 text-xs"
+                        disabled={resendInfoRequest.isPending && resendingId === req.id}
+                        onClick={() => {
+                          setResendingId(req.id);
+                          resendInfoRequest.mutate(
+                            { orgId: org.id, requestId: req.id },
+                            { onSettled: () => setResendingId(null) },
+                          );
+                        }}
+                      >
+                        {resendInfoRequest.isPending && resendingId === req.id ? (
+                          <LoaderCircle className="size-3 animate-spin" />
+                        ) : (
+                          <Mail className="size-3" />
+                        )}
+                        Resend email
+                      </Button>
+                    </div>
                   )}
                   {req.status === "RESPONDED" && (
                     <div className="mt-2 space-y-2 rounded-md border border-emerald-200/80 bg-white/70 p-2.5">
@@ -915,6 +962,7 @@ function RegistrationReviewDialog({
         <SendInfoRequestDialog
           orgId={org.id}
           orgName={org.name}
+          hasOpenRequest={hasOpenInfoRequest}
           onClose={() => setShowInfoRequest(false)}
         />
       )}

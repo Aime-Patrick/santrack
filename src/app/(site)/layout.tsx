@@ -2,16 +2,15 @@ import { LandingNav } from "@/components/landing/landing-nav";
 import { FooterSection } from "@/components/landing/footer-section";
 
 /**
- * The public face of the platform: the landing page and the consumer
- * verification flow.
+ * Public site shell: fixed header + page content + footer.
  *
- * A route group rather than a path segment, so these pages share the nav and
- * footer without `(site)` appearing in any URL — `/` and `/verify/TOKEN` are
- * what a consumer scans and what is printed on a label, and neither may move.
+ * Route group `(site)` does not appear in URLs — `/`, `/verify`, `/verify/TOKEN`
+ * stay stable for labels and consumer scans.
  *
- * No top padding here: `LandingNav` is fixed, and each page decides how it
- * meets it. The hero runs its own colour up under the bar deliberately, which
- * a padded wrapper would break with a white band.
+ * Nav is fixed (`h-16`). Pages that need clearance (verify, about hero, etc.)
+ * add their own top padding; the landing hero deliberately paints under the bar.
+ * `flex-1` on the content slot keeps short pages from leaving a gap above the
+ * footer without each page inventing its own full-viewport height.
  */
 export default function SiteLayout({
   children,
@@ -19,9 +18,9 @@ export default function SiteLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#f7f9fc]">
+    <div className="flex min-h-dvh flex-col bg-[#f7f9fc]">
       <LandingNav />
-      {children}
+      <div className="flex flex-1 flex-col">{children}</div>
       <FooterSection />
     </div>
   );

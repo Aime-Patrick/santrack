@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/select";
 import { MetricCard } from "@/components/dashboard/stat-card";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { RichTextDisplay } from "@/components/ui/rich-text";
 import {
   useQualityInspections,
   useCreateInspection,
@@ -587,22 +588,9 @@ function InspectionDetailDialog({
 
         <div className="space-y-3 py-2">
           {inspection.notes ? (
-            <div
-              className={[
-                "rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm leading-relaxed",
-                // Same prose styles as RichTextEditor content area
-                "[&_h2]:mb-1 [&_h2]:mt-3 [&_h2]:text-base [&_h2]:font-bold",
-                "[&_h3]:mb-1 [&_h3]:mt-2.5 [&_h3]:text-sm [&_h3]:font-semibold",
-                "[&_p]:mb-1.5",
-                "[&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2",
-                "[&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2",
-                "[&_li]:mb-0.5",
-                "[&_blockquote]:border-l-2 [&_blockquote]:border-primary/40 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_blockquote]:italic [&_blockquote]:my-2",
-                "[&_hr]:my-3 [&_hr]:border-border",
-                "[&_strong]:font-semibold",
-                "[&_em]:italic",
-              ].join(" ")}
-              dangerouslySetInnerHTML={{ __html: inspection.notes }}
+            <RichTextDisplay
+              html={inspection.notes}
+              className="rounded-lg border border-border bg-muted/30 px-4 py-3"
             />
           ) : (
             <p className="text-sm text-muted-foreground italic">No notes recorded.</p>

@@ -28,6 +28,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useMe, useChangePassword, useUpdateProfile } from "@/hooks/auth";
 import { TeamMembersPanel } from "@/components/dashboard/team-members-panel";
+import { isPasswordAllowed, PASSWORD_POLICY_MESSAGE } from "@/lib/password-policy";
 import { ROLE_LABELS } from "@/lib/user-roles";
 import { AuthoritySelfSetup } from "@/components/regulator/authority-self-setup";
 import { OversightScopeSettings } from "@/components/dashboard/oversight-scope-settings";
@@ -223,6 +224,7 @@ function GeneralPanel() {
 // ── Security panel ───────────────────────────────────────────────────────────
 
 function SecurityPanel() {
+  const { data: me } = useMe();
   const changePassword = useChangePassword();
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
     defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
@@ -247,9 +249,35 @@ function SecurityPanel() {
       <div>
         <h2 className="text-lg font-bold text-foreground">Security</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Keep your account secure.
+          Password and authenticator settings for your account.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Two-factor authentication</CardTitle>
+          <CardDescription>
+            System admins and regulator staff must enable an authenticator app.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Status:{" "}
+            <span className="font-medium text-foreground">
+              {me?.mfaEnabled
+                ? "Enabled"
+                : me?.mustEnableMfa
+                  ? "Required — not enabled"
+                  : "Optional"}
+            </span>
+          </p>
+          {!me?.mfaEnabled && (
+            <Button asChild variant="outline" size="sm">
+              <Link href="/mfa/setup">Set up authenticator</Link>
+            </Button>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -258,7 +286,7 @@ function SecurityPanel() {
             Change password
           </CardTitle>
           <CardDescription>
-            Use a strong, unique password you don't use elsewhere.
+            Use a strong, unique password you don&apos;t use elsewhere.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -270,7 +298,9 @@ function SecurityPanel() {
                 autoComplete="current-password"
                 {...register("currentPassword", { required: "Required" })}
               />
-              {errors.currentPassword && <p className="text-xs text-destructive">{errors.currentPassword.message}</p>}
+              {errors.currentPassword && (
+                <p className="text-xs text-destructive">{errors.currentPassword.message}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -280,10 +310,12 @@ function SecurityPanel() {
                 autoComplete="new-password"
                 {...register("newPassword", {
                   required: "Required",
-                  minLength: { value: 8, message: "At least 8 characters" },
+                  validate: (v) => isPasswordAllowed(v) || PASSWORD_POLICY_MESSAGE,
                 })}
               />
-              {errors.newPassword && <p className="text-xs text-destructive">{errors.newPassword.message}</p>}
+              {errors.newPassword && (
+                <p className="text-xs text-destructive">{errors.newPassword.message}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -296,17 +328,13 @@ function SecurityPanel() {
                   validate: (v) => v === newPwd || "Passwords do not match",
                 })}
               />
-              {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
+              {errors.confirmPassword && (
+                <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
+              )}
             </div>
 
-            <Button
-              type="submit"
-              disabled={changePassword.isPending}
-              className="bg-[#067eda] hover:bg-[#0569c0] text-white"
-            >
-              {changePassword.isPending ? (
-                <><Loader2 className="size-3.5 mr-1.5 animate-spin" /> Updating…</>
-              ) : "Update password"}
+            <Button type="submit" disabled={changePassword.isPending}>
+              {changePassword.isPending ? "Updating…" : "Update password"}
             </Button>
           </form>
         </CardContent>

@@ -11,13 +11,14 @@ import { useTranslations } from "next-intl";
 import { getApiErrorMessage } from "@/lib/api";
 import { useRegister } from "@/hooks/auth";
 import { AuthPrimaryButton } from "@/components/auth/auth-primary-button";
+import { strongPasswordSchema } from "@/lib/password-policy";
 
 const DESIGN_MODE = process.env.NEXT_PUBLIC_DESIGN_MODE === "true";
 
 const registerSchema = z.object({
   fullName: z.string().trim().min(2, "Enter your full name"),
   email: z.string().trim().email("Enter a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: strongPasswordSchema,
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;

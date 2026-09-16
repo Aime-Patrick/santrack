@@ -38,6 +38,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { RichTextDisplay, plainTextFromHtml } from "@/components/ui/rich-text";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -299,11 +300,11 @@ export default function RecallDetailPage() {
 
       {/* ── Recall reason banner ── */}
       <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm leading-relaxed text-foreground/75">
-        <span className="font-semibold text-danger">Recall reason: </span>
-        {recall.reason}
-        <span className="ml-3 text-xs text-muted-foreground">
-          — {new Date(recall.recallDate).toLocaleString()}
-        </span>
+        <p className="mb-1.5 font-semibold text-danger">Recall reason</p>
+        <RichTextDisplay html={recall.reason} />
+        <p className="mt-2 text-xs text-muted-foreground">
+          {new Date(recall.recallDate).toLocaleString()}
+        </p>
       </div>
 
       {/* ── Inventory metrics ── */}
@@ -376,9 +377,10 @@ export default function RecallDetailPage() {
             {new Date(recall.recallDate).toLocaleString()}
           </Field>
           <Field label="Defect / cause" span>
-            <p className="whitespace-pre-wrap rounded-lg border border-border bg-muted/30 p-3 text-sm leading-relaxed">
-              {recall.reason}
-            </p>
+            <RichTextDisplay
+              html={recall.reason}
+              className="rounded-lg border border-border bg-muted/30 p-3"
+            />
           </Field>
         </CardContent>
       </Card>
@@ -693,7 +695,10 @@ export default function RecallDetailPage() {
               <p><span className="font-semibold">Product:</span> {productName} (SKU: {recall.productSku ?? "N/A"})</p>
               <p><span className="font-semibold">Lot code:</span> <span className="font-mono">{recall.batchNumber}</span></p>
               <p><span className="font-semibold">Manufacturer:</span> {recall.manufacturerName ?? recall.initiatedBy}</p>
-              <p><span className="font-semibold">Defect / cause:</span> {recall.reason}</p>
+              <p>
+                <span className="font-semibold">Defect / cause:</span>{" "}
+                {plainTextFromHtml(recall.reason) || "—"}
+              </p>
               <p><span className="font-semibold">Recall issued:</span> {new Date(recall.recallDate).toLocaleString()}</p>
               <p><span className="font-semibold">Units affected:</span> {totalUnits.toLocaleString()}</p>
               <p><span className="font-semibold">Registered holder sites:</span> {holders.length}</p>

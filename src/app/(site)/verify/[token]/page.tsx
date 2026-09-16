@@ -46,8 +46,11 @@ export default function VerifyTokenPage({
   const { data, isLoading, error } = useVerify(token);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      {/* Atmosphere — soft flag wash, not a flat grey sheet */}
+    /*
+     * Child of `(site)` layout — LandingNav + FooterSection wrap this page.
+     * Brand chrome lives in the nav/footer; this page owns only the certificate.
+     */
+    <div className="relative flex flex-1 flex-col overflow-x-hidden bg-background text-foreground">
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] opacity-90"
         style={{
@@ -57,33 +60,35 @@ export default function VerifyTokenPage({
         aria-hidden
       />
 
-      <div className="relative flex h-1.5" aria-hidden="true">
-        <span className="flex-1 bg-rwanda-blue" />
-        <span className="flex-1 bg-rwanda-yellow" />
-        <span className="flex-1 bg-rwanda-green" />
+      {/* Clear fixed nav, then a thin flag accent before page content */}
+      <div className="relative pt-16" aria-hidden="true">
+        <div className="flex h-1.5">
+          <span className="flex-1 bg-rwanda-blue" />
+          <span className="flex-1 bg-rwanda-yellow" />
+          <span className="flex-1 bg-rwanda-green" />
+        </div>
       </div>
 
-      <div className="relative mx-auto w-full max-w-lg px-5 pb-20 pt-6 sm:px-8">
-        <header className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <TrustSeal size="sm" tone="neutral" />
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-foreground">
-                SanTrack Seal
-              </p>
-              <p className="text-[11px] text-muted-foreground">Public authenticity check</p>
-            </div>
+      <div className="relative mx-auto w-full max-w-lg flex-1 px-4 pb-12 pt-5 sm:px-8 sm:pb-16 sm:pt-6">
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-foreground">
+              Authenticity check
+            </p>
+            <p className="truncate text-[11px] text-muted-foreground">
+              Public product verification
+            </p>
           </div>
           <Link
             href="/verify"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary underline-offset-4 hover:underline"
+            className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold text-primary underline-offset-4 hover:underline"
           >
             <ScanLine className="size-3.5" />
             Scan another
           </Link>
         </header>
 
-        <main className="mt-8">
+        <main className="mt-6 min-w-0 sm:mt-8">
           {isLoading ? <LoadingState /> : null}
           {error ? (
             <NotFoundState
@@ -100,7 +105,7 @@ export default function VerifyTokenPage({
 
 function LoadingState() {
   return (
-    <section className="flex min-h-[22rem] flex-col items-center justify-center text-center">
+    <section className="flex min-h-[16rem] flex-col items-center justify-center px-2 text-center sm:min-h-[22rem]">
       <TrustSeal size="lg" tone="neutral" animate />
       <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin text-primary" aria-hidden />
@@ -122,21 +127,21 @@ function NotFoundState({
   firstScan?: boolean;
 }) {
   return (
-    <section className="rounded-xl border border-danger/30 bg-danger/5 px-5 py-8 sm:px-7">
+    <section className="rounded-xl border border-danger/30 bg-danger/5 px-4 py-6 sm:px-7 sm:py-8">
       <TrustSeal size="lg" tone="danger" animate label="Not in the registry" />
-      <div className="mt-6 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-danger">
-        <ShieldAlert className="size-3.5" />
-        Code not recognised
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-danger">
+        <ShieldAlert className="size-3.5 shrink-0" />
+        <span>Code not recognised</span>
       </div>
-      <h1 className="mt-3 text-center text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+      <h1 className="mt-3 text-balance text-center text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
         We could not verify this product
       </h1>
-      <p className="mx-auto mt-3 max-w-md text-center text-sm leading-6 text-muted-foreground">
+      <p className="mx-auto mt-3 max-w-md text-pretty text-center text-sm leading-6 text-muted-foreground">
         {message}
       </p>
 
       {typeof scanCount === "number" && scanCount > 0 ? (
-        <p className="mx-auto mt-4 max-w-sm text-center text-xs text-muted-foreground">
+        <p className="mx-auto mt-4 max-w-sm text-pretty text-center text-xs text-muted-foreground">
           {firstScan
             ? "This is the first time this unknown code was checked."
             : `This unknown code has been checked ${scanCount} times.`}
@@ -150,10 +155,10 @@ function NotFoundState({
         Do not buy or use the product until its seal is confirmed.
       </p>
 
-      <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+      <div className="mt-7 flex w-full flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
         <Link
           href="/verify"
-          className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+          className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
         >
           Scan another product
         </Link>
@@ -253,8 +258,8 @@ function VerifyCertificate({ token, result }: { token: string; result: VerifyRes
           : null;
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-xl border border-border bg-card/90 px-5 py-8 shadow-xs backdrop-blur-sm sm:px-8">
+    <div className="min-w-0 space-y-5 sm:space-y-6">
+      <section className="overflow-hidden rounded-xl border border-border bg-card/90 px-4 py-6 shadow-xs backdrop-blur-sm sm:px-8 sm:py-8">
         <TrustSeal
           size="xl"
           tone={tone}
@@ -264,7 +269,7 @@ function VerifyCertificate({ token, result }: { token: string; result: VerifyRes
 
         <div
           className={cn(
-            "mt-6 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.16em]",
+            "mt-5 flex flex-wrap items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.16em] sm:mt-6",
             tone === "success" && "text-success",
             tone === "info" && "text-primary",
             tone === "warning" && "text-warning-foreground",
@@ -272,22 +277,24 @@ function VerifyCertificate({ token, result }: { token: string; result: VerifyRes
           )}
         >
           {tone === "danger" || tone === "warning" ? (
-            <ShieldAlert className="size-3.5" />
+            <ShieldAlert className="size-3.5 shrink-0" />
           ) : (
-            <ShieldCheck className="size-3.5" />
+            <ShieldCheck className="size-3.5 shrink-0" />
           )}
-          {statusLabel}
+          <span className="text-center">{statusLabel}</span>
         </div>
 
-        <h1 className="mt-3 text-center text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl">
+        <h1 className="mt-3 text-balance break-words text-center text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-3xl md:text-4xl">
           {result.productName || "Registered product"}
         </h1>
         {result.productSku ? (
-          <p className="mt-2 text-center font-mono text-xs text-muted-foreground">{result.productSku}</p>
+          <p className="mt-2 break-all text-center font-mono text-xs text-muted-foreground">
+            {result.productSku}
+          </p>
         ) : null}
         <p
           className={cn(
-            "mx-auto mt-4 max-w-md text-center text-sm leading-6",
+            "mx-auto mt-4 max-w-md text-pretty text-center text-sm leading-6",
             tone === "danger" ? "font-medium text-danger" : "text-muted-foreground",
           )}
         >
@@ -304,7 +311,9 @@ function VerifyCertificate({ token, result }: { token: string; result: VerifyRes
             )}
           >
             <p className="text-xs font-semibold text-foreground">{scanSignal.title}</p>
-            <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{scanSignal.detail}</p>
+            <p className="mt-1 text-pretty text-[11px] leading-5 text-muted-foreground">
+              {scanSignal.detail}
+            </p>
           </div>
         ) : null}
 
@@ -328,7 +337,7 @@ function VerifyCertificate({ token, result }: { token: string; result: VerifyRes
         <RecordRow label="Record status" value={statusLabel} />
       </section>
 
-      <details className="group rounded-xl border border-border bg-card px-5 py-4">
+      <details className="group rounded-xl border border-border bg-card px-4 py-4 sm:px-5">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-foreground [&::-webkit-details-marker]:hidden">
           Seal checks
           <span
@@ -367,17 +376,17 @@ function VerifyCertificate({ token, result }: { token: string; result: VerifyRes
         </div>
       </details>
 
-      <div className="flex flex-wrap items-center justify-center gap-3">
+      <div className="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
         <Link
           href="/verify"
-          className="inline-flex h-10 items-center rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+          className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90"
         >
           Scan another product
         </Link>
         <ReportProductIssue token={token} compact />
       </div>
 
-      <p className="text-center text-[11px] text-faint">
+      <p className="break-all px-1 text-center text-[11px] text-faint">
         Public verification · each unit seal is unique · {token.slice(0, 18)}
         {token.length > 18 ? "…" : ""}
       </p>
@@ -391,8 +400,8 @@ function RecordField({ label, value, mono }: { label: string; value: string; mon
       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-faint">{label}</p>
       <p
         className={cn(
-          "mt-1 truncate text-sm font-semibold text-foreground",
-          mono && "font-mono text-xs font-medium",
+          "mt-1 break-words text-sm font-semibold text-foreground",
+          mono && "break-all font-mono text-xs font-medium",
         )}
       >
         {value}
@@ -411,9 +420,14 @@ function RecordRow({
   emphasis?: boolean;
 }) {
   return (
-    <div className="flex items-baseline justify-between gap-6 border-b border-border px-5 py-4 text-sm last:border-b-0">
+    <div className="flex flex-col gap-1 border-b border-border px-4 py-3.5 text-sm last:border-b-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6 sm:px-5 sm:py-4">
       <span className="shrink-0 text-muted-foreground">{label}</span>
-      <span className={cn("text-right font-medium text-foreground", emphasis && "text-danger")}>
+      <span
+        className={cn(
+          "min-w-0 break-words font-medium text-foreground sm:text-right",
+          emphasis && "text-danger",
+        )}
+      >
         {value}
       </span>
     </div>

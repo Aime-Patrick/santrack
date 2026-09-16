@@ -2,14 +2,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { authService } from "@/services/auth.service";
 import type { ResetPasswordInput } from "@/services/auth.service";
 import type {
+  AuthResponse,
   RegisterInput,
   LoginInput,
+  LoginResponse,
   CreateOrganizationInput,
   ChangePasswordInput,
   UserResponse,
   UserRole,
 } from "@/lib/api";
-import { clearAuthToken, getAuthToken, setAuthToken } from "@/lib/auth";
+import { clearAuthToken, getAuthToken, hasSessionMarker, setAuthToken } from "@/lib/auth";
 import {
   PREVIEW_ROLE_CAPABILITIES,
   PREVIEW_STANDING_CAPABILITIES,
@@ -32,6 +34,8 @@ function mockUser(role: UserRole, standing = false): UserResponse {
     role,
     organization: null,
     mustChangePassword: false,
+    mfaEnabled: false,
+    mustEnableMfa: false,
     capabilities: [
       ...PREVIEW_ROLE_CAPABILITIES[role],
       ...(standing
@@ -47,6 +51,12 @@ function mockUser(role: UserRole, standing = false): UserResponse {
 export const authKeys = {
   me: ["auth", "me"] as const,
 };
+
+function isMfaChallenge(
+  data: LoginResponse,
+): data is { mfaRequired: true; mfaToken: string } {
+  return "mfaRequired" in data && data.mfaRequired === true;
+}
 
 /**
  * Registers an account and stores the returned token. The /me cache is
@@ -64,15 +74,56 @@ export function useRegister() {
   });
 }
 
-/** Logs in, stores the token, and seeds the /me cache. */
+/** Logs in. May return an MFA challenge instead of a session. */
 export function useLogin() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (input: LoginInput) => authService.login(input),
     onSuccess: (data) => {
+      if (isMfaChallenge(data)) return;
       setAuthToken(data.token);
       queryClient.setQueryData(authKeys.me, data.user);
+    },
+  });
+}
+
+export function useVerifyMfaLogin() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { mfaToken: string; code: string }) =>
+      authService.verifyMfaLogin(input),
+    onSuccess: (data: AuthResponse) => {
+      setAuthToken(data.token);
+      queryClient.setQueryData(authKeys.me, data.user);
+    },
+  });
+}
+
+export function useBeginMfaSetup() {
+  return useMutation({
+    mutationFn: () => authService.beginMfaSetup(),
+  });
+}
+
+export function useConfirmMfaSetup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (code: string) => authService.confirmMfaSetup(code),
+    onSuccess: (user) => {
+      queryClient.setQueryData(authKeys.me, user);
+    },
+  });
+}
+
+export function useDisableMfa() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { password: string; code: string }) =>
+      authService.disableMfa(input),
+    onSuccess: (user) => {
+      queryClient.setQueryData(authKeys.me, user);
     },
   });
 }
@@ -146,7 +197,11 @@ export function useMe({
       ? [...authKeys.me, "design", designRole, previewStanding]
       : authKeys.me,
     queryFn: authService.me,
-    enabled: !DESIGN_MODE && enabled && typeof window !== "undefined" && !!getAuthToken(),
+    enabled:
+      !DESIGN_MODE &&
+      enabled &&
+      typeof window !== "undefined" &&
+      (!!getAuthToken() || hasSessionMarker()),
     staleTime: 5 * 60_000,
     retry: false,
     ...(DESIGN_MODE ? { initialData: mockUser(designRole, previewStanding) } : {}),
@@ -164,11 +219,12 @@ export function useUpdateProfile() {
   });
 }
 
-/** Clears the token, drops the cached user, and redirects to login. */
+/** Clears the cookie session + local marker, drops the cached user, redirects. */
 export function useLogout() {
   const queryClient = useQueryClient();
 
   return () => {
+    void authService.logout().catch(() => undefined);
     clearAuthToken();
     queryClient.removeQueries({ queryKey: authKeys.me });
     window.location.href = "/login";

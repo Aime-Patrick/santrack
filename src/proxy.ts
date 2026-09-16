@@ -24,12 +24,19 @@ export function proxy(request: NextRequest) {
 }
 
 function handleAuth(request: NextRequest) {
-  const token = request.cookies.get("auth_token")?.value;
+  const token = request.cookies.get("santrack_auth")?.value
+    ?? request.cookies.get("auth_token")?.value;
   const { pathname } = request.nextUrl;
 
-  const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/register");
+  const isAuthPage =
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/mfa/verify");
   const isProtectedPage =
-    pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding");
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/mfa/setup") ||
+    pathname.startsWith("/change-password");
 
   if (isProtectedPage && !token) {
     return NextResponse.redirect(new URL("/login", request.url));

@@ -11,12 +11,13 @@ import { useChangePassword, useMe } from "@/hooks/auth";
 import { AuthPrimaryButton } from "@/components/auth/auth-primary-button";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { getAuthToken } from "@/lib/auth";
+import { strongPasswordSchema } from "@/lib/password-policy";
 import { useEffect } from "react";
 
 const schema = z
   .object({
     currentPassword: z.string().min(1, "Enter your temporary password"),
-    newPassword: z.string().min(8, "New password must be at least 8 characters"),
+    newPassword: strongPasswordSchema,
     confirmPassword: z.string().min(1, "Confirm your new password"),
   })
   .refine((v) => v.newPassword === v.confirmPassword, {

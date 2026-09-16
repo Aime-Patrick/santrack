@@ -177,6 +177,21 @@ export const organizationService = {
       .then((r) => r.data);
   },
 
+  /**
+   * Re-delivers email for an existing PENDING information request (same token).
+   * Regulator only.
+   */
+  resendInfoRequest(
+    organizationId: number,
+    requestId: number,
+  ): Promise<RegistrationInfoRequest> {
+    return api
+      .post<RegistrationInfoRequest>(
+        `/api/organizations/${organizationId}/info-requests/${requestId}/resend`,
+      )
+      .then((r) => r.data);
+  },
+
   /** Lists information requests for a registration. Regulator only. */
   listInfoRequests(organizationId: number): Promise<RegistrationInfoRequest[]> {
     return api

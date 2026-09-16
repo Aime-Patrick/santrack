@@ -36,7 +36,11 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import {
+  isRichTextEmpty,
+  plainTextFromHtml,
+} from "@/components/ui/rich-text";
 import {
   Select,
   SelectContent,
@@ -47,6 +51,7 @@ import {
 import { useRecalls, useInitiateRecall } from "@/hooks/recall";
 import { useBatches } from "@/hooks/batches";
 import { useCapabilities } from "@/hooks/permissions";
+import { batchService, type Batch } from "@/services/batch.service";
 import { scanService } from "@/services/scan.service";
 import { QrScanInput } from "@/components/ui/qr-scanner";
 import { toast } from "sonner";
@@ -112,7 +117,7 @@ export default function RecallPage() {
             productLabel(row.original),
             row.original.productSku ?? "",
             row.original.manufacturerName ?? "",
-            row.original.reason ?? "",
+            plainTextFromHtml(row.original.reason),
           ]
             .join(" ")
             .toLowerCase();
@@ -124,7 +129,7 @@ export default function RecallPage() {
         header: "Reason",
         cell: ({ row }) => (
           <span className="line-clamp-2 max-w-[220px] text-sm">
-            {row.getValue("reason")}
+            {plainTextFromHtml(row.getValue("reason") as string) || "—"}
           </span>
         ),
       },
@@ -321,9 +326,25 @@ function IssueRecallDialog({
   const [scanMode, setScanMode] = useState(true);
   const [scanError, setScanError] = useState<string | null>(null);
   const [isResolving, setIsResolving] = useState(false);
+  /** Lot loaded from a scan — needed when the caller is not the manufacturer. */
+  const [scannedLot, setScannedLot] = useState<Batch | null>(null);
+  /** Extra lots offered after a product (not lot) barcode is scanned. */
+  const [productLots, setProductLots] = useState<Batch[]>([]);
 
-  const recallable = (batches ?? []).filter((b) => b.status !== "RECALLED");
-  const chosen = recallable.find((b) => String(b.id) === batchId);
+  const ownLots = (batches ?? []).filter((b) => b.status !== "RECALLED");
+  const recallable =
+    productLots.length > 0
+      ? productLots.filter((b) => b.status !== "RECALLED")
+      : ownLots;
+  const chosen =
+    (scannedLot && String(scannedLot.id) === batchId ? scannedLot : null) ??
+    recallable.find((b) => String(b.id) === batchId);
+
+  const selectLot = (lot: Batch) => {
+    setBatchId(String(lot.id));
+    setScannedLot(lot);
+    setScanError(null);
+  };
 
   const handleScan = async (code: string) => {
     const scanned = code.trim();
@@ -345,31 +366,69 @@ function IssueRecallDialog({
 
     const directLot = findLocalLot(scanned);
     if (directLot) {
-      setBatchId(String(directLot.id));
-      setScanError(null);
+      selectLot(directLot);
       return;
     }
 
     setIsResolving(true);
     setScanError(null);
+    setProductLots([]);
     try {
       const res = await scanService.resolve(scanned);
       let matchedBatchId: number | undefined = res.batchId;
 
       if (!matchedBatchId && res.carried?.batchCode) {
         const found = findLocalLot(res.carried.batchCode);
-        if (found) matchedBatchId = found.id;
+        if (found) {
+          matchedBatchId = found.id;
+        } else {
+          // Regulators (and anyone who does not manufacture) have an empty
+          // own-lots list — resolve the embedded lot code through the scan API.
+          const byLot = await scanService.resolve(res.carried.batchCode);
+          if (byLot.batchId) matchedBatchId = byLot.batchId;
+        }
       }
 
       if (matchedBatchId) {
-        setBatchId(String(matchedBatchId));
-      } else {
-        setScanError(
-          res.kind === "UNKNOWN"
-            ? "No active lot matches this code. Keep the camera open and scan the lot label or select it from the list."
-            : res.describes || "Could not identify a recallable lot from this code.",
-        );
+        const lot = await batchService.get(matchedBatchId);
+        if (lot.status === "RECALLED") {
+          setBatchId("");
+          setScannedLot(null);
+          setScanError(`Lot ${lot.batchCode} is already under recall.`);
+          return;
+        }
+        selectLot(lot);
+        return;
       }
+
+      // Retail / product barcode: identify the product, then ask which lot.
+      if (res.productId) {
+        const lots = (await batchService.list(res.productId)).filter(
+          (b) => b.status !== "RECALLED",
+        );
+        if (lots.length === 1) {
+          selectLot(lots[0]);
+          return;
+        }
+        if (lots.length > 1) {
+          setProductLots(lots);
+          setScanMode(false);
+          setBatchId("");
+          setScannedLot(null);
+          setScanError(
+            "This barcode names a product, not one lot. Choose which lot to recall.",
+          );
+          return;
+        }
+      }
+
+      setBatchId("");
+      setScannedLot(null);
+      setScanError(
+        res.kind === "UNKNOWN"
+          ? "No active lot matches this code. Keep the camera open and scan the lot label or select it from the list."
+          : res.describes || "Could not identify a recallable lot from this code.",
+      );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes("401") || msg.includes("Unauthorized")) {
@@ -394,6 +453,8 @@ function IssueRecallDialog({
           setStep(1);
           setScanError(null);
           setScanMode(true);
+          setScannedLot(null);
+          setProductLots([]);
         }
         onOpenChange(next);
       }}
@@ -467,7 +528,14 @@ function IssueRecallDialog({
               </>
             ) : (
               <Select value={batchId} onValueChange={(v) => {
-                setBatchId(v ?? "");
+                const id = v ?? "";
+                const lot = recallable.find((b) => String(b.id) === id);
+                if (lot) {
+                  selectLot(lot);
+                } else {
+                  setBatchId(id);
+                  setScannedLot(null);
+                }
               }}>
                 <SelectTrigger className="h-11 w-full">
                   <SelectValue placeholder="Choose an active lot">
@@ -477,11 +545,17 @@ function IssueRecallDialog({
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {recallable.map((batch) => (
-                    <SelectItem key={batch.id} value={String(batch.id)}>
-                      {batch.batchCode} — {batch.productName} ({batch.status})
-                    </SelectItem>
-                  ))}
+                  {recallable.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      No lots listed here. Scan a unit or lot code instead.
+                    </div>
+                  ) : (
+                    recallable.map((batch) => (
+                      <SelectItem key={batch.id} value={String(batch.id)}>
+                        {batch.batchCode} — {batch.productName} ({batch.status})
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             )}
@@ -514,13 +588,13 @@ function IssueRecallDialog({
                 <p className="text-sm text-muted-foreground">This will be visible to your response team.</p>
               </div>
             </div>
-            <Label htmlFor="recall-reason" className="sr-only">Recall reason and findings</Label>
-            <Textarea
-              id="recall-reason"
+            <Label className="sr-only">Recall reason and findings</Label>
+            <RichTextEditor
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={setReason}
               placeholder="Detail the hazard, contamination, or regulatory non-compliance…"
-              className="min-h-[180px] resize-none text-sm leading-relaxed md:min-h-[300px]"
+              minHeight={180}
+              className="md:[&_.tiptap]:min-h-[280px]"
             />
             <p className="text-xs text-muted-foreground">Include what was found, where, and the immediate action required.</p>
           </section>
@@ -544,14 +618,16 @@ function IssueRecallDialog({
           {step === 2 && (
           <Button
             className="bg-danger text-white hover:bg-danger/90"
-            disabled={!batchId || !reason.trim() || initiate.isPending}
+            disabled={!batchId || isRichTextEmpty(reason) || initiate.isPending}
             onClick={() =>
               initiate.mutate(
-                { batchId: Number(batchId), reason: reason.trim() },
+                { batchId: Number(batchId), reason },
                 {
                   onSuccess: () => {
                     setBatchId("");
                     setReason("");
+                    setScannedLot(null);
+                    setProductLots([]);
                     onOpenChange(false);
                     toast.success("Product recall issued across all distribution points.");
                   },

@@ -5,6 +5,7 @@ import {
   type ChangePasswordInput,
   type CreateOrganizationInput,
   type LoginInput,
+  type LoginResponse,
   type OrganizationResponse,
   type RegisterInput,
   type UserResponse,
@@ -20,13 +21,43 @@ export interface ResetPasswordInput {
   newPassword: string;
 }
 
+export interface MfaSetupResult {
+  secret: string;
+  otpauthUrl: string;
+  qrDataUrl: string;
+}
+
 export const authService = {
   register(input: RegisterInput): Promise<AuthResponse> {
     return api.post<AuthResponse>("/api/auth/register", input).then((r) => r.data);
   },
 
-  login(input: LoginInput): Promise<AuthResponse> {
-    return api.post<AuthResponse>("/api/auth/login", input).then((r) => r.data);
+  login(input: LoginInput): Promise<LoginResponse> {
+    return api.post<LoginResponse>("/api/auth/login", input).then((r) => r.data);
+  },
+
+  verifyMfaLogin(input: { mfaToken: string; code: string }): Promise<AuthResponse> {
+    return api
+      .post<AuthResponse>("/api/auth/mfa/verify-login", input)
+      .then((r) => r.data);
+  },
+
+  beginMfaSetup(): Promise<MfaSetupResult> {
+    return api.post<MfaSetupResult>("/api/auth/mfa/setup").then((r) => r.data);
+  },
+
+  confirmMfaSetup(code: string): Promise<UserResponse> {
+    return api
+      .post<UserResponse>("/api/auth/mfa/confirm", { code })
+      .then((r) => r.data);
+  },
+
+  disableMfa(input: { password: string; code: string }): Promise<UserResponse> {
+    return api.post<UserResponse>("/api/auth/mfa/disable", input).then((r) => r.data);
+  },
+
+  logout(): Promise<{ success: true }> {
+    return api.post<{ success: true }>("/api/auth/logout").then((r) => r.data);
   },
 
   requestPasswordReset(email: string): Promise<PasswordResetRequestResult> {

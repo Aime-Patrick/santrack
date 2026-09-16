@@ -158,8 +158,8 @@ function checks(variant: 0 | 1 | 2): EligibilityCheck[] {
     },
     {
       code: "PRODUCT_AUTHORIZATION",
-      status: "NOT_APPLICABLE",
-      message: "Product-level authorization is not part of this release.",
+      status: "PASS",
+      message: "Product registration PR-100 is active until 2099-12-12.",
     },
     {
       code: "LICENCE_VALIDITY_AT_REQUESTED_DATE",
@@ -178,8 +178,8 @@ function checks(variant: 0 | 1 | 2): EligibilityCheck[] {
     },
     {
       code: "PER_PRODUCTION_APPROVAL",
-      status: "NOT_APPLICABLE",
-      message: "Per-production approval is not part of this release.",
+      status: "PASS",
+      message: "Regulatory inspection of Kigali Plant passed on 2025-06-01.",
     },
   ];
 }

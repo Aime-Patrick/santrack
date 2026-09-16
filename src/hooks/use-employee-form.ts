@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { userService } from "@/services/user.service";
 import { getApiErrorMessage } from "@/lib/api";
 import type { UserRole } from "@/lib/api";
+import { strongPasswordSchema } from "@/lib/password-policy";
 
 // ---------------------------------------------------------------------------
 // Schema — maps to CreateUserInput (email, password, fullName, organizationId, role)
@@ -19,7 +20,7 @@ import type { UserRole } from "@/lib/api";
 const employeeSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: strongPasswordSchema,
   gender: z.string().optional(),
   dateOfBirth: z.string().optional(),
   nationalId: z.string().optional(),

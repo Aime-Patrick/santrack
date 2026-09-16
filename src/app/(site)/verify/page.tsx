@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { TrustSeal } from "@/components/verify/trust-seal";
 
 /**
  * Public consumer verify entry.
@@ -318,65 +319,58 @@ export default function ConsumerVerifyPage() {
   const corner = "absolute size-5 border-[#FAD126]";
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#0557b0] text-white">
-
-      {/* ── Main centered content ── */}
-      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center px-6 py-12">
-
-        {/* Brand */}
-        <header className="mb-10 flex flex-col items-center gap-3">
-          <div className="text-center">
-            <p className="text-lg font-semibold tracking-[0.18em] text-white/50">
+    /*
+     * Renders inside `(site)` layout (LandingNav + FooterSection).
+     * Clear the fixed nav; fill the flex-1 content slot; footer owns the
+     * bottom flag stripe — do not duplicate it here.
+     */
+    <div className="relative flex flex-1 flex-col overflow-x-hidden bg-[#0557b0] text-white">
+      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center px-4 pb-12 pt-20 sm:px-6 sm:pb-16 sm:pt-24">
+        {/* Brand moment for this tool — site logo stays in the shared nav */}
+        <header className="mb-6 flex w-full shrink-0 flex-col items-center gap-2 sm:mb-8 sm:gap-3">
+          <TrustSeal size="lg" tone="neutral" animate surface="dark" />
+          <div className="px-2 text-center">
+            <p className="text-sm font-semibold tracking-[0.18em] text-white/50 sm:text-lg">
               {t("registry")}
             </p>
           </div>
         </header>
 
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-extrabold leading-tight tracking-tight">
-            {t("title")}
-          </h1>
-          <p className="mx-auto mt-3 max-w-[280px] text-sm leading-relaxed text-white/65">
-            {t("subtitle")}
-          </p>
-        </div>
-
         {/* ── Mode switch ── */}
-        <div className="mb-7 flex items-center gap-1 rounded-full bg-white/10 p-1">
+        <div className="mb-6 flex w-full max-w-xs shrink-0 items-center gap-1 rounded-full bg-white/10 p-1 sm:mb-7">
           <button
             type="button"
             onClick={() => setActiveMode("camera")}
             className={cn(
-              "flex items-center gap-1.5 rounded-full px-5 py-2 text-xs font-bold transition-all",
+              "flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold transition-all sm:px-5",
               activeMode === "camera"
                 ? "bg-white text-[#0557b0] shadow-sm"
                 : "text-white/65 hover:text-white",
             )}
           >
-            <Camera className="size-3.5" />
+            <Camera className="size-3.5 shrink-0" />
             {t("modeCamera")}
           </button>
           <button
             type="button"
             onClick={() => setActiveMode("manual")}
             className={cn(
-              "flex items-center gap-1.5 rounded-full px-5 py-2 text-xs font-bold transition-all",
+              "flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold transition-all sm:px-5",
               activeMode === "manual"
                 ? "bg-white text-[#0557b0] shadow-sm"
                 : "text-white/65 hover:text-white",
             )}
           >
-            <QrCode className="size-3.5" />
+            <QrCode className="size-3.5 shrink-0" />
             {t("modeType")}
           </button>
         </div>
 
         {/* ── Interactive panel ── */}
-        <div className="w-full">
+        <div className="w-full min-w-0 shrink-0">
           {activeMode === "camera" ? (
-            <div className="flex flex-col items-center gap-5">
-              {/* Camera viewport */}
-              <div className="relative mx-auto aspect-square w-full max-w-[280px] overflow-hidden rounded-[1.75rem] bg-black/40 ring-2 ring-white/10 shadow-2xl">
+            <div className="flex flex-col items-center gap-4 sm:gap-5">
+              <div className="relative mx-auto aspect-square w-full max-w-[min(280px,85vw)] overflow-hidden rounded-[1.75rem] bg-black/40 shadow-2xl ring-2 ring-white/10">
                 <video
                   ref={videoRef}
                   autoPlay
@@ -387,20 +381,20 @@ export default function ConsumerVerifyPage() {
 
                 {cameraActive && (
                   <div className="pointer-events-none absolute inset-0">
-                    <div className={cn(corner, "-left-0.5 -top-0.5 border-l-[3px] border-t-[3px] rounded-tl-2xl")} />
-                    <div className={cn(corner, "-right-0.5 -top-0.5 border-r-[3px] border-t-[3px] rounded-tr-2xl")} />
-                    <div className={cn(corner, "-bottom-0.5 -left-0.5 border-b-[3px] border-l-[3px] rounded-bl-2xl")} />
-                    <div className={cn(corner, "-bottom-0.5 -right-0.5 border-b-[3px] border-r-[3px] rounded-br-2xl")} />
+                    <div className={cn(corner, "-left-0.5 -top-0.5 rounded-tl-2xl border-l-[3px] border-t-[3px]")} />
+                    <div className={cn(corner, "-right-0.5 -top-0.5 rounded-tr-2xl border-r-[3px] border-t-[3px]")} />
+                    <div className={cn(corner, "-bottom-0.5 -left-0.5 rounded-bl-2xl border-b-[3px] border-l-[3px]")} />
+                    <div className={cn(corner, "-bottom-0.5 -right-0.5 rounded-br-2xl border-b-[3px] border-r-[3px]")} />
                     <div className="absolute left-6 right-6 top-1/2 h-px animate-pulse bg-[#FAD126] shadow-[0_0_12px_#FAD126]" />
-                    <p className="absolute inset-x-0 bottom-3 text-center text-[10px] font-semibold tracking-[0.2em] text-white/60">
+                    <p className="absolute inset-x-0 bottom-3 px-2 text-center text-[10px] font-semibold tracking-[0.2em] text-white/60">
                       {t("alignCode")}
                     </p>
                   </div>
                 )}
 
                 {cameraError && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/80 p-6 text-center">
-                    <span className="flex size-12 items-center justify-center rounded-full bg-[#FAD126]">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 overflow-y-auto bg-black/80 p-4 text-center sm:p-6">
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#FAD126]">
                       <CameraOff className="size-5 text-[#0557b0]" />
                     </span>
                     <p className="max-w-[220px] text-xs leading-relaxed text-white/80">
@@ -409,7 +403,7 @@ export default function ConsumerVerifyPage() {
                     <button
                       type="button"
                       onClick={() => setActiveMode("manual")}
-                      className="rounded-full bg-[#FAD126] px-5 py-2 text-xs font-extrabold text-[#0557b0] hover:brightness-95 transition-all"
+                      className="rounded-full bg-[#FAD126] px-5 py-2 text-xs font-extrabold text-[#0557b0] transition-all hover:brightness-95"
                     >
                       {t("typeInstead")}
                     </button>
@@ -421,15 +415,15 @@ export default function ConsumerVerifyPage() {
                 type="button"
                 onClick={() => void toggleCamera()}
                 disabled={!cameraActive}
-                className="flex items-center gap-1.5 text-[11px] font-semibold text-white/45 underline underline-offset-4 hover:text-white/80 transition-colors disabled:pointer-events-none disabled:opacity-30"
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-white/45 underline underline-offset-4 transition-colors hover:text-white/80 disabled:pointer-events-none disabled:opacity-30"
               >
                 <RotateCw className="size-3" />
                 {t("switchCamera")}
               </button>
             </div>
           ) : (
-            <form onSubmit={handleManualSubmit} className="space-y-3">
-              <div className="relative">
+            <form onSubmit={handleManualSubmit} className="w-full min-w-0 space-y-3">
+              <div className="relative min-w-0">
                 <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
                   <Search className="size-4" />
                 </div>
@@ -437,7 +431,7 @@ export default function ConsumerVerifyPage() {
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value)}
                   placeholder={t("inputPlaceholder")}
-                  className="h-14 rounded-2xl border-0 bg-white pl-11 pr-14 font-mono text-sm text-slate-900 shadow-xl shadow-black/25 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#FAD126]"
+                  className="h-12 w-full min-w-0 rounded-2xl border-0 bg-white pl-11 pr-14 font-mono text-sm text-slate-900 shadow-xl shadow-black/25 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-[#FAD126] sm:h-14"
                   autoFocus
                   autoCapitalize="off"
                   autoCorrect="off"
@@ -456,35 +450,31 @@ export default function ConsumerVerifyPage() {
               <button
                 type="submit"
                 disabled={!manualCode.trim()}
-                className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-white text-xs font-extrabold uppercase tracking-[0.18em] text-[#0557b0] shadow-xl shadow-black/25 transition-all hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-white text-xs font-extrabold uppercase tracking-[0.18em] text-[#0557b0] shadow-xl shadow-black/25 transition-all hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40 sm:h-14"
               >
-                <ShieldCheck className="size-4" />
-                {t("verifyButton")}
+                <ShieldCheck className="size-4 shrink-0" />
+                <span className="truncate">{t("verifyButton")}</span>
               </button>
             </form>
           )}
         </div>
 
-        {/* ── Promise strip ── */}
-        <div className="mt-12 flex items-center justify-center gap-6">
+        {/* ── Promise strip — wraps on narrow screens ── */}
+        <div className="mt-8 flex w-full flex-wrap items-center justify-center gap-x-5 gap-y-2 px-1 sm:mt-10 sm:gap-x-6">
           {[
-            { icon: <CheckCircle2 className="size-3.5 text-[#1ABD6A]" />, label: t("badgeGenuine") },
-            { icon: <Sparkles className="size-3.5 text-[#FAD126]" />, label: t("badgeStandards") },
-            { icon: <ShieldCheck className="size-3.5 text-[#20A4D8]" />, label: t("badgeFresh") },
+            { icon: <CheckCircle2 className="size-3.5 shrink-0 text-[#1ABD6A]" />, label: t("badgeGenuine") },
+            { icon: <Sparkles className="size-3.5 shrink-0 text-[#FAD126]" />, label: t("badgeStandards") },
+            { icon: <ShieldCheck className="size-3.5 shrink-0 text-[#20A4D8]" />, label: t("badgeFresh") },
           ].map(({ icon, label }) => (
-            <span key={label} className="flex items-center gap-1.5 text-[11px] font-semibold text-white/60">
+            <span
+              key={label}
+              className="flex max-w-full items-center gap-1.5 text-[11px] font-semibold text-white/60"
+            >
               {icon}
-              {label}
+              <span className="truncate">{label}</span>
             </span>
           ))}
         </div>
-      </div>
-
-      {/* ── Rwanda flag bottom bar ── */}
-      <div className="flex h-1 shrink-0">
-        <span className="flex-1 bg-[#20A4D8]" />
-        <span className="flex-1 bg-[#FAD126]" />
-        <span className="flex-1 bg-[#1ABD6A]" />
       </div>
     </div>
   );
