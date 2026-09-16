@@ -95,6 +95,7 @@ export default function LoginPage() {
             router.replace("/mfa/verify");
             return;
           }
+          if (!("user" in data)) return;
           if (data.user.mustChangePassword) {
             router.replace("/change-password");
             return;

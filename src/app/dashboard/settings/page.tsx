@@ -272,8 +272,13 @@ function SecurityPanel() {
             </span>
           </p>
           {!me?.mfaEnabled && (
-            <Button asChild variant="outline" size="sm">
-              <Link href="/mfa/setup">Set up authenticator</Link>
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/mfa/setup" />}
+            >
+              Set up authenticator
             </Button>
           )}
         </CardContent>
