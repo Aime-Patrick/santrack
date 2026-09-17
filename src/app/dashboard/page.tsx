@@ -75,6 +75,8 @@ export default function DashboardPage() {
 
   const copy = homeCopy(me?.organization?.type);
   const Icon = copy.icon;
+  const orgType = me?.organization?.type;
+  const stackChartAndActivity = orgType === "RETAILER" || orgType === "SHOP";
 
   return (
     <div className="space-y-6">
@@ -93,14 +95,21 @@ export default function DashboardPage() {
 
       <RoleBasedKPIs />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
+      {stackChartAndActivity ? (
+        <div className="flex flex-col gap-6">
           <ProductionTrendsChart />
-        </div>
-        <div className="lg:col-span-2">
           <RecentActivities />
         </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+          <div className="lg:col-span-3">
+            <ProductionTrendsChart />
+          </div>
+          <div className="lg:col-span-2">
+            <RecentActivities />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -214,7 +214,7 @@ const ROLE_KPIS: Record<string, KPIDefinition[]> = {
       getCaption: () => "Awaiting inspection",
       icon: <ClipboardCheck className="size-4" />,
       iconBg: "bg-primary",
-      href: "/dashboard/manufacturing",
+      href: "/dashboard/manufacturing/quality",
     },
     {
       title: "Quarantined Items",

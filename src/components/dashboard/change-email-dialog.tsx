@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRequestUserEmailChange } from "@/hooks/users";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import type { UserResponse } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/user-roles";
 import { toast } from "sonner";
@@ -28,6 +29,8 @@ export function ChangeEmailDialog({
   onOpenChange,
   user,
 }: ChangeEmailDialogProps) {
+  const { data: me } = useCurrentUser();
+  const immediate = me?.role === "SYSTEM_ADMIN";
   const requestChange = useRequestUserEmailChange();
   const [email, setEmail] = useState("");
 
@@ -45,17 +48,20 @@ export function ChangeEmailDialog({
 
   const submit = () => {
     if (!user || !canSubmit) return;
+    const next = email.trim();
     requestChange.mutate(
-      { userId: user.id, email: email.trim() },
+      { userId: user.id, email: next },
       {
         onSuccess: () => {
           toast.success(
-            `Verification sent to ${email.trim()}. Current email stays until confirmed (30 minutes).`,
+            immediate
+              ? `Email updated to ${next}`
+              : `Verification sent to ${next}. Current email stays until confirmed (30 minutes).`,
           );
           onOpenChange(false);
         },
         onError: (error) => {
-          toast.error(apiErrorMessage(error, "Could not start email change"));
+          toast.error(apiErrorMessage(error, "Could not change email"));
         },
       },
     );
@@ -67,9 +73,13 @@ export function ChangeEmailDialog({
         <DialogHeader>
           <DialogTitle>Change email</DialogTitle>
           <DialogDescription>
-            {user
-              ? `Send a verification link to a new address for ${user.fullName || user.email}. Their current email (${user.email}) stays active until they confirm.`
-              : "Send a verification link to a new address."}
+            {immediate
+              ? user
+                ? `As platform operator, set a new login email for ${user.fullName || user.email} immediately — no inbox confirmation.`
+                : "Set a new login email immediately — no inbox confirmation."
+              : user
+                ? `Send a verification link to a new address for ${user.fullName || user.email}. Their current email (${user.email}) stays active until they confirm.`
+                : "Send a verification link to a new address."}
           </DialogDescription>
         </DialogHeader>
 
@@ -81,20 +91,26 @@ export function ChangeEmailDialog({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@example.com"
-            autoComplete="off"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                submit();
+              }
+            }}
           />
-          <p className="text-xs text-muted-foreground">
-            Link expires in 30 minutes. A notice is also sent to the current
-            address.
-          </p>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button disabled={!canSubmit} onClick={submit}>
-            {requestChange.isPending ? "Sending…" : "Send verification"}
+          <Button onClick={submit} disabled={!canSubmit}>
+            {requestChange.isPending
+              ? "Saving…"
+              : immediate
+                ? "Update email"
+                : "Send verification"}
           </Button>
         </DialogFooter>
       </DialogPopup>

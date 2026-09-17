@@ -94,7 +94,7 @@ export function ContinueWork() {
     quality: {
       title: "Complete quality checks",
       description: "Record a verdict for lots waiting for inspection.",
-      href: "/dashboard/manufacturing",
+      href: "/dashboard/manufacturing/quality",
       capability: "PERFORM_QC",
     },
     package: {

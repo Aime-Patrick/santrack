@@ -18,6 +18,7 @@ interface ActiveLot {
   label: string;
   batchCode: string;
   count: number;
+  href: string;
 }
 
 function pickMostUrgent(lots: ActiveLot[]): ActiveLot | null {
@@ -56,19 +57,29 @@ const STAGE_COPY: Record<
 };
 
 const PIPELINE = "/dashboard/manufacturing";
+const QUALITY = "/dashboard/manufacturing/quality";
 const SUPPRESS_ON = [PIPELINE];
 
 // ── Component ────────────────────────────────────────────────────────────────
 
+/**
+ * Manufacturer pipeline nudge. Only surfaces stages the signed-in role can act
+ * on — Quality Officers see pending QC, not packaging CTAs they cannot run.
+ */
 export function WorkflowBar() {
   const pathname = usePathname();
   const permissions = useCapabilities();
   const { data: user } = useCurrentUser();
 
+  const canRun = permissions.can("RUN_PRODUCTION");
+  const canQc = permissions.can("PERFORM_QC");
+  const canPack = permissions.can("HANDLE_PACKAGING");
+  const canPrint = permissions.can("PRINT_LABELS");
+
   const isManufacturer =
     !!user?.organization &&
     user.organization.type !== "REGULATOR" &&
-    permissions.canAny(["RUN_PRODUCTION", "PERFORM_QC", "HANDLE_PACKAGING"]);
+    (canRun || canQc || canPack);
 
   const suppressed = SUPPRESS_ON.some(
     (p) => pathname === p || pathname.startsWith(p + "/"),
@@ -106,36 +117,41 @@ export function WorkflowBar() {
   );
   const running = orders.filter((o) => o.status === "IN_PROGRESS");
 
-  if (pendingQC.length > 0) {
+  // Only nudge actions this role can actually perform.
+  if (canQc && pendingQC.length > 0) {
     lots.push({
       stage: "pending_qc",
       label: pendingQC[0].productName,
       batchCode: pendingQC[0].batchCode ?? pendingQC[0].orderNumber,
       count: pendingQC.length,
+      href: QUALITY,
     });
   }
-  if (readyToPackOrders.length > 0) {
+  if (canPack && readyToPackOrders.length > 0) {
     lots.push({
       stage: "approved",
       label: readyToPackOrders[0].productName,
       batchCode: readyToPackOrders[0].batchCode ?? readyToPackOrders[0].orderNumber,
       count: readyToPackOrders.length,
+      href: PIPELINE,
     });
   }
-  if (packagingOrders.length > 0) {
+  if ((canPack || canPrint) && packagingOrders.length > 0) {
     lots.push({
       stage: "packaging",
       label: packagingOrders[0].productName,
       batchCode: packagingOrders[0].batchCode ?? packagingOrders[0].orderNumber,
       count: packagingOrders.length,
+      href: PIPELINE,
     });
   }
-  if (running.length > 0) {
+  if (canRun && running.length > 0) {
     lots.push({
       stage: "running",
       label: running[0].productName,
       batchCode: running[0].batchCode ?? running[0].orderNumber,
       count: running.length,
+      href: PIPELINE,
     });
   }
 
@@ -166,7 +182,7 @@ export function WorkflowBar() {
       </div>
 
       <Link
-        href={PIPELINE}
+        href={urgent.href}
         className="inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-white hover:bg-primary/90 transition-colors"
       >
         {copy.action}
