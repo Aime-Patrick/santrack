@@ -302,11 +302,14 @@ export function OversightDashboard() {
               <ClipboardList className="size-4 text-muted-foreground" />
               Pending applications in supervised mandates
             </CardTitle>
-            <Button asChild size="sm" variant="outline" className="gap-1.5">
-              <Link href="/dashboard/regulator?tab=licences">
-                Open decide queue
-                <ArrowRightLeft className="size-3.5" />
-              </Link>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              render={<Link href="/dashboard/regulator?tab=licences" />}
+            >
+              Open decide queue
+              <ArrowRightLeft className="size-3.5" />
             </Button>
           </CardHeader>
           <CardContent className="p-0">
