@@ -396,7 +396,7 @@ export function StockPositionsPanel() {
               data={positions ?? []}
               filterPlaceholder="Filter by product name…"
               filterColumn="productName"
-              pageSize={15}
+              pageSize={10}
               noBorder
             />
           )}

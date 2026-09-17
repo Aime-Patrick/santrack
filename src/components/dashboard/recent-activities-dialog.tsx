@@ -129,7 +129,9 @@ export function RecentActivitiesDialog({ open, onOpenChange }: RecentActivitiesD
         accessorKey: "activity",
         header: t("activity"),
         cell: ({ row }) => (
-          <span className="font-semibold text-foreground">{row.getValue("activity")}</span>
+          <span className="block max-w-[22rem] truncate font-semibold text-foreground" title={String(row.getValue("activity"))}>
+            {row.getValue("activity")}
+          </span>
         ),
       },
       {

@@ -2,7 +2,6 @@
 
 import React from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import { AuthPrimaryLink } from "@/components/auth/auth-primary-button";
 import { SanTrackBrand } from "@/components/auth/san-track-logo";
@@ -37,7 +36,7 @@ export function RwandaWave() {
  */
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="h-screen grid lg:grid-cols-12 bg-slate-50 overflow-hidden">
+    <main className="grid h-[calc(100dvh-0.625rem)] min-h-0 overflow-hidden bg-slate-50 lg:grid-cols-12">
       {/* Visual Brand Panel */}
       <section className="relative hidden lg:col-span-6 xl:col-span-6 lg:flex flex-col justify-between overflow-hidden select-none bg-[#004d9c]">
         {/* Scenic Rwanda Landscape Background */}
@@ -96,7 +95,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       </section>
 
       {/* Form Panel */}
-      <section className="col-span-12 lg:col-span-6 xl:col-span-6 flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 relative overflow-hidden min-h-0 bg-[#f8fafc]">
+      <section className="relative col-span-12 flex min-h-0 flex-col overflow-hidden bg-[#f8fafc] lg:col-span-6 xl:col-span-6">
         {/* Imigongo background pattern */}
         <div
           className="absolute inset-0 z-0 opacity-[0.05]"
@@ -111,44 +110,27 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           aria-hidden="true"
         />
 
-        {/* Mobile Logo — matches landing nav exactly */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="mb-5 flex flex-col items-center gap-2 lg:hidden shrink-0 relative z-10"
-        >
-          <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/images/logo-symbol.png" alt="SANTRACK" width={36} height={36} className="size-9" />
-            <div className="flex flex-col leading-none">
-              <div className="flex items-baseline gap-1">
-                <span className="text-[17px] font-extrabold tracking-tight text-rwanda-blue">SAN</span>
-                <span className="text-[17px] font-extrabold tracking-tight text-rwanda-yellow">TRACK</span>
-              </div>
-              <span className="text-[7px] font-bold tracking-[0.18em] text-slate-400 uppercase">
-                Product Traceability &amp; GS1 Rwanda
-              </span>
-            </div>
-          </Link>
-        </motion.div>
-
-        {/* Back to home — desktop only (mobile has the logo link above) */}
-        <div className="absolute left-6 top-5 z-10 hidden lg:block">
+        {/* Back to home — overlay so it never steals vertical space from the card */}
+        <div className="absolute top-4 left-6 z-20 hidden w-fit lg:block">
           <AuthPrimaryLink href="/" compact showBackIcon>
             Back to home
           </AuthPrimaryLink>
         </div>
 
-        {/* Form Container */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="w-full max-w-[440px] z-10 min-h-0 overflow-y-auto relative"
-          style={{ overflowX: "clip" }}
-        >
-          {children}
-        </motion.div>
+        {/* Center the card. No page header — branding lives in the card (mobile) or left panel (desktop). */}
+        <div className="relative z-10 h-full min-h-0 overflow-y-auto overscroll-contain">
+          <div className="flex min-h-full flex-col items-center justify-center px-4 py-4 sm:px-6 lg:px-8 lg:pt-16 lg:pb-5">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="w-full max-w-[440px] shrink-0"
+              style={{ overflowX: "clip" }}
+            >
+              {children}
+            </motion.div>
+          </div>
+        </div>
       </section>
     </main>
   );

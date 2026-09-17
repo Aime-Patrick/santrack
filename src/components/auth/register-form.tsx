@@ -11,6 +11,7 @@ import { useTranslations } from "next-intl";
 import { getApiErrorMessage } from "@/lib/api";
 import { useRegister } from "@/hooks/auth";
 import { AuthPrimaryButton } from "@/components/auth/auth-primary-button";
+import { AuthCardBrand } from "@/components/auth/san-track-logo";
 import { strongPasswordSchema } from "@/lib/password-policy";
 
 const DESIGN_MODE = process.env.NEXT_PUBLIC_DESIGN_MODE === "true";
@@ -55,6 +56,7 @@ export function RegisterForm() {
   if (done) {
     return (
       <div className="w-full rounded-2xl bg-white p-7 sm:p-9 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-100/90">
+        <AuthCardBrand />
         <div className="flex flex-col items-center text-center">
           <div className="flex size-16 items-center justify-center rounded-full bg-emerald-50 ring-1 ring-emerald-200 animate-in zoom-in duration-300">
             <Check className="size-8 text-emerald-600" strokeWidth={2.5} />
@@ -84,6 +86,7 @@ export function RegisterForm() {
 
   return (
     <div className="w-full rounded-2xl bg-white p-7 sm:p-9 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-100/90 transition-all duration-300">
+      <AuthCardBrand />
       <div className="mb-5 flex items-center gap-2">
         <div className="h-1 w-8 rounded-full bg-[#067eda]" />
         <span className="font-mono text-xs uppercase tracking-wider text-slate-400">

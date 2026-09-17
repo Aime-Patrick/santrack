@@ -85,25 +85,25 @@ const VERDICT_CONFIG = {
   APPROVED: {
     label: "Approved",
     icon: <CheckCircle2 className="size-3.5" />,
-    className: "bg-green-50 border-green-200 text-green-700",
+    className: "bg-rwanda-green text-white",
   },
   CONCERNS: {
     label: "Concerns noted",
     icon: <AlertCircle className="size-3.5" />,
-    className: "bg-amber-50 border-amber-200 text-amber-700",
+    className: "bg-rwanda-yellow text-white",
   },
   OBJECTION: {
     label: "Objection",
     icon: <XSquare className="size-3.5" />,
-    className: "bg-red-50 border-red-200 text-red-700",
+    className: "bg-danger text-white",
   },
 } as const;
 
 const STATUS_CONFIG = {
-  PENDING: { label: "Pending", className: "border-sky-200 text-sky-700 bg-sky-50" },
-  RESPONDED: { label: "Responded", className: "border-green-200 text-green-700 bg-green-50" },
-  CANCELLED: { label: "Cancelled", className: "border-slate-200 text-slate-500 bg-slate-50" },
-  OVERDUE: { label: "Overdue", className: "border-red-200 text-red-700 bg-red-50" },
+  PENDING: { label: "Pending", className: "bg-rwanda-yellow text-white" },
+  RESPONDED: { label: "Responded", className: "bg-rwanda-green text-white" },
+  CANCELLED: { label: "Cancelled", className: "bg-muted-foreground text-white" },
+  OVERDUE: { label: "Overdue", className: "bg-danger text-white" },
 } as const;
 
 /**
@@ -130,16 +130,12 @@ export function PendingRegistrations() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {pendingCount > 0 && <Badge variant="outline">{pendingCount} pending</Badge>}
+          {pendingCount > 0 && <Badge variant="warning">{pendingCount} pending</Badge>}
           {changesCount > 0 && (
-            <Badge variant="outline" className="border-amber-300 text-amber-700">
-              {changesCount} awaiting resubmission
-            </Badge>
+            <Badge variant="warning">{changesCount} awaiting resubmission</Badge>
           )}
           {consultCount > 0 && (
-            <Badge variant="outline" className="border-sky-300 text-sky-700">
-              {consultCount} under consultation
-            </Badge>
+            <Badge variant="default">{consultCount} under consultation</Badge>
           )}
         </div>
       </CardHeader>
@@ -201,17 +197,13 @@ export function PendingRegistrations() {
                   </TableCell>
                   <TableCell>
                     {org.onboardingStatus === "CHANGES_REQUESTED" && (
-                      <Badge variant="outline" className="border-amber-300 text-amber-700 text-[10px]">
-                        Changes requested
-                      </Badge>
+                      <Badge variant="warning">Changes requested</Badge>
                     )}
                     {org.onboardingStatus === "UNDER_CONSULTATION" && (
-                      <Badge variant="outline" className="border-sky-300 text-sky-700 text-[10px]">
-                        Under consultation
-                      </Badge>
+                      <Badge variant="default">Under consultation</Badge>
                     )}
                     {org.onboardingStatus === "PENDING" && (
-                      <Badge variant="outline" className="text-[10px]">Pending</Badge>
+                      <Badge variant="warning">Pending</Badge>
                     )}
                   </TableCell>
                   <TableCell>

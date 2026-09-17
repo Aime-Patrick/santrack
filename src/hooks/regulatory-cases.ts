@@ -10,6 +10,8 @@ export const regulatoryCaseKeys = {
   list: (status?: RegulatoryCaseStatus) => [...regulatoryCaseKeys.all, "list", status ?? "all"] as const,
   officers: () => [...regulatoryCaseKeys.all, "officers"] as const,
   detail: (id: number) => [...regulatoryCaseKeys.all, "detail", id] as const,
+  inspections: (id: number) => [...regulatoryCaseKeys.all, "inspections", id] as const,
+  roster: () => [...regulatoryCaseKeys.all, "inspections", "roster"] as const,
 };
 
 export function useRegulatoryCases(status?: RegulatoryCaseStatus) {
@@ -66,6 +68,8 @@ export function useRecordRegulatoryInspection() {
     onSuccess: (_inspection, input) => {
       queryClient.invalidateQueries({ queryKey: regulatoryCaseKeys.all });
       queryClient.invalidateQueries({ queryKey: regulatoryCaseKeys.detail(input.caseId) });
+      queryClient.invalidateQueries({ queryKey: regulatoryCaseKeys.inspections(input.caseId) });
+      queryClient.invalidateQueries({ queryKey: regulatoryCaseKeys.roster() });
     },
   });
 }
@@ -90,6 +94,22 @@ export function useAssignRegulatoryCaseTeam() {
       queryClient.invalidateQueries({ queryKey: regulatoryCaseKeys.all });
       queryClient.invalidateQueries({ queryKey: regulatoryCaseKeys.detail(caseRecord.id) });
     },
+  });
+}
+
+export function useCaseInspections(caseId: number | null) {
+  return useQuery({
+    queryKey: regulatoryCaseKeys.inspections(caseId ?? 0),
+    queryFn: () => regulatoryCaseService.listInspections(caseId as number),
+    enabled: caseId !== null && caseId > 0,
+  });
+}
+
+export function useAuthorityInspections(limit = 50) {
+  return useQuery({
+    queryKey: [...regulatoryCaseKeys.roster(), limit],
+    queryFn: () => regulatoryCaseService.listAuthorityInspections(limit),
+    staleTime: 15_000,
   });
 }
 

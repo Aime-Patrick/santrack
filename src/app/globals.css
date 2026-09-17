@@ -74,6 +74,11 @@ body {
   font-family: var(--font-exo), 'Exo', system-ui, -apple-system, sans-serif;
 }
 
+/* Dashboard type is a step up from the public site so tables and copy stay readable. */
+html.dashboard-ui {
+  font-size: 20px
+}
+
 *, ::after, ::before {
   border-color: var(--color-border);
 }

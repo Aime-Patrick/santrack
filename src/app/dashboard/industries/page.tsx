@@ -50,6 +50,7 @@ import { IndustryEditDialog } from "./edit-dialog";
 import type { OrganizationResponse } from "@/lib/api";
 import type { RegistryLicense } from "@/services/organization.service";
 import { Provinces } from "rwanda";
+import { FLAG_BLUE, FLAG_GREEN, FLAG_NEUTRAL, FLAG_YELLOW, ORG_TYPE_BADGE } from "@/lib/badge-tones";
 
 type Industry = {
   id: string;
@@ -91,34 +92,14 @@ const TYPE_LABELS: Record<string, string> = {
   CONSUMER: "Consumer",
 };
 
-const TYPE_COLORS: Record<string, string> = {
-  MANUFACTURER: "border-blue-500/20 bg-blue-500/10 text-blue-700 dark:text-blue-400",
-  WAREHOUSE: "border-purple-500/20 bg-purple-500/10 text-purple-700 dark:text-purple-400",
-  DISTRIBUTOR: "border-cyan-500/20 bg-cyan-500/10 text-cyan-700 dark:text-cyan-400",
-  RETAILER: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-  SHOP: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400",
-};
-
 function StatusBadge({ status }: { status: Industry["status"] }) {
   if (status === "active") {
-    return (
-      <Badge className="border-emerald-600/30 bg-emerald-500/10 text-emerald-700 font-semibold dark:text-emerald-400">
-        <CheckCircle2 className="mr-1 size-3 text-emerald-600 dark:text-emerald-400" /> Active
-      </Badge>
-    );
+    return <Badge className={FLAG_GREEN}>Active</Badge>;
   }
   if (status === "pending") {
-    return (
-      <Badge className="border-amber-600/30 bg-amber-500/10 text-amber-700 font-semibold dark:text-amber-400">
-        <Clock className="mr-1 size-3 text-amber-600 dark:text-amber-400" /> Pending Review
-      </Badge>
-    );
+    return <Badge className={FLAG_YELLOW}>Pending review</Badge>;
   }
-  return (
-    <Badge className="border-slate-400/30 bg-muted text-muted-foreground font-medium">
-      Unlicensed
-    </Badge>
-  );
+  return <Badge className={FLAG_NEUTRAL}>Unlicensed</Badge>;
 }
 
 function IndustriesWorkspace() {
@@ -298,10 +279,10 @@ function IndustriesWorkspace() {
       header: "Category & Trade",
       cell: ({ row }) => {
         const ind = row.original;
-        const colorClass = TYPE_COLORS[ind.type] || "bg-muted text-muted-foreground";
+        const colorClass = ORG_TYPE_BADGE[ind.type] || FLAG_NEUTRAL;
         return (
           <div className="space-y-1">
-            <Badge className={`border px-2 py-0.5 text-xs font-medium ${colorClass}`}>
+            <Badge className={colorClass}>
               {ind.category}
             </Badge>
             {ind.industrySector && (
@@ -380,10 +361,7 @@ function IndustriesWorkspace() {
             <div className="flex items-center gap-1.5 flex-wrap">
               <StatusBadge status={ind.status} />
               {ind.licensedByUs && (
-                <Badge className="border-blue-600/30 bg-blue-500/10 text-blue-700 text-[10px] font-semibold dark:text-blue-400">
-                  <ShieldCheck className="mr-1 size-3 text-blue-600 dark:text-blue-400" />
-                  Licensed by Us
-                </Badge>
+                <Badge className={FLAG_BLUE}>Licensed by us</Badge>
               )}
             </div>
             {ind.primaryLicenseNumber && (

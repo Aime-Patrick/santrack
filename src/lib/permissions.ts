@@ -138,7 +138,6 @@ export const ROUTE_CAPABILITIES: { prefix: string; requires: Capability[] }[] = 
 export const TRADING_ORG_ROUTE_PREFIXES: string[] = [
   "/dashboard/licenses",
   "/dashboard/reports",
-  "/dashboard/analytics",
   "/dashboard/compliance",
 ];
 

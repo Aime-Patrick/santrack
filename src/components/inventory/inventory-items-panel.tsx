@@ -503,7 +503,7 @@ function StockCodesPanelInner() {
                 filterColumn="productName"
                 filterPlaceholder="Filter products…"
                 pageSize={10}
-                pageSizeOptions={[10, 15, 25, 50]}
+                pageSizeOptions={[5, 10, 25, 50]}
                 showSelectionCount={false}
                 noBorder
               />
@@ -519,8 +519,8 @@ function StockCodesPanelInner() {
               data={items}
               filterColumn="code"
               filterPlaceholder="Search serial (ST-…)…"
-              pageSize={15}
-              pageSizeOptions={[10, 15, 25, 50]}
+              pageSize={10}
+              pageSizeOptions={[5, 10, 25, 50]}
               showSelectionCount={false}
               noBorder
             />

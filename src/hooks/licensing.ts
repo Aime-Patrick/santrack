@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { licenseService } from "@/services/license.service";
+import { organizationKeys } from "@/hooks/organizations";
 import type {
   ApplyLicenseInput,
   LicenseDecision,
@@ -277,6 +279,9 @@ export function useSuspendLicense() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: licenseKeys.queue() });
       queryClient.invalidateQueries({ queryKey: licenseKeys.my() });
+      queryClient.invalidateQueries({ queryKey: organizationKeys.registry });
+      queryClient.invalidateQueries({ queryKey: ["accountability"] });
+      toast.success("Licence suspended");
     },
   });
 }
@@ -290,6 +295,9 @@ export function useRevokeLicense() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: licenseKeys.queue() });
       queryClient.invalidateQueries({ queryKey: licenseKeys.my() });
+      queryClient.invalidateQueries({ queryKey: organizationKeys.registry });
+      queryClient.invalidateQueries({ queryKey: ["accountability"] });
+      toast.success("Licence revoked");
     },
   });
 }
@@ -302,6 +310,9 @@ export function useReinstateLicense() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: licenseKeys.queue() });
       queryClient.invalidateQueries({ queryKey: licenseKeys.my() });
+      queryClient.invalidateQueries({ queryKey: organizationKeys.registry });
+      queryClient.invalidateQueries({ queryKey: ["accountability"] });
+      toast.success("Licence reinstated");
     },
   });
 }

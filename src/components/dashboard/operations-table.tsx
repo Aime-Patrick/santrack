@@ -202,7 +202,7 @@ export function OperationsTable({
   data = DEFAULT_DATA,
   addHref = "/dashboard/inventory/new",
   addLabel = "Add Record",
-  pageSize = 7,
+  pageSize = 5,
   className,
 }: OperationsTableProps) {
   const [activeTab, setActiveTab] = React.useState(tabs[0]?.key ?? "all");
@@ -283,7 +283,6 @@ export function OperationsTable({
           showPagination={true}
           noBorder
           tableClassName="text-xs"
-          headerClassName="bg-muted/20 border-b border-border/60 text-muted-foreground font-semibold text-[11px]"
           rowClassName={(row) =>
             cn("hover:bg-muted/30 transition-colors", row.getIsSelected() && "bg-muted/40")
           }

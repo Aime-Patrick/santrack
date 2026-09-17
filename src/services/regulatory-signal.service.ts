@@ -8,5 +8,8 @@ export type RegulatorySignal = {
 };
 
 export const regulatorySignalService = {
-  list: () => api.get<RegulatorySignal[]>("/api/regulator/signals").then((response) => response.data),
+  list: () =>
+    api.get<RegulatorySignal[]>("/api/regulator/signals").then((response) =>
+      Array.isArray(response.data) ? response.data : [],
+    ),
 };

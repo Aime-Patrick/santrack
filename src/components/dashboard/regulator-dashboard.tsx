@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   Building2,
   FileBadge,
@@ -13,7 +12,8 @@ import { RegulatorCharts } from "@/components/dashboard/regulator-charts";
 import { useComplianceFindings, useRegulatorQueue } from "@/hooks/licensing";
 import { useRegulatoryCommand } from "@/hooks/regulatory-command";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { RecentActivities } from "@/components/dashboard/recent-activities";
+import { RegulatorRecentActivity } from "@/components/regulator/regulator-recent-activity";
+import { ScanAnomalyWatch } from "@/components/regulator/scan-anomaly-watch";
 
 /**
  * Home screen for a licensing authority (REGULATOR organization).
@@ -89,62 +89,14 @@ export function RegulatorDashboard() {
         loading={commandLoading || queueLoading}
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <QuickLink
-          href="/dashboard/industries"
-          title="Industries"
-          description="Register and standing of every business"
-        />
-        <QuickLink
-          href="/dashboard/regulator"
-          title="License Review"
-          description="Decide submitted applications"
-        />
-        <QuickLink
-          href="/dashboard/compliance/findings"
-          title="Industry compliance"
-          description="Findings across supervised businesses"
-        />
-        <QuickLink
-          href="/dashboard/manufacturing/trace"
-          title="Trace & Act"
-          description="Follow a product identity end to end"
-        />
-        <QuickLink
-          href="/dashboard/recall"
-          title="Recalls"
-          description="Active and historical recalls"
-        />
-        <QuickLink
-          href="/dashboard/settings"
-          title="Settings"
-          description="Authority profile and staff"
-        />
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+        <div className="min-w-0 self-start">
+          <ScanAnomalyWatch compact />
+        </div>
+        <div className="min-w-0 self-start">
+          <RegulatorRecentActivity />
+        </div>
       </div>
-
-      <RecentActivities />
     </div>
-  );
-}
-
-function QuickLink({
-  href,
-  title,
-  description,
-}: {
-  href: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-primary/5"
-    >
-      <p className="font-semibold text-foreground group-hover:text-primary">
-        {title}
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-    </Link>
   );
 }

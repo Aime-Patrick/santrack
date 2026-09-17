@@ -13,7 +13,7 @@ import { getApiErrorMessage } from "@/lib/api";
 import { useLogin, useRequestPasswordReset } from "@/hooks/auth";
 import { AuthPrimaryButton } from "@/components/auth/auth-primary-button";
 import { AuthShell } from "@/components/auth/auth-shell";
-import { GoogleIcon, MicrosoftIcon } from "@/components/auth/san-track-logo";
+import { AuthCardBrand, GoogleIcon, MicrosoftIcon } from "@/components/auth/san-track-logo";
 
 const loginSchema = z.object({
   email: z.string().trim().min(1, "Please enter your username or email"),
@@ -36,7 +36,7 @@ type View = "login" | "forgot";
 
 /** Shared card chrome — each view is its own card so the whole card slides. */
 const CARD =
-  "w-full rounded-2xl bg-white p-7 sm:p-9 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-100/90";
+  "w-full rounded-2xl bg-white p-5 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-100/90";
 
 /** Whole-card slide: forward (to forgot) exits left / enters from the right. */
 const slideVariants = {
@@ -141,9 +141,10 @@ export default function LoginPage() {
               exit="exit"
               transition={slideTransition}
             >
+                <AuthCardBrand />
                 {/* Card Header */}
-                <div className="space-y-1">
-                  <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900">
+                <div className="space-y-0.5">
+                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
                     {t("welcomeBack")}
                   </h1>
                   <p className="text-xs sm:text-sm text-slate-500 font-medium">
@@ -154,7 +155,7 @@ export default function LoginPage() {
                 {/* Login Form */}
                 <form
                   onSubmit={onSubmit}
-                  className="mt-6 space-y-4"
+                  className="mt-4 space-y-3"
                   noValidate
                 >
                   {/* Username Field */}
@@ -256,14 +257,14 @@ export default function LoginPage() {
                     disabled={login.isPending}
                     loading={login.isPending}
                     loadingLabel={t("signingIn")}
-                    className="mt-2"
+                    className="mt-1"
                   >
                     {t("loginButton")}
                   </AuthPrimaryButton>
                 </form>
 
                 {/* SSO + footer link slide with the form */}
-                <div className="mt-6">
+                <div className="mt-4">
                   {/* "or continue with" Divider */}
                   <div className="relative flex items-center justify-center pb-1">
                     <div className="w-full border-t border-slate-200/80" />
@@ -273,10 +274,10 @@ export default function LoginPage() {
                   </div>
 
                   {/* Social SSO Buttons (Google & Microsoft) */}
-                  <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="grid grid-cols-2 gap-2.5 pt-1">
                     <button
                       type="button"
-                      className="h-11 border border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 active:bg-slate-100 rounded-lg flex items-center justify-center gap-2 font-medium text-xs sm:text-sm text-slate-700 transition-all duration-150 cursor-pointer shadow-xs"
+                      className="h-10 border border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 active:bg-slate-100 rounded-lg flex items-center justify-center gap-2 font-medium text-xs sm:text-sm text-slate-700 transition-all duration-150 cursor-pointer shadow-xs"
                     >
                       <GoogleIcon className="size-4" />
                       <span>Google</span>
@@ -284,7 +285,7 @@ export default function LoginPage() {
 
                     <button
                       type="button"
-                      className="h-11 border border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 active:bg-slate-100 rounded-lg flex items-center justify-center gap-2 font-medium text-xs sm:text-sm text-slate-700 transition-all duration-150 cursor-pointer shadow-xs"
+                      className="h-10 border border-slate-200 hover:border-slate-300 hover:bg-slate-50/80 active:bg-slate-100 rounded-lg flex items-center justify-center gap-2 font-medium text-xs sm:text-sm text-slate-700 transition-all duration-150 cursor-pointer shadow-xs"
                     >
                       <MicrosoftIcon className="size-3.5" />
                       <span>Microsoft</span>
@@ -293,7 +294,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Link to Register */}
-                <p className="mt-5 text-center text-xs text-slate-500">
+                <p className="mt-3.5 text-center text-xs text-slate-500">
                   {t("newToSanTrack")}{" "}
                   <Link
                     href="/register"
@@ -315,6 +316,7 @@ export default function LoginPage() {
               exit="exit"
               transition={slideTransition}
             >
+                <AuthCardBrand />
                 {resetSentTo ? (
                   /* Sent confirmation */
                   <div className="flex flex-col items-center text-center pt-1 pb-2">
@@ -348,8 +350,8 @@ export default function LoginPage() {
                   /* Request form */
                   <>
                     {/* Card Header */}
-                    <div className="space-y-1">
-                      <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900">
+                    <div className="space-y-0.5">
+                      <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
                         {t("forgotTitle")}
                       </h1>
                       <p className="text-xs sm:text-sm text-slate-500 font-medium">
@@ -359,7 +361,7 @@ export default function LoginPage() {
 
                     <form
                       onSubmit={onForgotSubmit}
-                      className="mt-6 space-y-4"
+                      className="mt-4 space-y-3"
                       noValidate
                     >
                       {/* Email Field */}
@@ -424,7 +426,7 @@ export default function LoginPage() {
       </motion.div>
 
       {/* Footer Copyright */}
-      <footer className="mt-7 text-center">
+      <footer className="mt-4 text-center">
         <p className="text-xs text-slate-400 font-normal">
           {t("copyright")}
         </p>

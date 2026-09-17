@@ -206,7 +206,7 @@ export default function IndustryFindingsPage() {
               data={findings}
               filterPlaceholder="Search by organization..."
               filterColumn="organizationName"
-              pageSize={15}
+              pageSize={10}
               noBorder
               onRowClick={(row) =>
                 router.push(`/dashboard/compliance/findings/${row.id}`)

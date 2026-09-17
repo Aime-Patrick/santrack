@@ -9,10 +9,22 @@ export function useRegulatoryComplaints() {
 
 export function usePromoteComplaint() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: regulatoryComplaintService.promote, onSuccess: () => queryClient.invalidateQueries({ queryKey: regulatoryComplaintKeys.all }) });
+  return useMutation({
+    mutationFn: regulatoryComplaintService.promote,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: regulatoryComplaintKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["regulatory-signals"] });
+    },
+  });
 }
 
 export function useDismissComplaint() {
   const queryClient = useQueryClient();
-  return useMutation({ mutationFn: regulatoryComplaintService.dismiss, onSuccess: () => queryClient.invalidateQueries({ queryKey: regulatoryComplaintKeys.all }) });
+  return useMutation({
+    mutationFn: regulatoryComplaintService.dismiss,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: regulatoryComplaintKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["regulatory-signals"] });
+    },
+  });
 }

@@ -67,6 +67,8 @@ export type RegulatoryInspectionResult = "PASS" | "CONDITIONAL" | "FAIL";
 export interface RegulatoryInspection {
   id: number;
   caseId: number;
+  caseNumber?: string | null;
+  caseTitle?: string;
   organization: { id: number; name: string };
   facility: { id: number; name: string } | null;
   inspector: { id: number; name: string };
@@ -181,6 +183,18 @@ export const regulatoryCaseService = {
 
   recordInspection(caseId: number, input: { result: RegulatoryInspectionResult; notes?: string }): Promise<RegulatoryInspection> {
     return api.post<RegulatoryInspection>(`/api/regulator/cases/${caseId}/inspections`, input).then((response) => response.data);
+  },
+
+  listInspections(caseId: number): Promise<RegulatoryInspection[]> {
+    return api
+      .get<RegulatoryInspection[]>(`/api/regulator/cases/${caseId}/inspections`)
+      .then((response) => (Array.isArray(response.data) ? response.data : []));
+  },
+
+  listAuthorityInspections(limit = 50): Promise<RegulatoryInspection[]> {
+    return api
+      .get<RegulatoryInspection[]>(`/api/regulator/inspections`, { params: { limit } })
+      .then((response) => (Array.isArray(response.data) ? response.data : []));
   },
 
   async downloadEvidence(caseId: number, evidenceId: number): Promise<void> {

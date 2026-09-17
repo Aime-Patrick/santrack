@@ -13,6 +13,7 @@ import {
   createPaginatedRowModel,
   columnFilteringFeature,
   columnVisibilityFeature,
+  globalFilteringFeature,
   rowPaginationFeature,
   rowSelectionFeature,
   rowSortingFeature,
@@ -22,6 +23,9 @@ import {
   FlexRender,
 } from "@tanstack/react-table";
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -38,11 +42,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 // Shared features object — tree-shaken to only what we use.
 const tableFeatures_ = tableFeatures({
   columnFilteringFeature,
   columnVisibilityFeature,
+  globalFilteringFeature,
   rowPaginationFeature,
   rowSelectionFeature,
   rowSortingFeature,
@@ -55,10 +61,45 @@ const tableFeatures_ = tableFeatures({
 
 export type TableFeatures = typeof tableFeatures_;
 
+declare module "@tanstack/react-table" {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TFeatures, TData extends RowData, TValue> {
+    /** Pin this column while the table scrolls horizontally. */
+    sticky?: "left" | "right";
+  }
+}
+
+const STICKY_RIGHT =
+  "sticky right-0 z-40 isolate min-w-14 bg-white border-l border-border";
+const STICKY_RIGHT_HEAD =
+  "sticky right-0 z-50 isolate min-w-14 bg-rwanda-blue border-l border-white/20 text-white";
+const STICKY_LEFT =
+  "sticky left-0 z-40 isolate bg-white border-r border-border";
+const STICKY_LEFT_HEAD =
+  "sticky left-0 z-50 isolate bg-rwanda-blue border-r border-white/20 text-white";
+
+const HEADER_CELL =
+  "bg-rwanda-blue text-white [&_svg]:text-white border-b border-r border-white/20 last:border-r-0";
+const BODY_CELL = "border-b border-r border-border last:border-r-0";
+
+function stickySide(
+  columnId: string,
+  meta: { sticky?: "left" | "right" } | undefined,
+  pinActions: boolean,
+): "left" | "right" | null {
+  if (meta?.sticky === "left" || meta?.sticky === "right") return meta.sticky;
+  if (pinActions && columnId === "actions") return "right";
+  return null;
+}
+
 interface DataTableProps<TData extends RowData> {
   columns: ColumnDef<TableFeatures, TData>[];
   data: TData[];
   filterPlaceholder?: string;
+  /**
+   * When set, filters that single column. Otherwise a global search across
+   * all accessor columns is used. Filter UI shows whenever `showFilter` is true.
+   */
   filterColumn?: string;
   pageSize?: number;
   /** Choices for the rows-per-page control. Empty = hide the control. */
@@ -74,18 +115,27 @@ interface DataTableProps<TData extends RowData> {
   /** Extra className on each <thead> row */
   headerClassName?: string;
   /** Per-row className callback */
-  rowClassName?: (row: ReturnType<ReturnType<typeof useTable<TableFeatures, TData>>['getRowModel']>['rows'][number]) => string;
+  rowClassName?: (
+    row: ReturnType<
+      ReturnType<typeof useTable<TableFeatures, TData>>["getRowModel"]
+    >["rows"][number],
+  ) => string;
   /** When set, the whole row is clickable. */
   onRowClick?: (row: TData) => void;
+  /**
+   * Keep the `actions` column (or any column with `meta.sticky`) pinned while
+   * the table scrolls horizontally. Default true.
+   */
+  pinActions?: boolean;
 }
 
 export function DataTable<TData extends RowData>({
   columns,
   data,
-  filterPlaceholder = "Filter...",
+  filterPlaceholder = "Search…",
   filterColumn,
   pageSize = 10,
-  pageSizeOptions = [10, 15, 25, 50],
+  pageSizeOptions = [5, 10, 25, 50],
   showFilter = true,
   showPagination = true,
   showSelectionCount = true,
@@ -94,10 +144,12 @@ export function DataTable<TData extends RowData>({
   headerClassName,
   rowClassName,
   onRowClick,
+  pinActions = true,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] =
     React.useState<ColumnFiltersState>([]);
+  const [globalFilter, setGlobalFilter] = React.useState("");
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize,
@@ -115,45 +167,109 @@ export function DataTable<TData extends RowData>({
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
     onPaginationChange: setPagination,
+    globalFilterFn: "includesString",
     state: {
       sorting,
       columnFilters,
+      globalFilter,
       pagination,
     },
   });
 
+  const filterValue = filterColumn
+    ? ((table.getColumn(filterColumn)?.getFilterValue() as string) ?? "")
+    : (globalFilter ?? "");
+
   return (
     <div className="space-y-4">
-      {showFilter && filterColumn && (
+      {showFilter && (
         <div className="flex items-center gap-2">
           <Input
             placeholder={filterPlaceholder}
-            value={
-              (table.getColumn(filterColumn)?.getFilterValue() as string) ?? ""
-            }
-            onChange={(event) =>
-              table
-                .getColumn(filterColumn)
-                ?.setFilterValue(event.target.value)
-            }
+            value={filterValue}
+            onChange={(event) => {
+              const next = event.target.value;
+              if (filterColumn) {
+                table.getColumn(filterColumn)?.setFilterValue(next);
+              } else {
+                table.setGlobalFilter(next);
+              }
+            }}
             className="max-w-sm"
+            aria-label={filterPlaceholder}
           />
         </div>
       )}
 
-      <div className={noBorder ? "overflow-hidden" : "overflow-hidden rounded-md border"}>
-        <Table className={tableClassName}>
+      <div
+        className={
+          noBorder ? "overflow-hidden" : "overflow-hidden rounded-md border"
+        }
+      >
+        <Table
+          className={cn("border-separate border-spacing-0", tableClassName)}
+        >
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className={headerClassName}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder ? null : (
-                      <FlexRender header={header} />
-                    )}
-                  </TableHead>
-                ))}
+              <TableRow
+                key={headerGroup.id}
+                className={cn(
+                  "border-b-0 hover:bg-transparent",
+                  headerClassName,
+                )}
+              >
+                {headerGroup.headers.map((header) => {
+                  const side = stickySide(
+                    header.column.id,
+                    header.column.columnDef.meta,
+                    pinActions,
+                  );
+                  const canSort = header.column.getCanSort();
+                  const sorted = header.column.getIsSorted();
+                  return (
+                    <TableHead
+                      key={header.id}
+                      className={cn(
+                        HEADER_CELL,
+                        side === "right" && STICKY_RIGHT_HEAD,
+                        side === "left" && STICKY_LEFT_HEAD,
+                        side && "bg-clip-padding",
+                        canSort && "cursor-pointer select-none",
+                      )}
+                      aria-sort={
+                        sorted === "asc"
+                          ? "ascending"
+                          : sorted === "desc"
+                            ? "descending"
+                            : canSort
+                              ? "none"
+                              : undefined
+                      }
+                      onClick={
+                        canSort
+                          ? header.column.getToggleSortingHandler()
+                          : undefined
+                      }
+                    >
+                      {header.isPlaceholder ? null : canSort ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <FlexRender header={header} />
+                          {sorted === "asc" ? (
+                            <ArrowUp className="size-3.5 shrink-0 opacity-90" />
+                          ) : sorted === "desc" ? (
+                            <ArrowDown className="size-3.5 shrink-0 opacity-90" />
+                          ) : (
+                            <ArrowUpDown className="size-3.5 shrink-0 opacity-60" />
+                          )}
+                        </span>
+                      ) : (
+                        <FlexRender header={header} />
+                      )}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             ))}
           </TableHeader>
@@ -165,6 +281,7 @@ export function DataTable<TData extends RowData>({
                   data-state={row.getIsSelected() && "selected"}
                   className={
                     [
+                      "group/row border-b-0",
                       onRowClick ? "cursor-pointer hover:bg-muted/50" : "",
                       rowClassName ? rowClassName(row) : "",
                     ]
@@ -177,18 +294,34 @@ export function DataTable<TData extends RowData>({
                       : undefined
                   }
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      <FlexRender cell={cell} />
-                    </TableCell>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const side = stickySide(
+                      cell.column.id,
+                      cell.column.columnDef.meta,
+                      pinActions,
+                    );
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          BODY_CELL,
+                          side === "right" && STICKY_RIGHT,
+                          side === "left" && STICKY_LEFT,
+                          side &&
+                            "bg-clip-padding group-hover/row:bg-muted group-data-[state=selected]/row:bg-muted",
+                        )}
+                      >
+                        <FlexRender cell={cell} />
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))
             ) : (
-              <TableRow>
+              <TableRow className="border-b-0 hover:bg-transparent">
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="h-24 border-b border-border text-center"
                 >
                   No results.
                 </TableCell>

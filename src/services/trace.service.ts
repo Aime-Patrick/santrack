@@ -261,6 +261,21 @@ export interface VerifyResult {
   firstScan?: boolean;
 }
 
+export interface VerificationAttemptSummary {
+  token: string;
+  known: boolean;
+  itemCode: string | null;
+  productName: string | null;
+  attempts: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+}
+
+export interface VerificationAttemptsResponse {
+  attempts: VerificationAttemptSummary[];
+  note: string;
+}
+
 export const traceService = {
   /** Get the full lifecycle timeline for an item. */
   timeline(qrCode: string): Promise<TraceTimeline> {
@@ -280,4 +295,26 @@ export const traceService = {
   verify(token: string): Promise<VerifyResult> {
     return api.get<VerifyResult>(`/api/verify/${token}`).then((r) => r.data);
   },
+
+  /** Codes scanned far more often than one physical thing could be. */
+  verificationAttempts(params?: { unknownOnly?: boolean; minAttempts?: number; limit?: number }) {
+    return api
+      .get<VerificationAttemptsResponse | VerificationAttemptSummary[]>(
+        "/api/trace/verification-attempts",
+        { params },
+      )
+      .then((r) => unwrapVerificationAttempts(r.data));
+  },
 };
+
+function unwrapVerificationAttempts(
+  body: VerificationAttemptsResponse | VerificationAttemptSummary[] | null | undefined,
+): VerificationAttemptsResponse {
+  if (Array.isArray(body)) {
+    return { attempts: body, note: "" };
+  }
+  return {
+    attempts: Array.isArray(body?.attempts) ? body.attempts : [],
+    note: body?.note ?? "",
+  };
+}

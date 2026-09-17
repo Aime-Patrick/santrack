@@ -23,11 +23,11 @@ import { usePendingRegistrations, useIncomingConsultations } from "@/hooks/organ
 import { api, getApiErrorMessage, type License, type LicenseDocument } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PageTabs, TabsContent } from "@/components/ui/page-tabs";
 import { CaseWorkQueue } from "@/components/regulator/case-work-queue";
 import { PendingRegistrations } from "@/components/regulator/pending-registrations";
 import { IncomingConsultations } from "@/components/regulator/incoming-consultations";
-import { ComplaintTriage } from "@/components/regulator/complaint-triage";
-import { SignalWatch } from "@/components/regulator/signal-watch";
+import { IntelligenceDesk } from "@/components/regulator/intelligence-desk";
 import { FieldInspectionMode } from "@/components/regulator/field-inspection-mode";
 import { useRegulatoryCommand } from "@/hooks/regulatory-command";
 import { IncomingReferrals } from "@/components/regulator/incoming-referrals";
@@ -615,15 +615,21 @@ const STRIP_CHIPS = [
   { key: "inspectionsToday",      label: "Inspections",    chip: "bg-success" },
 ] as const;
 
-function CommandStrip() {
+function CommandStrip({
+  onChip,
+}: {
+  onChip: (key: (typeof STRIP_CHIPS)[number]["key"]) => void;
+}) {
   const { data, isLoading } = useRegulatoryCommand();
   return (
-    <div className="flex max-w-xl flex-wrap items-center justify-end gap-1.5">
+    <div className="flex flex-wrap items-center gap-1.5">
       {STRIP_CHIPS.map(({ key, label, chip }) => (
-        <span
+        <button
           key={key}
+          type="button"
+          onClick={() => onChip(key)}
           className={cn(
-            "inline-flex items-baseline gap-1.5 rounded-full px-2.5 py-1 text-white",
+            "inline-flex cursor-pointer items-baseline gap-1.5 rounded-full px-2.5 py-1 text-white transition-opacity hover:opacity-90",
             chip,
           )}
         >
@@ -631,7 +637,7 @@ function CommandStrip() {
             {isLoading ? "—" : (data?.[key] ?? 0)}
           </span>
           <span className="text-[10px] font-medium leading-none">{label}</span>
-        </span>
+        </button>
       ))}
     </div>
   );
@@ -763,59 +769,59 @@ function RegulatorWorkspace() {
   return (
     <div className="space-y-6">
 
-      {/* ── Page header + inline command strip ── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
-            <Shield className="size-4" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">Regulatory Patrol</h1>
-            <p className="text-sm text-muted-foreground">
-              Registrations, licences, enforcement, and market intelligence — all in one place.
-            </p>
-          </div>
+      {/* ── Page header ── */}
+      <div className="flex items-center gap-3">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
+          <Shield className="size-4" />
         </div>
-        <CommandStrip />
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Regulatory Patrol</h1>
+          <p className="text-sm text-muted-foreground">
+            Registrations, licences, enforcement, and market intelligence — all in one place.
+          </p>
+        </div>
       </div>
 
       {/* ── Tabs ── */}
       <div>
-        {/* Tab bar */}
-        <div className="flex gap-1 rounded-xl border border-border bg-muted/50 p-1">
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTab(id)}
-              className={cn(
-                "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all",
-                tab === id
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Icon className="size-3.5 shrink-0" />
-              <span className="hidden sm:inline">{label}</span>
-            </button>
-          ))}
-        </div>
+        <CommandStrip
+          onChip={(key) => {
+            if (key === "activeRecalls") {
+              router.push("/dashboard/recall");
+              return;
+            }
+            if (key === "marketReportsToTriage") {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("tab", "intelligence");
+              params.delete("intel");
+              router.replace(`/dashboard/regulator?${params.toString()}`, { scroll: false });
+              return;
+            }
+            setTab("enforcement");
+          }}
+        />
 
-        {/* Tab panels */}
-        <div className="mt-5 space-y-5">
-
-          {/* Scan — primary workflow, first tab */}
-          {tab === "scan" && (
+        {/* Tab bar + panels */}
+        <PageTabs
+          value={tab}
+          onValueChange={(next) => setTab(next as Tab)}
+          fullWidth
+          className="mt-3"
+          items={TABS.map(({ id, label, icon }) => ({
+            value: id,
+            label,
+            icon,
+          }))}
+        >
+          <TabsContent value="scan" className="mt-5 space-y-5">
             <FieldInspectionMode />
-          )}
+          </TabsContent>
 
-          {/* Registrations — review queue for new applicants */}
-          {tab === "registrations" && (
+          <TabsContent value="registrations" className="mt-5 space-y-5">
             <RegistrationsTab />
-          )}
+          </TabsContent>
 
-          {/* Licences — submitted applications awaiting approve/reject */}
-          {tab === "licences" && (
+          <TabsContent value="licences" className="mt-5 space-y-5">
             <div className="space-y-5">
               <div className="flex items-center gap-2">
                 <Gavel className="size-4 text-primary" />
@@ -838,7 +844,6 @@ function RegulatorWorkspace() {
                       filterColumn="organizationName"
                       pageSize={10}
                       noBorder
-                      headerClassName="bg-muted"
                     />
                   ) : (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -856,23 +861,17 @@ function RegulatorWorkspace() {
               <ProductRegistrationQueue />
               <IncomingReferrals />
             </div>
-          )}
+          </TabsContent>
 
-          {/* Enforcement — cases only, scans live in the Scan tab */}
-          {tab === "enforcement" && (
+          <TabsContent value="enforcement" className="mt-5 space-y-5">
             <CaseWorkQueue />
-          )}
+          </TabsContent>
 
-          {/* Intelligence — market signals, complaint triage */}
-          {tab === "intelligence" && (
-            <div className="space-y-5">
-              <ComplaintTriage />
-              <SignalWatch />
-            </div>
-          )}
+          <TabsContent value="intelligence" className="mt-5 space-y-5">
+            <IntelligenceDesk />
+          </TabsContent>
 
-          {/* Setup — authority configuration */}
-          {tab === "setup" && (
+          <TabsContent value="setup" className="mt-5 space-y-5">
             <div className="space-y-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-border bg-card p-4 shadow-sm">
                 <div>
@@ -892,9 +891,8 @@ function RegulatorWorkspace() {
               </div>
               <AuthoritySelfSetup />
             </div>
-          )}
-
-        </div>
+          </TabsContent>
+        </PageTabs>
       </div>
 
       {selectedLicense && (

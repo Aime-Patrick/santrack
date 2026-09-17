@@ -347,7 +347,7 @@ export default function AuditPage() {
               data={entries}
               filterPlaceholder="Search by actor, org or path..."
               filterColumn="actor"
-              pageSize={15}
+              pageSize={10}
               noBorder
               onRowClick={(row) => router.push(`/dashboard/audit/${row.id}`)}
             />

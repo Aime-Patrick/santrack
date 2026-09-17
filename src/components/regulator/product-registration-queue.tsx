@@ -103,7 +103,6 @@ export function ProductRegistrationQueue() {
               filterColumn="productName"
               pageSize={10}
               noBorder
-              headerClassName="bg-muted"
             />
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">

@@ -79,31 +79,31 @@ function Field({
   );
 }
 
-/** Solid chips — white text on every status. No translucent backgrounds. */
+/** Solid Rwanda-flag chips. Yellow uses dark text so it stays readable. */
 const STATUS_CLASSES: Record<string, string> = {
   RECALLED: "border-transparent bg-danger text-white",
-  QUARANTINED: "border-transparent bg-amber-500 text-white",
-  DESTROYED: "border-transparent bg-zinc-500 text-white",
-  SOLD: "border-transparent bg-orange-600 text-white",
-  ACTIVE: "border-transparent bg-emerald-600 text-white",
+  QUARANTINED: "border-transparent bg-rwanda-yellow text-white",
+  DESTROYED: "border-transparent bg-muted-foreground text-white",
+  SOLD: "border-transparent bg-rwanda-yellow text-white",
+  ACTIVE: "border-transparent bg-rwanda-green text-white",
 };
 
-/** Solid background colors for timeline event badges — white text on every. */
+/** Solid Rwanda-flag chips. Yellow uses dark text so it stays readable. */
 const EVENT_BADGE_STYLES: Record<string, string> = {
-  RECALLED: "bg-danger",
-  RECEIVED: "bg-blue-600",
-  DISPATCHED: "bg-blue-700",
-  MANUFACTURED: "bg-emerald-600",
-  BATCH_APPROVED: "bg-teal-600",
-  QC_INSPECTED: "bg-cyan-600",
-  PRODUCTION_COMPLETED: "bg-green-600",
-  PRODUCTION_STARTED: "bg-slate-600",
-  SOLD: "bg-orange-600",
-  QUARANTINED: "bg-amber-500",
-  DESTROYED: "bg-zinc-500",
-  RELEASED: "bg-green-500",
-  PACKAGED: "bg-sky-600",
-  UNIT_REMOVED: "bg-pink-600",
+  RECALLED: "bg-danger text-white",
+  RECEIVED: "bg-rwanda-blue text-white",
+  DISPATCHED: "bg-rwanda-blue text-white",
+  MANUFACTURED: "bg-rwanda-green text-white",
+  BATCH_APPROVED: "bg-rwanda-green text-white",
+  QC_INSPECTED: "bg-rwanda-blue text-white",
+  PRODUCTION_COMPLETED: "bg-rwanda-green text-white",
+  PRODUCTION_STARTED: "bg-muted-foreground text-white",
+  SOLD: "bg-rwanda-yellow text-white",
+  QUARANTINED: "bg-rwanda-yellow text-white",
+  DESTROYED: "bg-muted-foreground text-white",
+  RELEASED: "bg-rwanda-green text-white",
+  PACKAGED: "bg-rwanda-yellow text-white",
+  UNIT_REMOVED: "bg-danger text-white",
 };
 
 /** Icon per event type for the timeline dot. */
@@ -501,7 +501,7 @@ export default function RecallDetailPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <span
                             className={cn(
-                              "inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white",
+                              "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium tracking-wide",
                               badgeClass,
                             )}
                           >

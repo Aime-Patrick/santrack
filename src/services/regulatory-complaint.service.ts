@@ -8,7 +8,10 @@ export type TriageComplaint = {
 };
 
 export const regulatoryComplaintService = {
-  list: () => api.get<TriageComplaint[]>("/api/regulator/complaints").then((response) => response.data),
+  list: () =>
+    api.get<TriageComplaint[]>("/api/regulator/complaints").then((response) =>
+      Array.isArray(response.data) ? response.data : [],
+    ),
   promote: ({ id, caseCategory }: { id: number; caseCategory: string }) => api.post(`/api/regulator/complaints/${id}/promote`, { caseCategory }).then((response) => response.data),
   dismiss: (id: number) => api.post(`/api/regulator/complaints/${id}/dismiss`).then((response) => response.data),
   async photoUrl(id: number): Promise<string> {

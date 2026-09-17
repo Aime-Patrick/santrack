@@ -55,3 +55,17 @@ export function useVerifyItem(token: string) {
     enabled: !!token,
   });
 }
+
+export function useVerificationAttempts(options?: { unknownOnly?: boolean; minAttempts?: number; limit?: number; enabled?: boolean }) {
+  return useQuery({
+    queryKey: ["trace", "verification-attempts", options?.unknownOnly ?? false, options?.minAttempts ?? 1, options?.limit ?? 50],
+    queryFn: () =>
+      traceService.verificationAttempts({
+        unknownOnly: options?.unknownOnly,
+        minAttempts: options?.minAttempts,
+        limit: options?.limit,
+      }),
+    enabled: options?.enabled ?? true,
+    staleTime: 30_000,
+  });
+}

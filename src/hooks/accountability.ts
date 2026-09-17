@@ -50,3 +50,11 @@ export function useBatchTimeline(batchId: number, limit = 30) {
     enabled: batchId > 0,
   });
 }
+
+export function useAuthorityRecentActivity(limit = 40) {
+  return useQuery({
+    queryKey: ["accountability", "recent", limit],
+    queryFn: () => accountabilityService.recent(limit),
+    staleTime: 15_000,
+  });
+}

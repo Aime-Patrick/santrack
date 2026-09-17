@@ -1,3 +1,5 @@
+import Image from "next/image";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 /**
@@ -117,6 +119,27 @@ export function SanTrackBrand({
         </span>
       </div>
     </div>
+  );
+}
+
+/** Compact mark inside auth cards on small screens (desktop uses the split brand panel). */
+export function AuthCardBrand({ className }: { className?: string }) {
+  return (
+    <Link
+      href="/"
+      className={cn("mb-4 flex items-center justify-center gap-2 lg:hidden", className)}
+    >
+      <Image src="/images/logo-symbol.png" alt="SANTRACK" width={32} height={32} className="size-8" />
+      <div className="flex flex-col leading-none">
+        <div className="flex items-baseline gap-1">
+          <span className="text-[15px] font-extrabold tracking-tight text-rwanda-blue">SAN</span>
+          <span className="text-[15px] font-extrabold tracking-tight text-rwanda-yellow">TRACK</span>
+        </div>
+        <span className="text-[6px] font-bold tracking-[0.18em] text-slate-400 uppercase">
+          Product Traceability &amp; GS1 Rwanda
+        </span>
+      </div>
+    </Link>
   );
 }
 

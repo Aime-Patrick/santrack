@@ -10,10 +10,12 @@ import {
   type ReactNode,
 } from "react";
 import { io, Socket } from "socket.io-client";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { getAuthToken } from "@/lib/auth";
+import { actionLabel } from "@/lib/notification-intelligence";
 
-interface Notification {
+export interface Notification {
   id: number;
   type: string;
   title: string;
@@ -56,7 +58,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const loadRest = useCallback(() => {
     api
-      .get<Notification[]>("/api/notifications", { params: { limit: 20 } })
+      .get<Notification[]>("/api/notifications", { params: { limit: 50 } })
       .then((res) => {
         setNotifications(res.data);
         setUnreadCount(res.data.filter((n) => !n.read).length);
@@ -87,6 +89,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       socket.on("notification", (notification: Notification) => {
         setNotifications((prev) => [notification, ...prev].slice(0, 50));
         setUnreadCount((prev) => prev + 1);
+        toast(notification.title, {
+          description: notification.message,
+          action: notification.actionUrl
+            ? {
+                label: actionLabel(notification.actionUrl),
+                onClick: () => {
+                  window.location.assign(notification.actionUrl!);
+                },
+              }
+            : undefined,
+        });
       });
 
       socket.on("unread_count", (data: { count: number }) => {

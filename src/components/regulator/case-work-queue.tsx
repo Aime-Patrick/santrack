@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, CheckCircle2, CircleDotDashed, Download, Factory, FileBadge, FileDown, LoaderCircle, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,12 +22,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useAssignRegulatoryCase, useAssignRegulatoryCaseTeam, useChangeRegulatoryCaseStatus, useRecordRegulatoryInspection, useRegulatoryCase, useRegulatoryCases, useRegulatoryOfficers } from "@/hooks/regulatory-cases";
+import { useAssignRegulatoryCase, useAssignRegulatoryCaseTeam, useCaseInspections, useChangeRegulatoryCaseStatus, useRecordRegulatoryInspection, useRegulatoryCase, useRegulatoryCases, useRegulatoryOfficers } from "@/hooks/regulatory-cases";
 import { regulatoryCaseService, type RegulatoryCase, type RegulatoryCaseStatus, type RegulatoryInspectionResult } from "@/services/regulatory-case.service";
 import { cn } from "@/lib/utils";
 import { useMyRegulatoryAuthority, useRegulatoryAuthorities } from "@/hooks/regulatory-authorities";
 import { useReferRegulatoryCase } from "@/hooks/regulatory-referrals";
 import { AccountabilityLedger } from "@/components/regulator/accountability-ledger";
+import { InspectionPlanner } from "@/components/regulator/inspection-planner";
 import { useBatchTimeline, useCaseTimeline, useFacilityTimeline, useLicenceTimeline, useOrganizationTimeline } from "@/hooks/accountability";
 
 /** Subject of the linked-records timeline shown inside a case sheet. */
@@ -68,18 +70,43 @@ function dueLabel(dueOn: string | null) {
 }
 
 export function CaseWorkQueue() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const { data: cases = [], isLoading } = useRegulatoryCases();
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const caseFromUrl = Number(searchParams.get("case")) || null;
+  const [selectedId, setSelectedId] = useState<number | null>(caseFromUrl);
   const activeCases = cases.filter((caseRecord) => caseRecord.status !== "CLOSED");
 
+  function openCase(id: number) {
+    setSelectedId(id);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", "enforcement");
+    params.set("case", String(id));
+    router.replace(`/dashboard/regulator?${params.toString()}`, { scroll: false });
+  }
+
   useEffect(() => {
-    const open = (event: Event) => setSelectedId((event as CustomEvent<number>).detail);
+    if (caseFromUrl) setSelectedId(caseFromUrl);
+  }, [caseFromUrl]);
+
+  useEffect(() => {
+    const open = (event: Event) => openCase((event as CustomEvent<number>).detail);
     window.addEventListener("santrack:open-case", open);
     return () => window.removeEventListener("santrack:open-case", open);
-  }, []);
+  }, [searchParams, router]);
+
+  function closeSheet() {
+    setSelectedId(null);
+    if (!searchParams.get("case")) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("case");
+    const qs = params.toString();
+    router.replace(qs ? `/dashboard/regulator?${qs}` : "/dashboard/regulator", { scroll: false });
+  }
 
   return (
-    <>
+    <div className="space-y-5">
+      <InspectionPlanner onOpenCase={openCase} />
       <Card className="overflow-hidden">
         <CardHeader className="flex-row items-center justify-between space-y-0 border-b border-border/70 py-4">
           <div>
@@ -115,7 +142,7 @@ export function CaseWorkQueue() {
                   <TableRow
                     key={caseRecord.id}
                     className="cursor-pointer"
-                    onClick={() => setSelectedId(caseRecord.id)}
+                    onClick={() => openCase(caseRecord.id)}
                   >
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -145,8 +172,8 @@ export function CaseWorkQueue() {
           )}
         </CardContent>
       </Card>
-      <CaseDetailSheet key={selectedId ?? "empty"} caseId={selectedId} onOpenChange={(open) => !open && setSelectedId(null)} />
-    </>
+      <CaseDetailSheet key={selectedId ?? "empty"} caseId={selectedId} onOpenChange={(open) => !open && closeSheet()} />
+    </div>
   );
 }
 
@@ -156,6 +183,7 @@ function CaseDetailSheet({ caseId, onOpenChange }: { caseId: number | null; onOp
   const assignCase = useAssignRegulatoryCase();
   const assignTeam = useAssignRegulatoryCaseTeam();
   const recordInspection = useRecordRegulatoryInspection();
+  const { data: inspections = [], isLoading: inspectionsLoading } = useCaseInspections(caseId);
   const { data: officers = [] } = useRegulatoryOfficers();
   const { data: authorities = [] } = useRegulatoryAuthorities();
   const { data: authority } = useMyRegulatoryAuthority(true);
@@ -322,9 +350,42 @@ function CaseDetailSheet({ caseId, onOpenChange }: { caseId: number | null; onOp
                   {referring ? <div className="space-y-3"><div><p className="text-sm font-medium">Refer this case</p><p className="mt-1 text-xs text-muted-foreground">The receiving authority must accept before ownership changes.</p></div><select aria-label="Receiving authority" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={toAuthorityId} onChange={(event) => setToAuthorityId(event.target.value)}><option value="">Choose receiving authority</option>{authorities.filter((authority) => authority.isActive && authority.id !== caseRecord.leadAuthority?.id).map((authority) => <option key={authority.id} value={authority.id}>{authority.name}</option>)}</select><Textarea value={referralReason} onChange={(event) => setReferralReason(event.target.value)} placeholder="Why should this authority review the case?" className="min-h-20 text-base" /><div className="flex gap-2"><Button className="flex-1" disabled={referCase.isPending || !toAuthorityId || referralReason.trim().length < 3} onClick={submitReferral}>{referCase.isPending ? "Sending…" : "Send referral"}</Button><Button variant="ghost" onClick={() => setReferring(false)}>Cancel</Button></div></div> : <Button variant="outline" className="w-full" onClick={() => setReferring(true)}>Refer to another authority</Button>}
                 </div>
               )}
-              {caseRecord.status !== "CLOSED" && (
-                <div className="mt-6 rounded-lg border border-border p-3">
-                  {recordingInspection ? (
+              <div className="mt-6 rounded-lg border border-border p-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Inspection history</p>
+                  {inspectionsLoading ? (
+                    <div className="flex justify-center py-4">
+                      <LoaderCircle className="size-4 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : inspections.length === 0 ? (
+                    <p className="mb-3 text-xs text-muted-foreground">No field visits recorded on this case yet.</p>
+                  ) : (
+                    <div className="mb-3 divide-y rounded-lg border border-border">
+                      {inspections.map((row) => (
+                        <div key={row.id} className="flex items-start justify-between gap-3 px-3 py-2.5">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium">{row.inspector.name}</p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              {new Date(row.inspectedAt).toLocaleString()}
+                              {row.notes ? ` · ${row.notes}` : ""}
+                            </p>
+                          </div>
+                          <Badge
+                            className={
+                              row.result === "PASS"
+                                ? "bg-emerald-600 text-white"
+                                : row.result === "FAIL"
+                                  ? "bg-danger text-white"
+                                  : "bg-amber-500 text-white"
+                            }
+                          >
+                            {row.result}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {caseRecord.status !== "CLOSED" ? (
+                    recordingInspection ? (
                     <div className="space-y-3">
                       <div>
                         <p className="text-sm font-medium">Record field inspection</p>
@@ -340,9 +401,9 @@ function CaseDetailSheet({ caseId, onOpenChange }: { caseId: number | null; onOp
                     </div>
                   ) : (
                     <Button variant="outline" className="w-full" onClick={() => setRecordingInspection(true)}>Record field inspection</Button>
-                  )}
+                  )
+                  ) : null}
                 </div>
-              )}
             </div>
             {caseRecord.status !== "CLOSED" && (
               <div className="space-y-2 border-t border-border p-4">

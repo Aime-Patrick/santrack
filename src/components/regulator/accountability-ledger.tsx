@@ -21,39 +21,39 @@ const SOURCE_CONFIG: Record<
   { color: string; icon: React.ComponentType<{ className?: string }>; label: string }
 > = {
   CASE: { color: "bg-danger", icon: ShieldAlert, label: "Case" },
-  LICENSE: { color: "bg-blue-600", icon: FileBadge, label: "Licence" },
-  INSPECTION: { color: "bg-amber-500", icon: ClipboardCheck, label: "Inspection" },
-  TRACEABILITY: { color: "bg-emerald-600", icon: Package, label: "Traceability" },
-  FINDING: { color: "bg-orange-500", icon: AlertTriangle, label: "Finding" },
-  COMPLAINT: { color: "bg-rose-600", icon: Megaphone, label: "Consumer report" },
+  LICENSE: { color: "bg-rwanda-blue", icon: FileBadge, label: "Licence" },
+  INSPECTION: { color: "bg-rwanda-yellow", icon: ClipboardCheck, label: "Inspection" },
+  TRACEABILITY: { color: "bg-rwanda-green", icon: Package, label: "Traceability" },
+  FINDING: { color: "bg-danger", icon: AlertTriangle, label: "Finding" },
+  COMPLAINT: { color: "bg-rwanda-blue", icon: Megaphone, label: "Consumer report" },
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  OPENED: "bg-blue-600",
-  ASSIGNED: "bg-sky-600",
-  STATUS_CHANGED: "bg-slate-600",
-  INSPECTION_RECORDED: "bg-amber-500",
-  EVIDENCE_SUBMITTED: "bg-teal-600",
-  RECALL_RECOVERY_RECORDED: "bg-danger",
-  REFERRED: "bg-cyan-600",
-  SUBMITTED: "bg-blue-500",
-  APPROVED: "bg-emerald-600",
-  REJECTED: "bg-danger",
-  SUSPENDED: "bg-amber-600",
-  REVOKED: "bg-danger",
-  DISPATCHED: "bg-blue-600",
-  RECEIVED: "bg-emerald-600",
-  SOLD: "bg-primary",
-  RECALLED: "bg-danger",
-  MANUFACTURED: "bg-emerald-600",
-  QC_PASSED: "bg-teal-600",
-  QC_FAILED: "bg-danger",
-  COMPLAINT_RECEIVED: "bg-rose-600",
-  PROMOTED: "bg-orange-600",
-  DISMISSED: "bg-slate-500",
-  PASS: "bg-emerald-600",
-  CONDITIONAL: "bg-amber-500",
-  FAIL: "bg-danger",
+  OPENED: "bg-rwanda-blue text-white",
+  ASSIGNED: "bg-rwanda-blue text-white",
+  STATUS_CHANGED: "bg-muted-foreground text-white",
+  INSPECTION_RECORDED: "bg-rwanda-yellow text-white",
+  EVIDENCE_SUBMITTED: "bg-rwanda-green text-white",
+  RECALL_RECOVERY_RECORDED: "bg-danger text-white",
+  REFERRED: "bg-rwanda-yellow text-white",
+  SUBMITTED: "bg-rwanda-blue text-white",
+  APPROVED: "bg-rwanda-green text-white",
+  REJECTED: "bg-danger text-white",
+  SUSPENDED: "bg-rwanda-yellow text-white",
+  REVOKED: "bg-danger text-white",
+  DISPATCHED: "bg-rwanda-blue text-white",
+  RECEIVED: "bg-rwanda-green text-white",
+  SOLD: "bg-rwanda-blue text-white",
+  RECALLED: "bg-danger text-white",
+  MANUFACTURED: "bg-rwanda-green text-white",
+  QC_PASSED: "bg-rwanda-green text-white",
+  QC_FAILED: "bg-danger text-white",
+  COMPLAINT_RECEIVED: "bg-rwanda-blue text-white",
+  PROMOTED: "bg-rwanda-yellow text-white",
+  DISMISSED: "bg-muted-foreground text-white",
+  PASS: "bg-rwanda-green text-white",
+  CONDITIONAL: "bg-rwanda-yellow text-white",
+  FAIL: "bg-danger text-white",
 };
 
 const stagger = {
@@ -185,8 +185,8 @@ export function AccountabilityLedger({
                     <div className="flex flex-wrap items-center gap-2">
                       <span
                         className={cn(
-                          "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white",
-                          typeColor,
+                          "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium tracking-wide",
+                          typeColor.includes("text-") ? typeColor : `${typeColor} text-white`,
                         )}
                       >
                         {entry.type.replace(/_/g, " ")}

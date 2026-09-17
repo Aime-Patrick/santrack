@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ScanLine, LoaderCircle, ArrowRight, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { AccountabilityLedger } from "@/components/regulator/accountability-ledg
 import { getApiErrorMessage } from "@/lib/api";
 
 export function FieldInspectionMode() {
+  const router = useRouter();
   const [result, setResult] = useState<FieldScanResult | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -106,7 +108,7 @@ export function FieldInspectionMode() {
               <button
                 key={caseRecord.id}
                 type="button"
-                onClick={() => window.dispatchEvent(new CustomEvent("santrack:open-case", { detail: caseRecord.id }))}
+                onClick={() => router.push(`/dashboard/regulator?tab=enforcement&case=${caseRecord.id}`)}
                 className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/40 cursor-pointer"
               >
                 <div className="min-w-0 flex-1">

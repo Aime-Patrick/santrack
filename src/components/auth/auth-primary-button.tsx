@@ -8,10 +8,10 @@ import { ArrowLeft, LoaderCircle } from "lucide-react";
  * gradient. Kept in one place so no form drifts into its own button.
  */
 const AUTH_PRIMARY_ACTION =
-  "rounded-lg font-semibold text-white tracking-wide " +
+  "inline-flex rounded-lg font-semibold text-white tracking-wide " +
   "bg-gradient-to-r from-[#0066d6] via-[#10b981] via-60% to-[#eab308] " +
   "hover:opacity-95 hover:shadow-lg hover:shadow-sky-500/20 active:scale-[0.99] " +
-  "transition-all duration-200 flex items-center justify-center " +
+  "transition-all duration-200 items-center justify-center " +
   "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0066d6] focus-visible:ring-offset-2";
 
 export const AUTH_PRIMARY_BUTTON =
@@ -61,7 +61,7 @@ export function AuthPrimaryLink({
   return (
     <Link
       {...props}
-      className={`${compact ? "h-9 px-4 text-xs" : "h-11 w-full px-5 text-sm sm:h-12 sm:text-base"} ${AUTH_PRIMARY_ACTION} ${className}`}
+      className={`${compact ? "h-9 w-fit px-4 text-xs" : "h-11 w-full px-5 text-sm sm:h-12 sm:text-base"} ${AUTH_PRIMARY_ACTION} ${className}`}
     >
       {showBackIcon ? <ArrowLeft className="mr-1.5 size-3.5" aria-hidden="true" /> : null}
       {children}

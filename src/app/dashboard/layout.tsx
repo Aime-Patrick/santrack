@@ -8,6 +8,7 @@ import { RouteGuard } from "@/components/auth/route-guard";
 import { DesignModeProvider } from "@/components/providers/design-mode-provider";
 import { RoleSwitcher } from "@/components/layout/role-switcher";
 import { WorkflowBar } from "@/components/layout/workflow-bar";
+import { DashboardTypeScale } from "@/components/layout/dashboard-type-scale";
 
 export default function DashboardLayout({
   children,
@@ -16,6 +17,7 @@ export default function DashboardLayout({
 }) {
   return (
     <DesignModeProvider>
+      <DashboardTypeScale />
       <PasswordChangeGuard>
         <MfaEnrollmentGuard>
           <OrgGuard>

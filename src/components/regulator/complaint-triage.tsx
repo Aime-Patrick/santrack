@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, LoaderCircle, Plus, X } from "lucide-react";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ import {
 } from "@/hooks/regulatory-authorities";
 import { regulatoryComplaintService } from "@/services/regulatory-complaint.service";
 import { getApiErrorMessage } from "@/lib/api";
+import { INTEL_PAGE_SIZE, QueueToolbar } from "@/components/regulator/queue-toolbar";
 
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase();
 const CREATE_NEW = "__create__";
@@ -36,9 +37,37 @@ export function ComplaintTriage() {
   const [categories, setCategories] = useState<Record<number, string>>({});
   const [draftNames, setDraftNames] = useState<Record<number, string>>({});
   const [photoFor, setPhotoFor] = useState<number | null>(null);
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
   const pending = promote.isPending || dismiss.isPending || configure.isPending;
   const caseCategories = authority?.caseCategories ?? [];
   const hasCategories = caseCategories.length > 0;
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return complaints;
+    return complaints.filter((complaint) => {
+      const haystack = [
+        complaint.issue,
+        complaint.note ?? "",
+        complaint.locationHint ?? "",
+        complaint.batch?.batchCode ?? "",
+        complaint.item?.code ?? "",
+        `rpt-${String(complaint.id).padStart(6, "0")}`,
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [complaints, query]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [query]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / INTEL_PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const rows = filtered.slice(safePage * INTEL_PAGE_SIZE, safePage * INTEL_PAGE_SIZE + INTEL_PAGE_SIZE);
 
   async function ensureCategory(name: string): Promise<string | null> {
     if (!authority) {
@@ -105,7 +134,7 @@ export function ComplaintTriage() {
             Unverified public reports. Review before they become regulatory work.
           </p>
         </div>
-        <Badge variant="outline">{complaints.length} to triage</Badge>
+        <Badge variant="outline">{filtered.length} to triage</Badge>
       </CardHeader>
       <CardContent className="p-0">
         {isLoading ? (
@@ -127,6 +156,20 @@ export function ComplaintTriage() {
                 .
               </div>
             )}
+            <QueueToolbar
+              query={query}
+              onQuery={setQuery}
+              placeholder="Search issue, batch, location, or report number…"
+              total={filtered.length}
+              page={safePage}
+              pageSize={INTEL_PAGE_SIZE}
+              onPage={setPage}
+            />
+            {filtered.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+                No reports match that search.
+              </p>
+            ) : (
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted hover:bg-muted">
@@ -138,7 +181,7 @@ export function ComplaintTriage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {complaints.slice(0, 8).map((complaint) => {
+                {rows.map((complaint) => {
                   const selected = categories[complaint.id] ?? (hasCategories ? "" : CREATE_NEW);
                   const creating = selected === CREATE_NEW || !hasCategories;
 
@@ -273,6 +316,7 @@ export function ComplaintTriage() {
                 })}
               </TableBody>
             </Table>
+            )}
           </>
         )}
       </CardContent>

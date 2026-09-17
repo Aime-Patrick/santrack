@@ -97,6 +97,8 @@ export const APP_NAVIGATION_GROUPS: NavigationGroup[] = [
     items: [
       { key: "dashboard", title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, requiresAny: ["DECIDE_LICENCES", "OVERSEE_INDUSTRIES"] },
       { key: "license-review", title: "Licence review", href: "/dashboard/regulator", icon: Gavel, requires: ["DECIDE_LICENCES"] },
+      { key: "reg-trace", title: "Scan & trace", href: "/dashboard/manufacturing/trace", icon: ScanLine, requiresAny: ["DECIDE_LICENCES", "OVERSEE_INDUSTRIES"] },
+      { key: "reg-analytics", title: "Analytics", href: "/dashboard/analytics", icon: BarChart3, requiresAny: ["DECIDE_LICENCES", "OVERSEE_INDUSTRIES"] },
       {
         key: "industries",
         title: "Industries",

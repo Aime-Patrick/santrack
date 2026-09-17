@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocale } from "next-intl";
 import {
-  Bell,
   User as UserIcon,
   Settings,
   LogOut,
@@ -32,12 +31,11 @@ import { UserAvatar } from "@/components/profile/user-avatar";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useLogout } from "@/hooks/auth";
 import { useCapabilities } from "@/hooks/permissions";
-import { useNotifications } from "@/components/providers/notification-provider";
+import { NotificationsMenu } from "@/components/layout/notifications-menu";
 import {
   GlobalSearch,
   useGlobalSearchHotkey,
 } from "@/components/layout/global-search";
-import { cn } from "@/lib/utils";
 import { locales, localeNames, type Locale } from "@/i18n/config";
 import type { UserResponse } from "@/lib/api";
 
@@ -84,88 +82,6 @@ function LocaleSwitcher() {
     </DropdownMenu>
   );
 }
-
-// ─── NotificationsMenu ───────────────────────────────────────────────────────
-
-interface NotificationsMenuProps {
-  notifications: {
-    id: number;
-    title: string;
-    message: string;
-    read: boolean;
-    createdAt: string;
-  }[];
-  unreadCount: number;
-  markAllRead: () => void;
-}
-
-const NotificationsMenu = React.memo(function NotificationsMenu({
-  notifications,
-  unreadCount,
-  markAllRead,
-}: NotificationsMenuProps) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <button
-            type="button"
-            className="relative flex size-9 items-center justify-center rounded-lg border border-border/70 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
-            title="Notifications"
-          />
-        }
-      >
-        <Bell className="size-4.5" />
-        {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-danger ring-2 ring-white" />
-        )}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 p-2 shadow-lg">
-        <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/50 pb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-foreground">Notifications</span>
-            {unreadCount > 0 && (
-              <span className="flex size-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-white">
-                {unreadCount}
-              </span>
-            )}
-          </div>
-          {unreadCount > 0 && (
-            <button
-              onClick={markAllRead}
-              className="text-[11px] text-primary font-medium hover:underline cursor-pointer"
-            >
-              Mark all as read
-            </button>
-          )}
-        </div>
-        <div className="space-y-1.5 pt-2">
-          {notifications.length === 0 ? (
-            <div className="py-6 text-center">
-              <p className="text-xs text-muted-foreground">No notifications yet</p>
-            </div>
-          ) : (
-            notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={cn(
-                  "p-2 rounded-lg hover:bg-muted/60 transition-colors text-xs space-y-0.5 cursor-pointer",
-                  !notification.read && "bg-muted/50"
-                )}
-              >
-                <p className="font-semibold text-foreground">{notification.title}</p>
-                <p className="text-[11px] text-muted-foreground">{notification.message}</p>
-                <p className="text-[10px] text-muted-foreground/80 pt-0.5">
-                  {new Date(notification.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-            ))
-          )}
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-});
 
 // ─── UserProfileMenu ─────────────────────────────────────────────────────────
 
@@ -261,10 +177,8 @@ export function DashboardHeader() {
   const { data: me } = useCurrentUser();
   const permissions = useCapabilities();
   const logout = useLogout();
-  const { notifications, unreadCount, markAllRead } = useNotifications();
   const { open: searchOpen, setOpen: setSearchOpen } = useGlobalSearchHotkey();
 
-  const displayNotifications = notifications.slice(0, 5);
   const canOpenRegulatorPortal = permissions.can("DECIDE_LICENCES");
 
   const userDisplayName = me?.fullName || "Design Admin";
@@ -309,11 +223,7 @@ export function DashboardHeader() {
         </button>
         <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
 
-        <NotificationsMenu
-          notifications={displayNotifications}
-          unreadCount={unreadCount}
-          markAllRead={markAllRead}
-        />
+        <NotificationsMenu />
 
         <LocaleSwitcher />
 

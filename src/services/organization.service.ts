@@ -39,6 +39,8 @@ export interface RegistryLicense {
   categoryCode?: string;
   categoryName?: string;
   status: string;
+  statusReason?: string | null;
+  statusChangedAt?: string | null;
   issuedOn?: string | null;
   expiresOn: string | null;
   issuedByOrgId?: number | null;

@@ -40,9 +40,10 @@ export function useIndustryCategories(options?: { enabled?: boolean }) {
   });
 }
 
-export function useSupplyChainSummary() {
+export function useSupplyChainSummary(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["analytics", "supply-chain"],
     queryFn: analyticsService.supplyChain,
+    enabled: options?.enabled ?? true,
   });
 }

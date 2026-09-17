@@ -1234,7 +1234,7 @@ export default function OpeningStockPage() {
                         setRejectedPage(0);
                       }}
                     >
-                      {[10, 15, 25, 50].map((n) => (
+                      {[5, 10, 25, 50].map((n) => (
                         <option key={n} value={n}>
                           {n}
                         </option>

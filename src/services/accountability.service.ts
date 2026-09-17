@@ -16,6 +16,9 @@ export interface AccountabilityEntry {
   actorEmail: string | null;
   organization: string | null;
   recordedAt: string;
+  organizationId?: number | null;
+  caseId?: number | null;
+  findingId?: number | null;
 }
 
 export const accountabilityService = {
@@ -48,4 +51,10 @@ export const accountabilityService = {
     api
       .get<AccountabilityEntry[]>(`/api/regulator/accountability/batch/${batchId}`, { params: { limit } })
       .then((r) => r.data),
+
+  /** Authority-wide feed for the regulator home screen. */
+  recent: (limit = 40) =>
+    api
+      .get<AccountabilityEntry[]>(`/api/regulator/accountability/recent`, { params: { limit } })
+      .then((r) => (Array.isArray(r.data) ? r.data : [])),
 };
