@@ -152,7 +152,7 @@ function FieldCard({
         ) : (
           <>
             {!isFirstFile && (
-              <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <p className="text-[13px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                 Note: only one file can be included per submission. Please combine multiple documents into a single PDF.
               </p>
             )}
@@ -168,7 +168,7 @@ function FieldCard({
                 <div className="flex flex-col items-center gap-1">
                   <FileText className="size-7 text-emerald-600" />
                   <span className="text-xs font-semibold text-emerald-700">{fileValue.name}</span>
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-[13px] text-muted-foreground">
                     {(fileValue.size / (1024 * 1024)).toFixed(2)} MB · Click to change
                   </span>
                 </div>
@@ -176,7 +176,7 @@ function FieldCard({
                 <div className="flex flex-col items-center gap-1">
                   <Upload className="size-7 text-primary/60" />
                   <span className="text-xs font-semibold text-foreground">Upload {field.label}</span>
-                  <span className="text-[11px] text-muted-foreground">PDF · JPG · PNG · max 5 MB</span>
+                  <span className="text-[13px] text-muted-foreground">PDF · JPG · PNG · max 5 MB</span>
                 </div>
               )}
               <input
@@ -445,7 +445,7 @@ export default function RegistrationRespondPage() {
             </div>
             <div>
               <div className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold mb-1.5",
+                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-semibold mb-1.5",
                 isReadOnly ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700",
               )}>
                 {isReadOnly ? "Response recorded" : "Additional information required"}
@@ -465,7 +465,7 @@ export default function RegistrationRespondPage() {
 
           {/* The regulator's request message */}
           <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-800 mb-2">
+            <p className="text-[13px] font-semibold uppercase tracking-wide text-amber-800 mb-2">
               What the regulatory authority requested
             </p>
             <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
@@ -485,7 +485,7 @@ export default function RegistrationRespondPage() {
                   <span
                     key={f.key}
                     className={cn(
-                      "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium",
+                      "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[13px] font-medium",
                       showStatus
                         ? provided
                           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -619,7 +619,7 @@ export default function RegistrationRespondPage() {
                 )}
                 {submitting ? "Submitting…" : "Submit response to regulator"}
               </Button>
-              <p className="text-[11px] text-center text-muted-foreground">
+              <p className="text-[13px] text-center text-muted-foreground">
                 By submitting, you confirm the information is accurate.
                 This link can only be used once — you will not be able to edit your response afterwards.
               </p>

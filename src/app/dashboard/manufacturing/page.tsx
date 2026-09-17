@@ -336,7 +336,7 @@ export default function ManufacturingPipelinePage() {
 
       {/* ── Related work (not competing hubs) ── */}
       <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
-        <span className="mr-0.5 text-[11px] font-medium text-faint">Also</span>
+        <span className="mr-0.5 text-[13px] font-medium text-faint">Also</span>
         <Button
           variant="outline"
           size="sm"
@@ -1032,7 +1032,7 @@ function InspectDialog({
                 )}
               >
                 <p className="text-sm font-semibold text-foreground">{v.label}</p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">{v.hint}</p>
+                <p className="mt-0.5 text-[13px] text-muted-foreground">{v.hint}</p>
               </button>
             ))}
           </div>

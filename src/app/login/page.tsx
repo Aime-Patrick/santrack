@@ -268,7 +268,7 @@ export default function LoginPage() {
                   {/* "or continue with" Divider */}
                   <div className="relative flex items-center justify-center pb-1">
                     <div className="w-full border-t border-slate-200/80" />
-                    <span className="absolute bg-white px-3 text-[11px] text-slate-400 font-normal">
+                    <span className="absolute bg-white px-3 text-[13px] text-slate-400 font-normal">
                       {t("orContinueWith")}
                     </span>
                   </div>

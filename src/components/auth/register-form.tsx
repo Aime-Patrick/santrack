@@ -166,7 +166,7 @@ export function RegisterForm() {
               )}
             </button>
           </div>
-          <p className="text-[11px] text-slate-400 mt-1">{t("passwordHint")}</p>
+          <p className="text-[13px] text-slate-400 mt-1">{t("passwordHint")}</p>
           {errors.password ? (
             <p className="text-xs font-medium text-red-500 mt-1">
               {errors.password.message}

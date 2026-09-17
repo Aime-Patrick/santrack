@@ -23,7 +23,7 @@ import {
 } from "@/hooks/regulatory-authorities";
 import { regulatoryComplaintService } from "@/services/regulatory-complaint.service";
 import { getApiErrorMessage } from "@/lib/api";
-import { INTEL_PAGE_SIZE, QueueToolbar } from "@/components/regulator/queue-toolbar";
+import { INTEL_PAGE_SIZE, QueuePagination, QueueSearch } from "@/components/regulator/queue-toolbar";
 
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase();
 const CREATE_NEW = "__create__";
@@ -156,14 +156,10 @@ export function ComplaintTriage() {
                 .
               </div>
             )}
-            <QueueToolbar
+            <QueueSearch
               query={query}
               onQuery={setQuery}
               placeholder="Search issue, batch, location, or report number…"
-              total={filtered.length}
-              page={safePage}
-              pageSize={INTEL_PAGE_SIZE}
-              onPage={setPage}
             />
             {filtered.length === 0 ? (
               <p className="px-5 py-8 text-center text-sm text-muted-foreground">
@@ -299,7 +295,7 @@ export function ComplaintTriage() {
                             </Button>
                           </div>
                           {!hasCategories && (
-                            <p className="text-[11px] text-muted-foreground">
+                            <p className="text-[13px] text-muted-foreground">
                               Type a category name, then Create &amp; open — it is saved for next time.
                             </p>
                           )}
@@ -317,6 +313,12 @@ export function ComplaintTriage() {
               </TableBody>
             </Table>
             )}
+            <QueuePagination
+              total={filtered.length}
+              page={safePage}
+              pageSize={INTEL_PAGE_SIZE}
+              onPage={setPage}
+            />
           </>
         )}
       </CardContent>

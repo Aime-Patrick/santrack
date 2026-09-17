@@ -670,7 +670,7 @@ export function ApplyPremiseLicenseDialog({
                           <Label className="text-xs font-medium">
                             Premise GPS Location
                           </Label>
-                          <p className="text-[11px] text-muted-foreground">
+                          <p className="text-[13px] text-muted-foreground">
                             Detect automatically from your device or select directly on map
                           </p>
                         </div>
@@ -725,7 +725,7 @@ export function ApplyPremiseLicenseDialog({
                             <Check className="size-3" /> Selected
                           </span>
                         ) : (
-                          <span className="text-[11px] text-muted-foreground">
+                          <span className="text-[13px] text-muted-foreground">
                             Optional but recommended
                           </span>
                         )}
@@ -960,7 +960,7 @@ export function ApplyPremiseLicenseDialog({
                             <p className="font-medium text-foreground truncate">
                               {docType.replace(/_/g, " ")}
                             </p>
-                            <p className="text-[11px] text-muted-foreground">
+                            <p className="text-[13px] text-muted-foreground">
                               {isDone ? "✓ Uploaded & Attached" : "PDF or certified image"}
                             </p>
                           </div>

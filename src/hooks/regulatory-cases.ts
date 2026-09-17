@@ -7,17 +7,21 @@ import {
 
 export const regulatoryCaseKeys = {
   all: ["regulatory-cases"] as const,
-  list: (status?: RegulatoryCaseStatus) => [...regulatoryCaseKeys.all, "list", status ?? "all"] as const,
+  list: (status?: RegulatoryCaseStatus, scope?: "all" | "mine" | "team") =>
+    [...regulatoryCaseKeys.all, "list", status ?? "all", scope ?? "all"] as const,
   officers: () => [...regulatoryCaseKeys.all, "officers"] as const,
   detail: (id: number) => [...regulatoryCaseKeys.all, "detail", id] as const,
   inspections: (id: number) => [...regulatoryCaseKeys.all, "inspections", id] as const,
   roster: () => [...regulatoryCaseKeys.all, "inspections", "roster"] as const,
 };
 
-export function useRegulatoryCases(status?: RegulatoryCaseStatus) {
+export function useRegulatoryCases(
+  status?: RegulatoryCaseStatus,
+  scope: "all" | "mine" | "team" = "all",
+) {
   return useQuery({
-    queryKey: regulatoryCaseKeys.list(status),
-    queryFn: () => regulatoryCaseService.list(status),
+    queryKey: regulatoryCaseKeys.list(status, scope),
+    queryFn: () => regulatoryCaseService.list({ status, scope }),
     staleTime: 15_000,
   });
 }
@@ -89,7 +93,15 @@ export function useAssignRegulatoryCase() {
 export function useAssignRegulatoryCaseTeam() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, team }: { id: number; team: string }) => regulatoryCaseService.assignTeam(id, team),
+    mutationFn: ({
+      id,
+      teamId,
+      team,
+    }: {
+      id: number;
+      teamId?: number;
+      team?: string;
+    }) => regulatoryCaseService.assignTeam(id, { teamId, team }),
     onSuccess: (caseRecord) => {
       queryClient.invalidateQueries({ queryKey: regulatoryCaseKeys.all });
       queryClient.invalidateQueries({ queryKey: regulatoryCaseKeys.detail(caseRecord.id) });

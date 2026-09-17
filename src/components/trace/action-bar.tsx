@@ -114,7 +114,7 @@ export function ActionBar({ actions, onAction, pending }: ActionBarProps) {
     <div className="space-y-4">
       {groups.map(({ group, entries }) => (
         <div key={group}>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-faint">
+          <p className="mb-2 text-[13px] font-bold uppercase tracking-wider text-faint">
             {GROUP_TITLES[group]}
           </p>
           <div className="flex flex-wrap gap-2">

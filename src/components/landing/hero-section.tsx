@@ -79,7 +79,7 @@ export function HeroSection() {
               {/* Kicker */}
               <div className="inline-flex items-center gap-2.5 w-fit">
                 <span className="w-7 sm:w-8 h-[3px] bg-rwanda-yellow rounded-full" />
-                <span className="text-rwanda-yellow text-[11px] sm:text-xs font-bold tracking-[0.22em] uppercase">
+                <span className="text-rwanda-yellow text-[13px] sm:text-xs font-bold tracking-[0.22em] uppercase">
                   SAN TRACK
                 </span>
               </div>

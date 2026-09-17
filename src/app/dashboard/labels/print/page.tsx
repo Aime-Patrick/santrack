@@ -33,7 +33,7 @@ const poolColumns: ColumnDef<TableFeatures, IdentityPool>[] = [
           {row.original.productName ?? "—"}
         </div>
         {row.original.productSku ? (
-          <div className="font-mono text-[11px] text-muted-foreground">
+          <div className="font-mono text-[13px] text-muted-foreground">
             {row.original.productSku}
           </div>
         ) : null}

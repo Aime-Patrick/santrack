@@ -114,7 +114,7 @@ export function ScanAnomalyWatch({
         cell: ({ row }) => {
           const code = row.original.code;
           const className =
-            "inline-flex items-center gap-0.5 text-[11px] font-medium leading-none text-primary hover:underline";
+            "inline-flex items-center gap-0.5 text-[13px] font-medium leading-none text-primary hover:underline";
           if (onOpen) {
             return (
               <button

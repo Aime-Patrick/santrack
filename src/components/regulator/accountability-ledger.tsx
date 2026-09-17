@@ -185,7 +185,7 @@ export function AccountabilityLedger({
                     <div className="flex flex-wrap items-center gap-2">
                       <span
                         className={cn(
-                          "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium tracking-wide",
+                          "inline-flex items-center rounded-full px-2.5 py-0.5 text-[13px] font-medium tracking-wide",
                           typeColor.includes("text-") ? typeColor : `${typeColor} text-white`,
                         )}
                       >
@@ -197,7 +197,7 @@ export function AccountabilityLedger({
                       >
                         {sourceConfig.label}
                       </Badge>
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-[13px] text-muted-foreground">
                         {new Date(entry.recordedAt).toLocaleString()}
                       </span>
                     </div>

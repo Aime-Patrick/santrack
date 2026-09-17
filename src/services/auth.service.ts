@@ -86,6 +86,29 @@ export const authService = {
     return api.patch<UserResponse>("/api/auth/me", dto).then((r) => r.data);
   },
 
+  requestEmailChange(input: {
+    email: string;
+    password: string;
+  }): Promise<UserResponse> {
+    return api
+      .post<UserResponse>("/api/auth/me/email-change", input)
+      .then((r) => r.data);
+  },
+
+  cancelEmailChange(): Promise<UserResponse> {
+    return api
+      .delete<UserResponse>("/api/auth/me/email-change")
+      .then((r) => r.data);
+  },
+
+  verifyEmailChange(token: string): Promise<{ success: true; email: string }> {
+    return api
+      .post<{ success: true; email: string }>("/api/auth/verify-email-change", {
+        token,
+      })
+      .then((r) => r.data);
+  },
+
   setLibraryAvatar(avatarUrl: string | null): Promise<UserResponse> {
     return api
       .patch<UserResponse>("/api/auth/me/avatar", { avatarUrl })

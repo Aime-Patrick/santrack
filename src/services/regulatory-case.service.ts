@@ -19,6 +19,7 @@ export interface RegulatoryCase {
   status: RegulatoryCaseStatus;
   caseCategory: string | null;
   assignedTeam: string | null;
+  assignedTeamId: number | null;
   dueOn: string | null;
   openedAt: string;
   organization: { id: number; name: string };
@@ -118,9 +119,17 @@ export const regulatoryCaseService = {
     return api.post<RegulatoryCase>("/api/regulator/cases", input).then((response) => response.data);
   },
 
-  list(status?: RegulatoryCaseStatus): Promise<RegulatoryCase[]> {
+  list(params?: {
+    status?: RegulatoryCaseStatus;
+    scope?: "all" | "mine" | "team";
+  }): Promise<RegulatoryCase[]> {
     return api
-      .get<RegulatoryCase[]>("/api/regulator/cases", { params: status ? { status } : undefined })
+      .get<RegulatoryCase[]>("/api/regulator/cases", {
+        params: {
+          ...(params?.status ? { status: params.status } : {}),
+          ...(params?.scope && params.scope !== "all" ? { scope: params.scope } : {}),
+        },
+      })
       .then((response) => response.data);
   },
 
@@ -177,8 +186,8 @@ export const regulatoryCaseService = {
     return api.post<RegulatoryCase>(`/api/regulator/cases/${id}/assign`, { officerId, note }).then((response) => response.data);
   },
 
-  assignTeam(id: number, team: string): Promise<RegulatoryCase> {
-    return api.post<RegulatoryCase>(`/api/regulator/cases/${id}/team`, { team }).then((response) => response.data);
+  assignTeam(id: number, input: { teamId?: number; team?: string }): Promise<RegulatoryCase> {
+    return api.post<RegulatoryCase>(`/api/regulator/cases/${id}/team`, input).then((response) => response.data);
   },
 
   recordInspection(caseId: number, input: { result: RegulatoryInspectionResult; notes?: string }): Promise<RegulatoryInspection> {

@@ -338,7 +338,7 @@ export function ManageCategoriesDialog({
                     className="font-mono text-xs uppercase"
                     required
                   />
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[13px] text-muted-foreground">
                     Unique uppercase identifier used in rules and registry.
                   </p>
                 </div>
@@ -431,7 +431,7 @@ export function ManageCategoriesDialog({
               <div className="space-y-2">
                 <Label className="text-xs font-medium flex items-center justify-between">
                   <span>Required Documents Checklist</span>
-                  <span className="text-[11px] text-muted-foreground font-normal">
+                  <span className="text-[13px] text-muted-foreground font-normal">
                     {requiredDocs.length} required
                   </span>
                 </Label>
@@ -463,7 +463,7 @@ export function ManageCategoriesDialog({
 
                 {/* Quick Add Suggestions */}
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="text-[11px] text-muted-foreground self-center mr-1">Quick Add:</span>
+                  <span className="text-[13px] text-muted-foreground self-center mr-1">Quick Add:</span>
                   {COMMON_REQUIRED_DOCUMENTS.map((doc) => {
                     const isAdded = requiredDocs.includes(doc);
                     if (isAdded) return null;
@@ -472,7 +472,7 @@ export function ManageCategoriesDialog({
                         key={doc}
                         type="button"
                         onClick={() => addDoc(doc)}
-                        className="px-2 py-0.5 rounded text-[11px] bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground border border-border transition-colors flex items-center gap-1"
+                        className="px-2 py-0.5 rounded text-[13px] bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground border border-border transition-colors flex items-center gap-1"
                       >
                         <Plus className="w-2.5 h-2.5" />
                         {doc}
@@ -513,7 +513,7 @@ export function ManageCategoriesDialog({
               <div className="space-y-2">
                 <Label className="text-xs font-medium flex items-center justify-between">
                   <span>Permitted Product Categories</span>
-                  <span className="text-[11px] text-muted-foreground font-normal">
+                  <span className="text-[13px] text-muted-foreground font-normal">
                     (Leave empty for unrestricted)
                   </span>
                 </Label>
@@ -545,7 +545,7 @@ export function ManageCategoriesDialog({
 
                 {/* Quick Add Suggestions */}
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  <span className="text-[11px] text-muted-foreground self-center mr-1">Quick Add:</span>
+                  <span className="text-[13px] text-muted-foreground self-center mr-1">Quick Add:</span>
                   {COMMON_PRODUCT_CATEGORIES.map((prod) => {
                     const isAdded = permittedProducts.includes(prod);
                     if (isAdded) return null;
@@ -554,7 +554,7 @@ export function ManageCategoriesDialog({
                         key={prod}
                         type="button"
                         onClick={() => addProduct(prod)}
-                        className="px-2 py-0.5 rounded text-[11px] bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground border border-border transition-colors flex items-center gap-1"
+                        className="px-2 py-0.5 rounded text-[13px] bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground border border-border transition-colors flex items-center gap-1"
                       >
                         <Plus className="w-2.5 h-2.5" />
                         {prod}
@@ -596,7 +596,7 @@ export function ManageCategoriesDialog({
                   <Label htmlFor="cat-active" className="text-xs font-semibold cursor-pointer">
                     Active for New Applications
                   </Label>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[13px] text-muted-foreground">
                     When inactive, applicants cannot submit new applications for this category.
                   </p>
                 </div>

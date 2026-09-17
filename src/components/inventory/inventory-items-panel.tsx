@@ -576,7 +576,7 @@ function StockCodesPanelInner() {
               )}
             </div>
             {previewItem ? (
-              <p className="text-center font-mono text-[11px] text-muted-foreground">
+              <p className="text-center font-mono text-[13px] text-muted-foreground">
                 Preview: {previewItem.code}
               </p>
             ) : null}

@@ -18,6 +18,7 @@ import {
 import { useMe } from "@/hooks/auth";
 import { useUsers } from "@/hooks/users";
 import { AddUserDialog } from "@/components/dashboard/add-user-dialog";
+import { ChangeEmailDialog } from "@/components/dashboard/change-email-dialog";
 import { EditRoleDialog } from "@/components/dashboard/edit-role-dialog";
 import { ResetPasswordDialog } from "@/components/dashboard/reset-password-dialog";
 import { DeactivateUserDialog } from "@/components/dashboard/deactivate-user-dialog";
@@ -48,6 +49,7 @@ export function TeamMembersPanel({
   const [addOpen, setAddOpen] = useState(false);
   const [activeUser, setActiveUser] = useState<UserResponse | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [grantOpen, setGrantOpen] = useState(false);
@@ -91,9 +93,16 @@ export function TeamMembersPanel({
         accessorKey: "email",
         header: "Email",
         cell: ({ row }) => (
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Mail className="size-3.5" />
-            {row.original.email}
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Mail className="size-3.5 shrink-0" />
+              <span className="truncate">{row.original.email}</span>
+            </div>
+            {row.original.pendingEmail ? (
+              <p className="mt-0.5 truncate text-[11px] text-warning">
+                Pending: {row.original.pendingEmail}
+              </p>
+            ) : null}
           </div>
         ),
       },
@@ -133,6 +142,15 @@ export function TeamMembersPanel({
                 >
                   <Shield className="size-4" />
                   Edit role
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setActiveUser(user);
+                    setEmailOpen(true);
+                  }}
+                >
+                  <Mail className="size-4" />
+                  Change email
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
@@ -229,6 +247,11 @@ export function TeamMembersPanel({
       <EditRoleDialog
         open={editOpen}
         onOpenChange={setEditOpen}
+        user={activeUser}
+      />
+      <ChangeEmailDialog
+        open={emailOpen}
+        onOpenChange={setEmailOpen}
         user={activeUser}
       />
       <ResetPasswordDialog

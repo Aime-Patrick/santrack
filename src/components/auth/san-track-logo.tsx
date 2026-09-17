@@ -111,7 +111,7 @@ export function SanTrackBrand({
         </div>
         <span
           className={cn(
-            "text-[11px] font-bold tracking-[0.22em] uppercase mt-1.5",
+            "text-[13px] font-bold tracking-[0.22em] uppercase mt-1.5",
             isDark ? "text-white" : "text-slate-600",
           )}
         >

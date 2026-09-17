@@ -238,7 +238,7 @@ export function BatchJourneyView({ batchId, batchSelector }: BatchJourneyViewPro
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-6 text-[11px] text-rwanda-green border-rwanda-green/40 hover:bg-emerald-50"
+                        className="h-6 text-[13px] text-rwanda-green border-rwanda-green/40 hover:bg-emerald-50"
                         nativeButton={false}
                         render={<Link href="/dashboard/labels/print?template=unit" />}
                       >
@@ -250,7 +250,7 @@ export function BatchJourneyView({ batchId, batchSelector }: BatchJourneyViewPro
 
                 {rawMaterials.length > 0 && (
                   <div className="space-y-1.5 pt-1">
-                    <span className="font-semibold text-foreground text-[11px] uppercase tracking-wider">
+                    <span className="font-semibold text-foreground text-[13px] uppercase tracking-wider">
                       Bill of Materials (&quot;Consumed Ingredients&quot;):
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -296,7 +296,7 @@ export function BatchJourneyView({ batchId, batchSelector }: BatchJourneyViewPro
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-[11px] text-muted-foreground font-mono">
+                  <span className="text-[13px] text-muted-foreground font-mono">
                     {new Date(inspections[0].testedAt).toLocaleDateString()}
                   </span>
                   <ChevronDown className={cn(
@@ -317,7 +317,7 @@ export function BatchJourneyView({ batchId, batchSelector }: BatchJourneyViewPro
                         </span>
                       </div>
                       {insp.notes && (
-                        <p className="text-muted-foreground italic border-t border-border/50 pt-1 mt-1 text-[11px]">
+                        <p className="text-muted-foreground italic border-t border-border/50 pt-1 mt-1 text-[13px]">
                           &quot;{insp.notes}&quot;
                         </p>
                       )}
@@ -412,7 +412,7 @@ export function BatchJourneyView({ batchId, batchSelector }: BatchJourneyViewPro
                         <span className="font-semibold text-foreground">{t.destinationOrgName}</span>
                       </div>
 
-                      <div className="flex flex-wrap items-center justify-between pt-2 border-t border-border/50 text-[11px] font-mono">
+                      <div className="flex flex-wrap items-center justify-between pt-2 border-t border-border/50 text-[13px] font-mono">
                         <div>Dispatched: <strong className="text-foreground">{t.dispatchedCount} units</strong></div>
                         <div>Received: <strong className="text-foreground">{t.receivedCount} units</strong></div>
                         <div>
@@ -484,7 +484,7 @@ export function BatchJourneyView({ batchId, batchSelector }: BatchJourneyViewPro
                           <span className="font-mono font-bold shrink-0">{node.totalUnits} units</span>
                         </div>
 
-                        <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <div className="text-[13px] text-muted-foreground flex items-center gap-1">
                           <MapPin className="size-3 text-rwanda-green shrink-0" />
                           <span className="truncate">{node.facilityName ?? "Main Storage"}</span>
                         </div>
@@ -549,7 +549,7 @@ export function BatchJourneyView({ batchId, batchSelector }: BatchJourneyViewPro
                       <span>Point-of-Sale Consumer Verification</span>
                       <span className="font-mono text-rwanda-green font-bold">GS1 Authenticated</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-[13px] text-muted-foreground">
                       Each unit carries a cryptographic scan identity. Consumer scans confirm product authenticity in real time without exposing commercial supplier pricing or custody contracts.
                     </p>
                   </div>

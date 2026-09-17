@@ -387,13 +387,13 @@ function QrActivitySection({
             <p className="text-lg font-bold text-foreground">
               {(executive?.market?.consumerSales ?? 0).toLocaleString()}
             </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Consumer scans / sales</p>
+            <p className="text-[13px] text-muted-foreground mt-0.5">Consumer scans / sales</p>
           </div>
           <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-center">
             <p className="text-lg font-bold text-foreground">
               {(executive?.market?.productsSold ?? 0).toLocaleString()}
             </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Products sold</p>
+            <p className="text-[13px] text-muted-foreground mt-0.5">Products sold</p>
           </div>
         </div>
       </CardContent>
@@ -552,7 +552,7 @@ function ReportsPanel({ isRegulator }: { isRegulator: boolean }) {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">{r.label}</p>
-                <p className="text-[11px] text-muted-foreground">{r.description}</p>
+                <p className="text-[13px] text-muted-foreground">{r.description}</p>
               </div>
             </button>
           );

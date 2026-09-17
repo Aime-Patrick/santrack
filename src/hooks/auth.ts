@@ -30,6 +30,8 @@ function mockUser(role: UserRole, standing = false): UserResponse {
   return {
     id: 1,
     email: `admin@santrack.rw`,
+    pendingEmail: null,
+    pendingEmailExpiresAt: null,
     fullName: "Design Admin",
     role,
     organization: null,
@@ -218,6 +220,33 @@ export function useUpdateProfile() {
     onSuccess: (updated) => {
       queryClient.setQueryData(authKeys.me, updated);
     },
+  });
+}
+
+export function useRequestEmailChange() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { email: string; password: string }) =>
+      authService.requestEmailChange(input),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(authKeys.me, updated);
+    },
+  });
+}
+
+export function useCancelEmailChange() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => authService.cancelEmailChange(),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(authKeys.me, updated);
+    },
+  });
+}
+
+export function useVerifyEmailChange() {
+  return useMutation({
+    mutationFn: (token: string) => authService.verifyEmailChange(token),
   });
 }
 

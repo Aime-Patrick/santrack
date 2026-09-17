@@ -240,7 +240,7 @@ function RespondDialog({
               </p>
             )}
             {c.forwardedDocumentIds && c.forwardedDocumentIds.length > 0 && (
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-[13px] text-muted-foreground">
                 {c.forwardedDocumentIds.length} document
                 {c.forwardedDocumentIds.length !== 1 ? "s" : ""} forwarded for your review
               </p>
@@ -277,7 +277,7 @@ function RespondDialog({
                       )}
                       <span className="text-sm font-semibold">{opt.label}</span>
                     </div>
-                    <p className="mt-0.5 ml-6 text-[11px] text-muted-foreground">
+                    <p className="mt-0.5 ml-6 text-[13px] text-muted-foreground">
                       {opt.description}
                     </p>
                   </button>

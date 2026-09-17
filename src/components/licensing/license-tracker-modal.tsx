@@ -239,7 +239,7 @@ export function LicenseTrackerModal({
                     <p className="text-xs font-semibold">
                       License Renewal Required (Expires in {daysRemaining} days)
                     </p>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-[13px] text-muted-foreground">
                       Operating licenses must be renewed prior to expiration to prevent compliance disruption.
                     </p>
                   </div>
@@ -278,7 +278,7 @@ export function LicenseTrackerModal({
                     )}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-[11px] uppercase tracking-wider">
+                      <span className="font-bold text-[13px] uppercase tracking-wider">
                         Stage {step.num}
                       </span>
                       {step.completed ? (
@@ -290,7 +290,7 @@ export function LicenseTrackerModal({
                       )}
                     </div>
                     <p className="font-semibold text-foreground">{step.label}</p>
-                    <p className="text-[11px] text-muted-foreground leading-tight">{step.desc}</p>
+                    <p className="text-[13px] text-muted-foreground leading-tight">{step.desc}</p>
                   </div>
                 ))}
               </div>
@@ -366,7 +366,7 @@ export function LicenseTrackerModal({
                       variant="ghost"
                       size="sm"
                       onClick={() => onOpenDossierUpload(license)}
-                      className="h-6 px-2 text-[11px] text-primary"
+                      className="h-6 px-2 text-[13px] text-primary"
                     >
                       + Upload More
                     </Button>
@@ -394,7 +394,7 @@ export function LicenseTrackerModal({
                             <p className="font-medium text-foreground truncate">
                               {doc.documentType.replace(/_/g, " ")}
                             </p>
-                            <p className="text-[11px] text-muted-foreground truncate">
+                            <p className="text-[13px] text-muted-foreground truncate">
                               {doc.filename}
                             </p>
                           </div>
@@ -455,7 +455,7 @@ export function LicenseTrackerModal({
                           )}
                         </div>
                         {event.notes && (
-                          <p className="text-muted-foreground text-[11px] bg-muted/30 p-1.5 rounded border border-border mt-0.5">
+                          <p className="text-muted-foreground text-[13px] bg-muted/30 p-1.5 rounded border border-border mt-0.5">
                             {event.notes}
                           </p>
                         )}

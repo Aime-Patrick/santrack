@@ -76,7 +76,7 @@ export function EligibilityOutcome({
                 </p>
                 {failing.remedy?.href ? (
                   <div className="mt-3">
-                    <p className="text-[11px] uppercase tracking-wide text-faint">
+                    <p className="text-[13px] uppercase tracking-wide text-faint">
                       Next step
                     </p>
                     <RemedyLink remedy={failing.remedy} className="mt-1 text-sm" />
@@ -169,7 +169,7 @@ export function EligibilityOutcome({
               </p>
               {failing.remedy?.href && (
                 <div className="mt-3">
-                  <p className="text-[11px] uppercase tracking-wide text-faint">
+                  <p className="text-[13px] uppercase tracking-wide text-faint">
                     How to put it right
                   </p>
                   <RemedyLink remedy={failing.remedy} className="mt-1 text-sm" />
@@ -247,7 +247,7 @@ export function DecisionFootnote({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border/70 pt-3 text-[11px] text-faint",
+        "flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border/70 pt-3 text-[13px] text-faint",
         className,
       )}
     >
@@ -311,7 +311,7 @@ export function RefusalPanel({
 
           {failing?.remedy?.href && (
             <div className="mt-3">
-              <p className="text-[11px] uppercase tracking-wide text-faint">
+              <p className="text-[13px] uppercase tracking-wide text-faint">
                 Next step
               </p>
               <RemedyLink remedy={failing.remedy} className="mt-1 text-sm" />

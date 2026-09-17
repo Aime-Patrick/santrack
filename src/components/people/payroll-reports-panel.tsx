@@ -132,25 +132,25 @@ export function PayrollReportsPanel() {
           <CardContent>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-1">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Total Requests</p>
+                <p className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wide">Total Requests</p>
                 <p className="text-xl font-bold tracking-tight text-foreground">{leaveReport.totalRequests}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Approved</p>
+                <p className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wide">Approved</p>
                 <div className="flex items-center gap-2">
                   <p className="text-xl font-bold tracking-tight text-foreground">{leaveReport.approved}</p>
                   <Badge variant="outline" className="border-transparent bg-success text-white">Approved</Badge>
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Rejected</p>
+                <p className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wide">Rejected</p>
                 <div className="flex items-center gap-2">
                   <p className="text-xl font-bold tracking-tight text-foreground">{leaveReport.rejected}</p>
                   <Badge variant="outline" className="border-transparent bg-danger text-white">Rejected</Badge>
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Pending</p>
+                <p className="text-[13px] font-semibold text-muted-foreground uppercase tracking-wide">Pending</p>
                 <div className="flex items-center gap-2">
                   <p className="text-xl font-bold tracking-tight text-foreground">{leaveReport.pending}</p>
                   <Badge variant="outline" className="border-transparent bg-warning-foreground text-white">Pending</Badge>

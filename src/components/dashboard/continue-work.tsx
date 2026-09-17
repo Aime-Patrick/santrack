@@ -203,7 +203,7 @@ export function ContinueWork() {
     <Card size="sm" className="border-primary/15 bg-gradient-to-br from-primary/[0.035] to-white">
       <CardHeader className="gap-0.5 pb-0">
         <CardTitle className="text-sm">Continue work</CardTitle>
-        <CardDescription className="text-[11px] leading-snug">
+        <CardDescription className="text-[13px] leading-snug">
           Urgent items first, then your usual next steps.
         </CardDescription>
       </CardHeader>
@@ -216,9 +216,9 @@ export function ContinueWork() {
           >
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-semibold text-foreground">{action.title}</p>
-              <p className="mt-0.5 line-clamp-1 text-[11px] leading-snug text-muted-foreground">{action.description}</p>
+              <p className="mt-0.5 line-clamp-1 text-[13px] leading-snug text-muted-foreground">{action.description}</p>
               {action.emphasis ? (
-                <p className="mt-1 truncate text-[11px] font-semibold text-primary">{action.emphasis}</p>
+                <p className="mt-1 truncate text-[13px] font-semibold text-primary">{action.emphasis}</p>
               ) : null}
             </div>
             <ArrowRight className="mt-0.5 size-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />

@@ -88,7 +88,7 @@ function ContentCard({
         {label}
       </div>
       <p className="text-2xl font-bold text-foreground">{count}</p>
-      <p className="text-[11px] text-muted-foreground">{description}</p>
+      <p className="text-[13px] text-muted-foreground">{description}</p>
     </div>
   );
 }
@@ -99,7 +99,7 @@ function SealBadge({ sealState }: { sealState: string | null }) {
     <Badge
       variant="outline"
       className={cn(
-        "text-[11px] font-semibold",
+        "text-[13px] font-semibold",
         sealState === "SEALED"
           ? "border-warning/40 bg-warning/10 text-warning-foreground"
           : "border-success/40 bg-success/10 text-success",

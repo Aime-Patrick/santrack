@@ -1153,11 +1153,11 @@ export function FabricDesignerHost({
   const renderToolPanel = () => {
     if (activeTool === "templates") {
       return <div className="space-y-3">
-        {onCreateBlank ? <button type="button" onClick={() => { setActiveTool(null); setPageSelected(false); onCreateBlank(); }} className="group flex w-full items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-primary/[0.04] p-3 text-left transition-colors hover:border-primary hover:bg-primary/[0.08]"><span className="grid size-14 shrink-0 place-items-center rounded-lg border border-border bg-white shadow-xs"><Plus className="size-6 text-primary transition-transform group-hover:scale-110" /></span><span className="min-w-0"><span className="block text-sm font-semibold text-foreground">Start with a blank page</span><span className="mt-1 block text-[11px] leading-4 text-muted-foreground">Empty {pageSize.width} × {pageSize.height} mm page. Add everything yourself.</span></span></button> : null}
+        {onCreateBlank ? <button type="button" onClick={() => { setActiveTool(null); setPageSelected(false); onCreateBlank(); }} className="group flex w-full items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-primary/[0.04] p-3 text-left transition-colors hover:border-primary hover:bg-primary/[0.08]"><span className="grid size-14 shrink-0 place-items-center rounded-lg border border-border bg-white shadow-xs"><Plus className="size-6 text-primary transition-transform group-hover:scale-110" /></span><span className="min-w-0"><span className="block text-sm font-semibold text-foreground">Start with a blank page</span><span className="mt-1 block text-[13px] leading-4 text-muted-foreground">Empty {pageSize.width} × {pageSize.height} mm page. Add everything yourself.</span></span></button> : null}
         <div className="flex items-center gap-2"><span className="h-px flex-1 bg-border" /><span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Or use a template</span><span className="h-px flex-1 bg-border" /></div>
         <div className="relative"><Plus className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={panelQuery} onChange={(event) => setPanelQuery(event.target.value)} className="h-11 rounded-xl bg-card pl-9 text-xs" placeholder="Describe your ideal design" /></div>
         <div className="grid grid-cols-[1fr_1.1fr] gap-2"><Button type="button" variant="outline" className="h-10" disabled title="AI template generation is not connected yet"><WandSparkles className="size-4 text-primary" /> Generate</Button><Button type="button" className="h-10"><Search className="size-4" /> Search</Button></div>
-        <div className="grid grid-cols-2 gap-2 pt-1">{visibleTemplates.map((option, index) => <button key={option.id} type="button" onClick={() => { setActiveTool(null); setPageSelected(false); onSelectTemplate?.(option.id); }} className={cn("group overflow-hidden rounded-md border text-left transition-colors", option.id === activeTemplateId ? "border-primary ring-2 ring-primary/15" : "border-border hover:border-primary/50")}><div className={cn("relative aspect-[1.42] overflow-hidden p-2", index % 4 === 0 ? "bg-primary/10" : index % 4 === 1 ? "bg-success/10" : index % 4 === 2 ? "bg-warning/20" : "bg-foreground/5")}><div className="h-full rounded border border-border/70 bg-card p-2 shadow-xs"><div className="h-1.5 w-1/2 rounded bg-primary/70" /><div className="mt-2 flex items-end justify-between"><div className="space-y-1"><div className="h-1 w-10 rounded bg-foreground/50" /><div className="h-1 w-8 rounded bg-foreground/25" /><div className="h-1 w-12 rounded bg-foreground/25" /></div><div className="grid size-8 grid-cols-3 gap-0.5 border border-foreground/20 p-0.5">{Array.from({ length: 9 }).map((_, cell) => <span key={cell} className={cn("bg-foreground", cell % 3 === 1 && "opacity-25")} />)}</div></div></div></div><div className="bg-card p-2"><div className="flex items-center justify-between gap-1"><span className="truncate text-[11px] font-semibold text-foreground">{option.name}</span>{option.id === activeTemplateId ? <span className="size-1.5 shrink-0 rounded-full bg-primary" /> : null}</div><span className="font-mono text-[9px] text-muted-foreground">{option.widthMm} × {option.heightMm} mm</span></div></button>)}</div>
+        <div className="grid grid-cols-2 gap-2 pt-1">{visibleTemplates.map((option, index) => <button key={option.id} type="button" onClick={() => { setActiveTool(null); setPageSelected(false); onSelectTemplate?.(option.id); }} className={cn("group overflow-hidden rounded-md border text-left transition-colors", option.id === activeTemplateId ? "border-primary ring-2 ring-primary/15" : "border-border hover:border-primary/50")}><div className={cn("relative aspect-[1.42] overflow-hidden p-2", index % 4 === 0 ? "bg-primary/10" : index % 4 === 1 ? "bg-success/10" : index % 4 === 2 ? "bg-warning/20" : "bg-foreground/5")}><div className="h-full rounded border border-border/70 bg-card p-2 shadow-xs"><div className="h-1.5 w-1/2 rounded bg-primary/70" /><div className="mt-2 flex items-end justify-between"><div className="space-y-1"><div className="h-1 w-10 rounded bg-foreground/50" /><div className="h-1 w-8 rounded bg-foreground/25" /><div className="h-1 w-12 rounded bg-foreground/25" /></div><div className="grid size-8 grid-cols-3 gap-0.5 border border-foreground/20 p-0.5">{Array.from({ length: 9 }).map((_, cell) => <span key={cell} className={cn("bg-foreground", cell % 3 === 1 && "opacity-25")} />)}</div></div></div></div><div className="bg-card p-2"><div className="flex items-center justify-between gap-1"><span className="truncate text-[13px] font-semibold text-foreground">{option.name}</span>{option.id === activeTemplateId ? <span className="size-1.5 shrink-0 rounded-full bg-primary" /> : null}</div><span className="font-mono text-[9px] text-muted-foreground">{option.widthMm} × {option.heightMm} mm</span></div></button>)}</div>
         {visibleTemplates.length === 0 ? <p className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">No label templates match “{panelQuery}”.</p> : null}
       </div>;
     }
@@ -1172,17 +1172,17 @@ export function FabricDesignerHost({
       return <div className="space-y-4">
         <div className="relative"><Plus className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={panelQuery} onChange={(event) => setPanelQuery(event.target.value)} className="h-11 rounded-xl bg-card pl-9 text-xs" placeholder="Describe your ideal element" /></div>
         <div className="grid grid-cols-[1fr_1.1fr] gap-2"><Button type="button" variant="outline" className="h-10" disabled title="AI element generation is not connected yet"><WandSparkles className="size-4 text-primary" /> Generate</Button><Button type="button" className="h-10"><Search className="size-4" /> Search</Button></div>
-        <div><h4 className="mb-3 text-sm font-semibold text-foreground">Browse categories</h4><div className="grid grid-cols-3 gap-x-2 gap-y-4">{elementCategories.map((category) => <button key={category.id} type="button" onClick={() => category.id === "shapes" ? setElementCategory("shapes") : undefined} aria-disabled={category.id !== "shapes"} title={category.id === "shapes" ? `Browse ${category.label}` : `${category.label} is coming soon`} className="group flex flex-col items-center gap-2 text-center"><span className={cn("flex size-16 items-center justify-center rounded-2xl shadow-sm ring-1 ring-border transition-transform group-hover:-translate-y-0.5", category.color)}>{category.icon}</span><span className="text-[11px] font-medium text-foreground">{category.label}</span></button>)}</div></div>
+        <div><h4 className="mb-3 text-sm font-semibold text-foreground">Browse categories</h4><div className="grid grid-cols-3 gap-x-2 gap-y-4">{elementCategories.map((category) => <button key={category.id} type="button" onClick={() => category.id === "shapes" ? setElementCategory("shapes") : undefined} aria-disabled={category.id !== "shapes"} title={category.id === "shapes" ? `Browse ${category.label}` : `${category.label} is coming soon`} className="group flex flex-col items-center gap-2 text-center"><span className={cn("flex size-16 items-center justify-center rounded-2xl shadow-sm ring-1 ring-border transition-transform group-hover:-translate-y-0.5", category.color)}>{category.icon}</span><span className="text-[13px] font-medium text-foreground">{category.label}</span></button>)}</div></div>
       </div>;
     }
     if (activeTool === "text") {
       return <div className="space-y-2"><Button type="button" className="w-full" onClick={addText}><Type className="size-4" /> Add text box</Button><button type="button" onClick={() => addBoundText("productName", 14, 40)} className="w-full rounded-lg border border-border bg-card p-3 text-left text-base font-bold text-foreground hover:border-primary/50">Add product name</button><button type="button" onClick={() => addBoundText("serial", 10, 34)} className="w-full rounded-lg border border-border bg-card p-3 text-left font-mono text-sm text-foreground hover:border-primary/50">Add serial number</button><button type="button" onClick={() => addBoundText("batchLine", 8, 38)} className="w-full rounded-lg border border-border bg-card p-3 text-left text-xs text-muted-foreground hover:border-primary/50">Add batch and SKU</button></div>;
     }
     if (activeTool === "brand") {
-      return <div className="space-y-3"><div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-center"><Palette className="mx-auto size-7 text-primary" /><p className="mt-2 text-xs font-semibold text-foreground">Brand assets</p><p className="mt-1 text-[11px] leading-4 text-muted-foreground">Add your company logo or certification mark.</p></div>{onAddImage ? <Button type="button" variant="outline" className="w-full" onClick={() => onAddImage(pageIndex)}><ImagePlus className="size-4" /> Add logo</Button> : null}</div>;
+      return <div className="space-y-3"><div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-center"><Palette className="mx-auto size-7 text-primary" /><p className="mt-2 text-xs font-semibold text-foreground">Brand assets</p><p className="mt-1 text-[13px] leading-4 text-muted-foreground">Add your company logo or certification mark.</p></div>{onAddImage ? <Button type="button" variant="outline" className="w-full" onClick={() => onAddImage(pageIndex)}><ImagePlus className="size-4" /> Add logo</Button> : null}</div>;
     }
     if (activeTool === "uploads") {
-      return <div className="space-y-2">{onUploadArtwork ? <Button type="button" className="w-full" onClick={onUploadArtwork}><CloudUpload className="size-4" /> Upload background</Button> : null}{onAddImage ? <Button type="button" variant="outline" className="w-full" onClick={() => onAddImage(pageIndex)}><ImagePlus className="size-4" /> Add image</Button> : null}<p className="pt-2 text-[11px] leading-4 text-muted-foreground">PNG, JPG, WebP, SVG, or PDF artwork.</p></div>;
+      return <div className="space-y-2">{onUploadArtwork ? <Button type="button" className="w-full" onClick={onUploadArtwork}><CloudUpload className="size-4" /> Upload background</Button> : null}{onAddImage ? <Button type="button" variant="outline" className="w-full" onClick={() => onAddImage(pageIndex)}><ImagePlus className="size-4" /> Add image</Button> : null}<p className="pt-2 text-[13px] leading-4 text-muted-foreground">PNG, JPG, WebP, SVG, or PDF artwork.</p></div>;
     }
     if (activeTool === "tools") return null;
     if (activeTool === "projects") {
@@ -1192,11 +1192,11 @@ export function FabricDesignerHost({
         <div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input value={panelQuery} onChange={(event) => setPanelQuery(event.target.value)} className="h-11 rounded-xl bg-card pl-9 text-xs" placeholder="Search your content" /></div>
         <button type="button" className="flex h-11 w-full items-center justify-between rounded-xl border border-border bg-card px-3 text-left text-sm font-medium text-foreground"><span className="flex min-w-0 items-center gap-2"><span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Folder className="size-3.5" /></span><span className="truncate">Your projects</span></span><ChevronDown className="size-4 text-muted-foreground" /></button>
         <div className="grid grid-cols-4 border-b border-border">
-          {(["all", "designs", "folders", "images"] as ProjectTab[]).map((tab) => <button key={tab} type="button" onClick={() => setProjectTab(tab)} className={cn("relative px-1 pb-2 text-[11px] font-semibold capitalize text-muted-foreground transition-colors hover:text-foreground", projectTab === tab && "text-primary after:absolute after:inset-x-1 after:-bottom-px after:h-0.5 after:rounded-full after:bg-primary")}>{tab}</button>)}
+          {(["all", "designs", "folders", "images"] as ProjectTab[]).map((tab) => <button key={tab} type="button" onClick={() => setProjectTab(tab)} className={cn("relative px-1 pb-2 text-[13px] font-semibold capitalize text-muted-foreground transition-colors hover:text-foreground", projectTab === tab && "text-primary after:absolute after:inset-x-1 after:-bottom-px after:h-0.5 after:rounded-full after:bg-primary")}>{tab}</button>)}
         </div>
-        {showDesigns ? <section className="space-y-2"><div className="flex items-center justify-between"><h4 className="text-xs font-semibold text-foreground">Designs</h4><span className="text-[10px] text-muted-foreground">{visibleTemplates.length} labels</span></div><div className="grid grid-cols-2 gap-2">{visibleTemplates.map((option, index) => <button key={option.id} type="button" onClick={() => { setActiveTool(null); setPageSelected(false); onSelectTemplate?.(option.id); }} className={cn("overflow-hidden rounded-lg border bg-card text-left transition hover:border-primary", option.id === activeTemplateId ? "border-primary ring-2 ring-primary/15" : "border-border")}><div className={cn("aspect-[1.55] p-2", index % 3 === 0 ? "bg-primary/10" : index % 3 === 1 ? "bg-success/10" : "bg-warning/15")}><div className="relative h-full overflow-hidden rounded-sm border border-border/70 bg-white p-1.5 shadow-xs"><div className="h-1 w-1/2 rounded bg-primary/70" /><div className="mt-1.5 h-0.5 w-2/3 rounded bg-foreground/30" /><div className="absolute bottom-1.5 right-1.5 grid size-7 grid-cols-3 gap-px border border-foreground/20 p-0.5">{Array.from({ length: 9 }).map((_, cell) => <span key={cell} className={cn("bg-foreground", cell % 4 === 1 && "opacity-20")} />)}</div></div></div><div className="p-2"><p className="truncate text-[11px] font-semibold text-foreground">{option.name}</p><p className="mt-0.5 font-mono text-[9px] text-muted-foreground">{option.widthMm} × {option.heightMm} mm</p></div></button>)}</div>{visibleTemplates.length === 0 ? <p className="rounded-lg border border-dashed border-border p-4 text-center text-[11px] text-muted-foreground">No projects match “{panelQuery}”.</p> : null}</section> : null}
+        {showDesigns ? <section className="space-y-2"><div className="flex items-center justify-between"><h4 className="text-xs font-semibold text-foreground">Designs</h4><span className="text-[10px] text-muted-foreground">{visibleTemplates.length} labels</span></div><div className="grid grid-cols-2 gap-2">{visibleTemplates.map((option, index) => <button key={option.id} type="button" onClick={() => { setActiveTool(null); setPageSelected(false); onSelectTemplate?.(option.id); }} className={cn("overflow-hidden rounded-lg border bg-card text-left transition hover:border-primary", option.id === activeTemplateId ? "border-primary ring-2 ring-primary/15" : "border-border")}><div className={cn("aspect-[1.55] p-2", index % 3 === 0 ? "bg-primary/10" : index % 3 === 1 ? "bg-success/10" : "bg-warning/15")}><div className="relative h-full overflow-hidden rounded-sm border border-border/70 bg-white p-1.5 shadow-xs"><div className="h-1 w-1/2 rounded bg-primary/70" /><div className="mt-1.5 h-0.5 w-2/3 rounded bg-foreground/30" /><div className="absolute bottom-1.5 right-1.5 grid size-7 grid-cols-3 gap-px border border-foreground/20 p-0.5">{Array.from({ length: 9 }).map((_, cell) => <span key={cell} className={cn("bg-foreground", cell % 4 === 1 && "opacity-20")} />)}</div></div></div><div className="p-2"><p className="truncate text-[13px] font-semibold text-foreground">{option.name}</p><p className="mt-0.5 font-mono text-[9px] text-muted-foreground">{option.widthMm} × {option.heightMm} mm</p></div></button>)}</div>{visibleTemplates.length === 0 ? <p className="rounded-lg border border-dashed border-border p-4 text-center text-[13px] text-muted-foreground">No projects match “{panelQuery}”.</p> : null}</section> : null}
         {showFolders ? <section className="space-y-2"><h4 className="text-xs font-semibold text-foreground">Folders</h4><div className="space-y-2"><button type="button" className="flex w-full items-center gap-3 rounded-lg border border-dashed border-border bg-card p-3 text-left hover:border-primary"><span className="flex size-10 items-center justify-center rounded-lg bg-muted text-foreground"><FolderPlus className="size-5" /></span><span className="text-xs font-semibold text-foreground">Create folder</span></button><button type="button" className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left hover:border-primary"><span className="flex size-10 items-center justify-center rounded-lg bg-muted text-foreground"><Star className="size-5" /></span><span className="text-xs font-semibold text-foreground">Starred</span></button></div></section> : null}
-        {projectTab === "images" ? <section className="rounded-xl border border-dashed border-border bg-card p-5 text-center"><Images className="mx-auto size-7 text-primary" /><p className="mt-2 text-xs font-semibold text-foreground">Your uploaded images</p><p className="mt-1 text-[11px] leading-4 text-muted-foreground">Upload logos and artwork to reuse across label projects.</p>{onAddImage ? <Button type="button" size="sm" className="mt-3" onClick={() => onAddImage(pageIndex)}><ImagePlus className="size-4" /> Upload image</Button> : null}</section> : null}
+        {projectTab === "images" ? <section className="rounded-xl border border-dashed border-border bg-card p-5 text-center"><Images className="mx-auto size-7 text-primary" /><p className="mt-2 text-xs font-semibold text-foreground">Your uploaded images</p><p className="mt-1 text-[13px] leading-4 text-muted-foreground">Upload logos and artwork to reuse across label projects.</p>{onAddImage ? <Button type="button" size="sm" className="mt-3" onClick={() => onAddImage(pageIndex)}><ImagePlus className="size-4" /> Upload image</Button> : null}</section> : null}
       </div>;
     }
     return null;
@@ -1260,7 +1260,7 @@ export function FabricDesignerHost({
           <Button type="button" size="icon" variant={selectedLinethrough ? "secondary" : "ghost"} className="size-9 shrink-0" onClick={() => updateSelectedStyle({ linethrough: !selectedLinethrough })} title="Strikethrough"><Strikethrough className="size-4" /></Button>
           <Button type="button" size="icon" variant="ghost" className="size-9 shrink-0" onClick={cycleSelectedTextAlignment} title={`Text alignment: ${selectedTextAlign}`}>{selectedTextAlign === "center" ? <AlignCenter className="size-4" /> : selectedTextAlign === "right" ? <AlignRight className="size-4" /> : <AlignLeft className="size-4" />}</Button>
         </> : selectedIsQr ? <div className="flex shrink-0 items-center gap-1.5">
-          <span className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-semibold text-primary">Trust QR</span>
+          <span className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[13px] font-semibold text-primary">Trust QR</span>
           <label className="relative flex h-9 cursor-pointer items-center gap-2 rounded-lg px-2 text-xs font-semibold text-foreground hover:bg-muted">
             <span className="size-5 rounded-full border border-border shadow-inner" style={{ backgroundColor: selectedTrustQr.moduleColor }} />
             Dots
@@ -1288,7 +1288,7 @@ export function FabricDesignerHost({
               }
             />
             <DropdownMenuContent align="start" className="w-64 border border-border bg-card p-3 shadow-lg">
-              <p className="mb-2 text-[11px] font-semibold text-foreground">QR frame</p>
+              <p className="mb-2 text-[13px] font-semibold text-foreground">QR frame</p>
               <label className="relative mb-3 flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-border px-2.5 text-xs font-medium text-foreground hover:bg-muted">
                 <span className="size-5 rounded-full border-4 bg-white" style={{ borderColor: selectedTrustQr.borderColor }} />
                 Border color
@@ -1307,7 +1307,7 @@ export function FabricDesignerHost({
                     type="button"
                     onClick={() => void updateTrustQrStyle({ borderWidth: option.value })}
                     className={cn(
-                      "rounded-lg border px-1 py-2 text-[11px] font-semibold transition-colors",
+                      "rounded-lg border px-1 py-2 text-[13px] font-semibold transition-colors",
                       selectedTrustQr.borderWidth === option.value
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border text-foreground hover:border-primary/40",
@@ -1329,7 +1329,7 @@ export function FabricDesignerHost({
                     type="button"
                     onClick={() => void updateTrustQrStyle({ cornerRadius: option.value })}
                     className={cn(
-                      "flex flex-col items-center gap-1.5 rounded-lg border px-2 py-2 text-[11px] font-semibold transition-colors",
+                      "flex flex-col items-center gap-1.5 rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors",
                       Math.abs(selectedTrustQr.cornerRadius - option.value) < 3
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border text-foreground hover:border-primary/40",
@@ -1354,7 +1354,7 @@ export function FabricDesignerHost({
                 type="button"
                 onClick={() => void updateTrustQrStyle({ center: option.id })}
                 className={cn(
-                  "h-8 rounded-md px-2.5 text-[11px] font-semibold transition-colors",
+                  "h-8 rounded-md px-2.5 text-[13px] font-semibold transition-colors",
                   selectedTrustQr.center === option.id
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -1393,7 +1393,7 @@ export function FabricDesignerHost({
               }
             />
             <DropdownMenuContent align="start" className="w-64 border border-border bg-card p-3 shadow-lg">
-              <p className="mb-2 text-[11px] font-semibold text-foreground">Shape border</p>
+              <p className="mb-2 text-[13px] font-semibold text-foreground">Shape border</p>
               <label className="relative mb-3 flex h-9 cursor-pointer items-center gap-2 rounded-lg border border-border px-2.5 text-xs font-medium text-foreground hover:bg-muted">
                 <span className="size-5 rounded-full border-4 bg-white" style={{ borderColor: selectedStrokeColor }} />
                 Border color
@@ -1412,7 +1412,7 @@ export function FabricDesignerHost({
                     type="button"
                     onClick={() => updateSelectedStyle({ strokeWidth: option.value })}
                     className={cn(
-                      "rounded-lg border px-1 py-2 text-[11px] font-semibold transition-colors",
+                      "rounded-lg border px-1 py-2 text-[13px] font-semibold transition-colors",
                       Math.abs(selectedStrokeWidth - option.value) < 0.3
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border text-foreground hover:border-primary/40",
@@ -1436,7 +1436,7 @@ export function FabricDesignerHost({
                         type="button"
                         onClick={() => updateSelectedStyle({ rx: option.value, ry: option.value })}
                         className={cn(
-                          "flex flex-col items-center gap-1.5 rounded-lg border px-2 py-2 text-[11px] font-semibold transition-colors",
+                          "flex flex-col items-center gap-1.5 rounded-lg border px-2 py-2 text-[13px] font-semibold transition-colors",
                           Math.abs(selectedCornerRadius - option.value) < 2
                             ? "border-primary bg-primary/10 text-primary"
                             : "border-border text-foreground hover:border-primary/40",
@@ -1469,7 +1469,7 @@ export function FabricDesignerHost({
             />
             <DropdownMenuContent align="start" className="w-64 border border-border bg-card shadow-lg">
               <div className="border-b border-border px-3 py-2">
-                <p className="text-[11px] font-semibold text-foreground">What prints here</p>
+                <p className="text-[13px] font-semibold text-foreground">What prints here</p>
                 <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
                   Pick which product data fills this text or barcode when you print.
                 </p>
@@ -1489,7 +1489,7 @@ export function FabricDesignerHost({
             </DropdownMenuContent>
           </DropdownMenu>
         ) : selectedIsQr ? (
-          <span className="hidden h-9 items-center rounded-lg bg-muted/60 px-2.5 text-[11px] font-medium text-muted-foreground lg:inline-flex" title="This QR always encodes the unit verify link">
+          <span className="hidden h-9 items-center rounded-lg bg-muted/60 px-2.5 text-[13px] font-medium text-muted-foreground lg:inline-flex" title="This QR always encodes the unit verify link">
             Encodes verify link
           </span>
         ) : null}
@@ -1505,7 +1505,7 @@ export function FabricDesignerHost({
               }
             />
             <DropdownMenuContent align="start" className="w-56 border border-border bg-card p-3 shadow-lg">
-              <p className="mb-2 text-[11px] font-semibold text-foreground">Position &amp; size</p>
+              <p className="mb-2 text-[13px] font-semibold text-foreground">Position &amp; size</p>
               <div className="grid grid-cols-2 gap-2">
                 {([
                   ["Left", "x", selectedX],
@@ -1560,7 +1560,7 @@ export function FabricDesignerHost({
       <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row">
         <div className="hidden shrink-0 border-r border-border bg-card lg:order-1 lg:flex">
           <nav className="flex w-[86px] shrink-0 flex-col overflow-y-auto py-2" aria-label="Design tools">
-            {toolItems.map((item, index) => <div key={item.id} className={cn(index === toolItems.length - 1 && "mt-2 border-t border-border pt-2")}><button type="button" onClick={() => { setActiveTool((current) => current === item.id ? null : item.id); if (item.id === "elements") setElementCategory(null); setPanelQuery(""); }} className="group relative flex w-full flex-col items-center gap-1 px-1 py-2 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground"><span className={cn("relative flex size-9 items-center justify-center rounded-lg transition-colors", activeTool === item.id ? "bg-primary text-primary-foreground shadow-sm" : "group-hover:bg-muted")}>{item.icon}{item.premium ? <Crown className="absolute -right-1 -top-1 size-3 fill-warning text-warning" /> : null}</span><span className={cn("leading-4", activeTool === item.id && "font-semibold text-foreground")}>{item.label}</span></button></div>)}
+            {toolItems.map((item, index) => <div key={item.id} className={cn(index === toolItems.length - 1 && "mt-2 border-t border-border pt-2")}><button type="button" onClick={() => { setActiveTool((current) => current === item.id ? null : item.id); if (item.id === "elements") setElementCategory(null); setPanelQuery(""); }} className="group relative flex w-full flex-col items-center gap-1 px-1 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"><span className={cn("relative flex size-9 items-center justify-center rounded-lg transition-colors", activeTool === item.id ? "bg-primary text-primary-foreground shadow-sm" : "group-hover:bg-muted")}>{item.icon}{item.premium ? <Crown className="absolute -right-1 -top-1 size-3 fill-warning text-warning" /> : null}</span><span className={cn("leading-4", activeTool === item.id && "font-semibold text-foreground")}>{item.label}</span></button></div>)}
           </nav>
           {activeTool && activeTool !== "tools" ? <aside className="flex w-80 shrink-0 flex-col border-l border-border bg-muted/20"><div className="flex h-12 items-center justify-between border-b border-border px-3"><div className="flex items-center gap-1">{activeTool === "elements" && elementCategory ? <Button type="button" size="icon" variant="ghost" className="size-7 text-foreground" onClick={() => { setElementCategory(null); setPanelQuery(""); }} title="Back to categories"><ChevronLeft className="size-4" /></Button> : null}<p className="text-sm font-semibold text-foreground">{toolTitle}</p></div><Button type="button" size="icon" variant="ghost" className="size-7 text-muted-foreground" onClick={() => setActiveTool(null)} title="Close panel"><X className="size-4" /></Button></div><div className="min-h-0 flex-1 overflow-y-auto p-3">{toolPanelContent}</div></aside> : null}
         </div>
@@ -1659,17 +1659,17 @@ export function FabricDesignerHost({
                     <Plus className="size-4" /> Add page
                   </Button>
                   {pageCount > 1 ? (
-                    <span className="text-[11px] font-medium text-muted-foreground">Page {pageIndex + 1} of {pageCount}</span>
+                    <span className="text-[13px] font-medium text-muted-foreground">Page {pageIndex + 1} of {pageCount}</span>
                   ) : null}
                 </div>
               </div>
             </div>
           </div>
           <div className="flex min-h-12 shrink-0 items-center gap-3 overflow-x-auto border-t border-border bg-card px-2 sm:px-3">
-            <div className="hidden items-center gap-2 text-[11px] text-muted-foreground xl:flex"><Move className="size-3.5" /> Smart guides · Shift+resize locks ratio · Ctrl/Cmd+G group · Arrows nudge · Space pan</div>
+            <div className="hidden items-center gap-2 text-[13px] text-muted-foreground xl:flex"><Move className="size-3.5" /> Smart guides · Shift+resize locks ratio · Ctrl/Cmd+G group · Arrows nudge · Space pan</div>
             <div className="ml-auto flex items-center gap-1">
               <Button type="button" size="icon" variant="ghost" className="size-7" onClick={() => switchPage(pageIndex - 1)} disabled={pageIndex === 0} title="Previous page"><ChevronLeft className="size-3.5" /></Button>
-              <span className="min-w-16 text-center text-[11px] font-semibold tabular-nums text-foreground">Page {pageIndex + 1} / {pageCount}</span>
+              <span className="min-w-16 text-center text-[13px] font-semibold tabular-nums text-foreground">Page {pageIndex + 1} / {pageCount}</span>
               <Button type="button" size="icon" variant="ghost" className="size-7" onClick={() => switchPage(pageIndex + 1)} disabled={pageIndex >= pageCount - 1} title="Next page"><ChevronRight className="size-3.5" /></Button>
               <Button type="button" size="icon" variant="ghost" className="size-7" onClick={addPage} title="Add page"><Plus className="size-3.5" /></Button>
             </div>
@@ -1695,13 +1695,13 @@ export function FabricDesignerHost({
 
         {/* Inspector retired: selected-element controls now live in the contextual top toolbar.
         <aside className={cn("order-3 w-full shrink-0 overflow-auto border-t border-border bg-card lg:w-[296px] lg:border-l lg:border-t-0", !selectedObject?.labelMeta && "hidden")}>
-          <div className="border-b border-border px-4 py-3"><div className="flex items-center gap-2 text-sm font-semibold text-foreground"><RotateCw className="size-4 text-primary" /> Inspector</div><p className="mt-1 text-[11px] leading-4 text-muted-foreground">Fine-tune the selected element or use the canvas handles.</p></div>
+          <div className="border-b border-border px-4 py-3"><div className="flex items-center gap-2 text-sm font-semibold text-foreground"><RotateCw className="size-4 text-primary" /> Inspector</div><p className="mt-1 text-[13px] leading-4 text-muted-foreground">Fine-tune the selected element or use the canvas handles.</p></div>
           {selectedObject?.labelMeta ? <div className="space-y-4 p-4">
-            <div><div className="mb-1.5 flex items-center justify-between gap-2"><label htmlFor="fabric-binding" className="text-[11px] font-semibold text-muted-foreground">Binding key</label><span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium capitalize text-primary">{selectedObject.labelMeta.kind === "dynamicText" ? "Data field" : selectedObject.labelMeta.kind}</span></div><Input id="fabric-binding" value={selectedObject.labelMeta.schemaName} onChange={(event) => updateBinding(event.target.value)} onBlur={() => { if (selectedObject.labelMeta?.kind === "qrcode" || selectedObject.labelMeta?.kind === "barcode") setCanvasVersion((version) => version + 1); }} className="h-9 font-mono text-xs" spellCheck={false} /><p className="mt-1.5 text-[10px] leading-4 text-muted-foreground">Use <code className="rounded bg-muted px-1">serial</code>, <code className="rounded bg-muted px-1">qr</code>, or <code className="rounded bg-muted px-1">productName</code>.</p>{selectedObject.labelMeta.kind === "dynamicText" || selectedObject.labelMeta.kind === "qrcode" || selectedObject.labelMeta.kind === "barcode" ? <div className="mt-3 rounded-lg border border-border bg-muted/30 p-2.5"><p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Live data preview</p><p className="mt-1 break-words text-[11px] leading-4 text-foreground">{selectedPreviewValue}</p></div> : null}</div>
-            <div className="border-t border-border pt-4"><p className="mb-2 text-[11px] font-semibold text-foreground">Position &amp; size <span className="font-normal text-muted-foreground">(mm)</span></p><div className="grid grid-cols-2 gap-2">{([["X", "x", selectedX], ["Y", "y", selectedY], ["W", "width", Number(selectedWidth.toFixed(1))], ["H", "height", Number(selectedHeight.toFixed(1))]] as const).map(([label, metric, value]) => <label key={metric} className="space-y-1 text-[10px] font-medium text-muted-foreground">{label}<Input type="number" step="0.1" value={value} onChange={(event) => updateMetric(metric, event.target.value)} className="h-8 bg-muted/20 font-mono text-xs" /></label>)}</div><label className="mt-2 block space-y-1 text-[10px] font-medium text-muted-foreground">Rotation (°)<Input type="number" step="1" value={selectedRotation} onChange={(event) => updateMetric("rotation", event.target.value)} className="h-8 bg-muted/20 font-mono text-xs" /></label></div>
-            <div className="border-t border-border pt-4"><p className="mb-2 text-[11px] font-semibold text-foreground">Align on label</p><div className="grid grid-cols-2 gap-2"><Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-[11px]" onClick={() => alignSelected("horizontal")}><AlignCenter className="size-3.5" /> Horizontal</Button><Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-[11px]" onClick={() => alignSelected("vertical")}><AlignCenter className="size-3.5 rotate-90" /> Vertical</Button></div></div>
+            <div><div className="mb-1.5 flex items-center justify-between gap-2"><label htmlFor="fabric-binding" className="text-[13px] font-semibold text-muted-foreground">Binding key</label><span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium capitalize text-primary">{selectedObject.labelMeta.kind === "dynamicText" ? "Data field" : selectedObject.labelMeta.kind}</span></div><Input id="fabric-binding" value={selectedObject.labelMeta.schemaName} onChange={(event) => updateBinding(event.target.value)} onBlur={() => { if (selectedObject.labelMeta?.kind === "qrcode" || selectedObject.labelMeta?.kind === "barcode") setCanvasVersion((version) => version + 1); }} className="h-9 font-mono text-xs" spellCheck={false} /><p className="mt-1.5 text-[10px] leading-4 text-muted-foreground">Use <code className="rounded bg-muted px-1">serial</code>, <code className="rounded bg-muted px-1">qr</code>, or <code className="rounded bg-muted px-1">productName</code>.</p>{selectedObject.labelMeta.kind === "dynamicText" || selectedObject.labelMeta.kind === "qrcode" || selectedObject.labelMeta.kind === "barcode" ? <div className="mt-3 rounded-lg border border-border bg-muted/30 p-2.5"><p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Live data preview</p><p className="mt-1 break-words text-[13px] leading-4 text-foreground">{selectedPreviewValue}</p></div> : null}</div>
+            <div className="border-t border-border pt-4"><p className="mb-2 text-[13px] font-semibold text-foreground">Position &amp; size <span className="font-normal text-muted-foreground">(mm)</span></p><div className="grid grid-cols-2 gap-2">{([["X", "x", selectedX], ["Y", "y", selectedY], ["W", "width", Number(selectedWidth.toFixed(1))], ["H", "height", Number(selectedHeight.toFixed(1))]] as const).map(([label, metric, value]) => <label key={metric} className="space-y-1 text-[10px] font-medium text-muted-foreground">{label}<Input type="number" step="0.1" value={value} onChange={(event) => updateMetric(metric, event.target.value)} className="h-8 bg-muted/20 font-mono text-xs" /></label>)}</div><label className="mt-2 block space-y-1 text-[10px] font-medium text-muted-foreground">Rotation (°)<Input type="number" step="1" value={selectedRotation} onChange={(event) => updateMetric("rotation", event.target.value)} className="h-8 bg-muted/20 font-mono text-xs" /></label></div>
+            <div className="border-t border-border pt-4"><p className="mb-2 text-[13px] font-semibold text-foreground">Align on label</p><div className="grid grid-cols-2 gap-2"><Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-[13px]" onClick={() => alignSelected("horizontal")}><AlignCenter className="size-3.5" /> Horizontal</Button><Button type="button" variant="outline" size="sm" className="h-8 gap-1.5 text-[13px]" onClick={() => alignSelected("vertical")}><AlignCenter className="size-3.5 rotate-90" /> Vertical</Button></div></div>
             <div className="grid grid-cols-3 gap-2 border-t border-border pt-4"><Button type="button" variant="outline" size="sm" className="h-8 px-2 text-[10px]" onClick={() => reorderSelected("back")}>Send back</Button><Button type="button" variant="outline" size="sm" className="h-8 px-2 text-[10px]" onClick={() => reorderSelected("front")}>Bring front</Button><Button type="button" variant="outline" size="sm" className="h-8 px-2 text-[10px] text-danger hover:text-danger" onClick={deleteSelected}>Delete</Button></div>
-          </div> : <div className="space-y-4 p-4"><div className="rounded-lg border border-dashed border-border bg-muted/30 p-3 text-xs leading-5 text-muted-foreground">Select a layer or click an element on the label to edit its binding, position, size, and rotation.</div><div className="rounded-lg bg-muted/40 p-3"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Shortcuts</p><div className="mt-2 space-y-1.5 text-[11px] text-muted-foreground"><p><kbd className="rounded border border-border bg-card px-1 font-mono text-[10px]">Delete</kbd> remove selected</p><p><kbd className="rounded border border-border bg-card px-1 font-mono text-[10px]">Ctrl/Cmd+D</kbd> duplicate</p><p><kbd className="rounded border border-border bg-card px-1 font-mono text-[10px]">Arrow keys</kbd> nudge · Shift = 5px</p></div></div></div>}
+          </div> : <div className="space-y-4 p-4"><div className="rounded-lg border border-dashed border-border bg-muted/30 p-3 text-xs leading-5 text-muted-foreground">Select a layer or click an element on the label to edit its binding, position, size, and rotation.</div><div className="rounded-lg bg-muted/40 p-3"><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Shortcuts</p><div className="mt-2 space-y-1.5 text-[13px] text-muted-foreground"><p><kbd className="rounded border border-border bg-card px-1 font-mono text-[10px]">Delete</kbd> remove selected</p><p><kbd className="rounded border border-border bg-card px-1 font-mono text-[10px]">Ctrl/Cmd+D</kbd> duplicate</p><p><kbd className="rounded border border-border bg-card px-1 font-mono text-[10px]">Arrow keys</kbd> nudge · Shift = 5px</p></div></div></div>}
           <div className="border-t border-border px-4 py-3 text-[10px] leading-4 text-muted-foreground"><span className="font-medium text-foreground">Live preview</span> uses the first pool record. Save the layout when you are ready to print.</div>
         </aside> */}
       </div>
@@ -1711,7 +1711,7 @@ export function FabricDesignerHost({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50/80 px-3 py-2">
-        <span className="mr-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Add</span>
+        <span className="mr-1 text-[13px] font-semibold uppercase tracking-[0.14em] text-slate-500">Add</span>
         <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5" onClick={addText}>
           <Type className="size-3.5" /> Text
         </Button>
@@ -1768,7 +1768,7 @@ export function FabricDesignerHost({
                   className="mt-1.5 h-9 font-mono text-xs"
                   spellCheck={false}
                 />
-                <p className="mt-1.5 text-[11px] leading-4 text-slate-500">Use keys such as <code>serial</code>, <code>qr</code>, or <code>productName</code>.</p>
+                <p className="mt-1.5 text-[13px] leading-4 text-slate-500">Use keys such as <code>serial</code>, <code>qr</code>, or <code>productName</code>.</p>
               </div>
               <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
                 <div className="flex items-center justify-between gap-2"><span>Element</span><span className="font-medium text-slate-900">{selectedObject.labelMeta.kind}</span></div>
@@ -1779,7 +1779,7 @@ export function FabricDesignerHost({
             <div className="mt-5 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-500">Select an element to edit its binding key and arrange its layer.</div>
           )}
 
-          <div className="mt-6 border-t border-slate-100 pt-4 text-[11px] leading-5 text-slate-500">
+          <div className="mt-6 border-t border-slate-100 pt-4 text-[13px] leading-5 text-slate-500">
             <div className="flex items-center gap-1.5 font-medium text-slate-700"><Minus className="size-3.5" /> {pageSize.width} × {pageSize.height} mm</div>
             <p className="mt-1">The live preview uses real batch values. The canvas is the layout editor.</p>
           </div>

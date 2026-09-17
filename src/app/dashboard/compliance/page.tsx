@@ -139,7 +139,7 @@ function ComplianceOverviewWorkspace() {
         <div className="flex items-center gap-4">
           {data && (
             <div className="text-right">
-              <p className="text-[11px] uppercase tracking-wide text-faint">
+              <p className="text-[13px] uppercase tracking-wide text-faint">
                 Enforcement
               </p>
               <p className="font-mono text-sm font-semibold text-foreground">
@@ -576,7 +576,7 @@ function FacilityRow({ facility }: { facility: FacilityCompliance }) {
         </div>
         <div className="flex items-center gap-2">
           {!facility.active && (
-            <span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+            <span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[13px] font-medium text-muted-foreground">
               Closed
             </span>
           )}

@@ -216,7 +216,7 @@ export function RichTextEditor({
         {maxLength && (
           <span
             className={cn(
-              "ml-auto text-[11px] font-medium tabular-nums",
+              "ml-auto text-[13px] font-medium tabular-nums",
               nearLimit ? "text-amber-600" : "text-muted-foreground",
             )}
           >

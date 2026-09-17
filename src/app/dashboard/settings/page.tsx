@@ -34,9 +34,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { useMe, useChangePassword, useUpdateProfile, useDisableMfa } from "@/hooks/auth";
+import { useMe, useChangePassword, useUpdateProfile, useDisableMfa, useRequestEmailChange, useCancelEmailChange } from "@/hooks/auth";
 import { TeamMembersPanel } from "@/components/dashboard/team-members-panel";
 import { isPasswordAllowed, PASSWORD_POLICY_MESSAGE } from "@/lib/password-policy";
 import { ROLE_LABELS } from "@/lib/user-roles";
@@ -95,7 +96,11 @@ const NAV_ITEMS: NavItem[] = [
 
 function ProfilePanel({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]> }) {
   const update = useUpdateProfile();
+  const requestEmailChange = useRequestEmailChange();
+  const cancelEmailChange = useCancelEmailChange();
   const [avatarOpen, setAvatarOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailPassword, setEmailPassword] = useState("");
   const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm({
     defaultValues: { fullName: me.fullName ?? "" },
   });
@@ -112,6 +117,26 @@ function ProfilePanel({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]
       },
     );
   }
+
+  function onRequestEmailChange() {
+    const email = newEmail.trim();
+    if (!email || !emailPassword) return;
+    requestEmailChange.mutate(
+      { email, password: emailPassword },
+      {
+        onSuccess: () => {
+          setNewEmail("");
+          setEmailPassword("");
+          toast.success(
+            `Verification sent to ${email}. Your current email stays until you confirm (30 minutes).`,
+          );
+        },
+        onError: (e) => toast.error(getApiErrorMessage(e)),
+      },
+    );
+  }
+
+  const pendingEmail = me.pendingEmail ?? null;
 
   return (
     <div className="space-y-6">
@@ -130,7 +155,7 @@ function ProfilePanel({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]
 
       {/* Avatar block */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-2">
           <div className="flex min-w-0 flex-wrap items-center gap-5">
             <div className="relative shrink-0">
               <UserAvatar
@@ -143,7 +168,7 @@ function ProfilePanel({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]
             <div className="min-w-0">
               <p className="truncate text-base font-semibold">{me.fullName ?? "—"}</p>
               <p className="truncate text-sm text-muted-foreground">{me.email}</p>
-              <Badge variant="outline" className="mt-1.5 text-[11px]">
+              <Badge variant="outline" className="mt-1.5 text-[13px]">
                 {ROLE_LABELS[me.role] ?? me.role}
               </Badge>
               <div className="mt-3">
@@ -182,14 +207,6 @@ function ProfilePanel({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]
             </div>
 
             <div className="space-y-1.5">
-              <Label>Email address</Label>
-              <Input value={me.email} disabled className="bg-muted/40 text-muted-foreground" />
-              <p className="text-[11px] text-muted-foreground">
-                Contact an administrator to change your email.
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
               <Label>User ID</Label>
               <Input value={String(me.id)} disabled className="bg-muted/40 font-mono text-xs text-muted-foreground" />
             </div>
@@ -206,6 +223,89 @@ function ProfilePanel({ me }: { me: NonNullable<ReturnType<typeof useMe>["data"]
               )}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold">Email address</CardTitle>
+          <CardDescription>
+            Current sign-in email stays active until you verify the new inbox.
+            Verification links expire in 30 minutes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="max-w-sm space-y-4">
+          <div className="space-y-1.5">
+            <Label>Current email</Label>
+            <Input value={me.email} disabled className="bg-muted/40 text-muted-foreground" />
+          </div>
+
+          {pendingEmail ? (
+            <div className="space-y-3 rounded-lg border border-warning/40 bg-warning/10 p-3">
+              <p className="text-sm text-foreground">
+                Pending verification: <span className="font-medium">{pendingEmail}</span>
+              </p>
+              {me.pendingEmailExpiresAt ? (
+                <p className="text-xs text-muted-foreground">
+                  Expires {new Date(me.pendingEmailExpiresAt).toLocaleString()}
+                </p>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={cancelEmailChange.isPending}
+                onClick={() =>
+                  cancelEmailChange.mutate(undefined, {
+                    onSuccess: () => toast.success("Pending email change cancelled"),
+                    onError: (e) => toast.error(getApiErrorMessage(e)),
+                  })
+                }
+              >
+                Cancel pending change
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="profile-new-email">New email</Label>
+                <Input
+                  id="profile-new-email"
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  autoComplete="off"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="profile-email-password">Current password</Label>
+                <PasswordInput
+                  id="profile-email-password"
+                  value={emailPassword}
+                  onChange={(e) => setEmailPassword(e.target.value)}
+                  placeholder="Confirm with your password"
+                  autoComplete="current-password"
+                />
+              </div>
+              <Button
+                type="button"
+                disabled={
+                  !newEmail.trim() ||
+                  !emailPassword ||
+                  newEmail.trim().toLowerCase() === me.email.toLowerCase() ||
+                  requestEmailChange.isPending
+                }
+                onClick={onRequestEmailChange}
+              >
+                {requestEmailChange.isPending ? (
+                  <><Loader2 className="mr-1.5 size-3.5 animate-spin" /> Sending…</>
+                ) : (
+                  "Send verification"
+                )}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -379,9 +479,8 @@ function SecurityPanel() {
           >
             <div className="space-y-1.5">
               <Label htmlFor="disable-password">Current password</Label>
-              <Input
+              <PasswordInput
                 id="disable-password"
-                type="password"
                 autoComplete="current-password"
                 placeholder="Enter your current password"
                 {...disableForm.register("password", { required: "Required" })}
@@ -446,8 +545,7 @@ function SecurityPanel() {
           <form onSubmit={handleSubmit(onSubmit)} className="max-w-sm space-y-4">
             <div className="space-y-1.5">
               <Label>Current password</Label>
-              <Input
-                type="password"
+              <PasswordInput
                 autoComplete="current-password"
                 placeholder="Enter your current password"
                 {...register("currentPassword", { required: "Required" })}
@@ -459,8 +557,7 @@ function SecurityPanel() {
 
             <div className="space-y-1.5">
               <Label>New password</Label>
-              <Input
-                type="password"
+              <PasswordInput
                 autoComplete="new-password"
                 placeholder="At least 12 characters, letter + number"
                 {...register("newPassword", {
@@ -475,8 +572,7 @@ function SecurityPanel() {
 
             <div className="space-y-1.5">
               <Label>Confirm new password</Label>
-              <Input
-                type="password"
+              <PasswordInput
                 autoComplete="new-password"
                 placeholder="Re-enter your new password"
                 {...register("confirmPassword", {

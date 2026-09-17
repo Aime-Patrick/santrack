@@ -43,7 +43,7 @@ function CartLineRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-foreground">{line.productName}</p>
         <div className="mt-0.5 flex flex-wrap items-center gap-2">
-          <span className="font-mono text-[11px] text-muted-foreground">{line.code}</span>
+          <span className="font-mono text-[13px] text-muted-foreground">{line.code}</span>
           <Badge variant="outline" className="h-4 px-1.5 py-0 text-[10px]">
             {line.itemKind === "PACKAGE"
               ? `Whole ${(line.packageType ?? "package").toLowerCase()}`
@@ -204,7 +204,7 @@ export default function POSPage() {
                   <ShoppingCart className="size-4 text-primary" />
                   Cart
                   {cart.length > 0 && (
-                    <Badge className="ml-1 h-5 bg-primary px-1.5 py-0 text-[11px] text-white">
+                    <Badge className="ml-1 h-5 bg-primary px-1.5 py-0 text-[13px] text-white">
                       {cart.length}
                     </Badge>
                   )}

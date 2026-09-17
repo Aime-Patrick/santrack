@@ -318,7 +318,7 @@ function DetailRow({
 }) {
   return (
     <div className="rounded-xl border border-border/80 bg-[#f8fafc] p-3.5 space-y-1 shadow-2xs">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <p className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </p>
       <p className={cn("text-sm font-medium text-foreground", mono && "font-mono")}>
@@ -404,7 +404,7 @@ function ProductDetailsCard({
 
           {product.specification && (
             <div className="space-y-1.5 rounded-xl border border-border/80 bg-[#f8fafc] p-4">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Technical Specifications
               </span>
               <p className="text-sm whitespace-pre-wrap text-foreground">

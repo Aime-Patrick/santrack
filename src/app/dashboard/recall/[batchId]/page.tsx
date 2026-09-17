@@ -501,7 +501,7 @@ export default function RecallDetailPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <span
                             className={cn(
-                              "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium tracking-wide",
+                              "inline-flex items-center rounded-full px-2.5 py-0.5 text-[13px] font-medium tracking-wide",
                               badgeClass,
                             )}
                           >
@@ -515,12 +515,12 @@ export default function RecallDetailPage() {
                             {new Date(evt.occurredAt).toLocaleString()}
                           </span>
                           {evt.quantity > 0 && (
-                            <span className="font-mono text-[11px] font-semibold text-foreground/70">
+                            <span className="font-mono text-[13px] font-semibold text-foreground/70">
                               {evt.quantity.toLocaleString()} units
                             </span>
                           )}
                           {evt.batchCode && (
-                            <span className="font-mono text-[11px] text-muted-foreground">
+                            <span className="font-mono text-[13px] text-muted-foreground">
                               {evt.batchCode}
                             </span>
                           )}
@@ -629,7 +629,7 @@ export default function RecallDetailPage() {
                 <AlertTriangle className="size-5" />
               </div>
               <div>
-                <p className="mb-0.5 text-[11px] font-bold uppercase tracking-[0.14em] text-warning-foreground">
+                <p className="mb-0.5 text-[13px] font-bold uppercase tracking-[0.14em] text-warning-foreground">
                   Regulatory action
                 </p>
                 <DialogTitle>Lift recall — lot {recall.batchNumber}</DialogTitle>

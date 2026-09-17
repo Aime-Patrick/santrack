@@ -223,7 +223,7 @@ function NewAnnouncementDialog({ onCreated }: NewAnnouncementDialogProps) {
               placeholder={slugify(titleValue) || "auto-generated-from-title"}
               {...register("slug")}
             />
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               Leave blank to generate automatically from the title.
             </p>
           </div>
@@ -621,7 +621,7 @@ export default function AnnouncementsPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge
                         variant="outline"
-                        className={`text-[11px] ${CATEGORY_COLORS[post.category]}`}
+                        className={`text-[13px] ${CATEGORY_COLORS[post.category]}`}
                       >
                         {CATEGORY_LABELS[post.category]}
                       </Badge>
@@ -629,8 +629,8 @@ export default function AnnouncementsPage() {
                         variant="outline"
                         className={
                           post.published
-                            ? "text-[11px] bg-green-50 text-green-700 border-green-200"
-                            : "text-[11px] bg-amber-50 text-amber-600 border-amber-200"
+                            ? "text-[13px] bg-green-50 text-green-700 border-green-200"
+                            : "text-[13px] bg-amber-50 text-amber-600 border-amber-200"
                         }
                       >
                         {post.published ? (
@@ -705,7 +705,7 @@ export default function AnnouncementsPage() {
                     </span>
                   </span>
                   {post.readTime && <span>{post.readTime}</span>}
-                  <span className="font-mono text-[11px] text-slate-400">
+                  <span className="font-mono text-[13px] text-slate-400">
                     /{post.slug}
                   </span>
                 </div>

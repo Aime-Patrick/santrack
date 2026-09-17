@@ -1144,7 +1144,7 @@ function Section({
 }) {
   return (
     <div>
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-faint">
+      <p className="mb-2 text-[13px] font-bold uppercase tracking-wider text-faint">
         {title}
       </p>
       <div className="space-y-1.5">{children}</div>
@@ -1191,7 +1191,7 @@ function ContentsList({
 }) {
   return (
     <div>
-      <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-faint">
+      <p className="mb-2 text-[13px] font-bold uppercase tracking-wider text-faint">
         {title}
       </p>
       {items.length === 0 ? (

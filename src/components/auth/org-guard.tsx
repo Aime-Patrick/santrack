@@ -343,7 +343,7 @@ export function RegistrationStatusScreen({
             <CardContent className="p-6 space-y-5">
               {organization.reviewNote ? (
                 <div className="rounded-xl border border-amber-300/80 bg-amber-50 dark:bg-amber-950/30 p-4 text-xs">
-                  <p className="font-semibold text-amber-900 dark:text-amber-200 uppercase tracking-wide text-[11px] mb-1">
+                  <p className="font-semibold text-amber-900 dark:text-amber-200 uppercase tracking-wide text-[13px] mb-1">
                     What the regulator requires:
                   </p>
                   <p className="text-foreground leading-relaxed text-sm whitespace-pre-line font-medium">
@@ -400,7 +400,7 @@ export function RegistrationStatusScreen({
                   <span className="text-xs font-semibold text-foreground">
                     {uploading ? "Uploading document to secure storage..." : "Click or drag file to attach"}
                   </span>
-                  <span className="text-[11px] text-muted-foreground mt-0.5">
+                  <span className="text-[13px] text-muted-foreground mt-0.5">
                     PDF, JPEG, PNG or WebP (Max 5 MB)
                   </span>
                   <input

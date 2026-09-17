@@ -13,7 +13,7 @@ export function TrustedBySection() {
         <div className="flex flex-col lg:flex-row items-center gap-5 lg:gap-6">
           {/* Left Title */}
           <div className="shrink-0 text-center lg:text-left">
-            <p className="text-[11px] sm:text-[12px] font-bold tracking-[0.13em] uppercase text-[#0057b8] max-w-[180px] leading-snug">
+            <p className="text-[13px] sm:text-[12px] font-bold tracking-[0.13em] uppercase text-[#0057b8] max-w-[180px] leading-snug">
               {t("trustedBy")}
             </p>
           </div>
@@ -147,7 +147,7 @@ export function TrustedBySection() {
 
               {/* AND MORE */}
               <div className="flex items-center justify-center pl-4 lg:pl-5">
-                <span className="text-[10px] sm:text-[11px] font-extrabold text-slate-400 tracking-wider whitespace-nowrap">
+                <span className="text-[10px] sm:text-[13px] font-extrabold text-slate-400 tracking-wider whitespace-nowrap">
                   AND MORE...
                 </span>
               </div>

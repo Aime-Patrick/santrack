@@ -51,11 +51,11 @@ export function LicenceSummaryPanel({
           </span>
         </span>
 
-        <span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+        <span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[13px] font-medium text-muted-foreground">
           {licence.status}
         </span>
 
-        <span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+        <span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-[13px] font-medium text-muted-foreground">
           {licence.grain === "FACILITY" ? "Site licence" : "Company licence"}
         </span>
       </div>
@@ -111,7 +111,7 @@ function Fact({
 }) {
   return (
     <div>
-      <dt className="text-[11px] uppercase tracking-wide text-faint">{label}</dt>
+      <dt className="text-[13px] uppercase tracking-wide text-faint">{label}</dt>
       <dd className="mt-0.5 flex items-center gap-1 font-medium text-foreground">
         {Icon && <Icon className="size-3 text-faint" />}
         {value}

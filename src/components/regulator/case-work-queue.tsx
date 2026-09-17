@@ -25,7 +25,7 @@ import {
 import { useAssignRegulatoryCase, useAssignRegulatoryCaseTeam, useCaseInspections, useChangeRegulatoryCaseStatus, useRecordRegulatoryInspection, useRegulatoryCase, useRegulatoryCases, useRegulatoryOfficers } from "@/hooks/regulatory-cases";
 import { regulatoryCaseService, type RegulatoryCase, type RegulatoryCaseStatus, type RegulatoryInspectionResult } from "@/services/regulatory-case.service";
 import { cn } from "@/lib/utils";
-import { useMyRegulatoryAuthority, useRegulatoryAuthorities } from "@/hooks/regulatory-authorities";
+import { useActiveAuthorityTeams, useMyRegulatoryAuthority, useRegulatoryAuthorities } from "@/hooks/regulatory-authorities";
 import { useReferRegulatoryCase } from "@/hooks/regulatory-referrals";
 import { AccountabilityLedger } from "@/components/regulator/accountability-ledger";
 import { InspectionPlanner } from "@/components/regulator/inspection-planner";
@@ -72,7 +72,8 @@ function dueLabel(dueOn: string | null) {
 export function CaseWorkQueue() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { data: cases = [], isLoading } = useRegulatoryCases();
+  const [scope, setScope] = useState<"all" | "mine" | "team">("all");
+  const { data: cases = [], isLoading } = useRegulatoryCases(undefined, scope);
   const caseFromUrl = Number(searchParams.get("case")) || null;
   const [selectedId, setSelectedId] = useState<number | null>(caseFromUrl);
   const activeCases = cases.filter((caseRecord) => caseRecord.status !== "CLOSED");
@@ -108,14 +109,41 @@ export function CaseWorkQueue() {
     <div className="space-y-5">
       <InspectionPlanner onOpenCase={openCase} />
       <Card className="overflow-hidden">
-        <CardHeader className="flex-row items-center justify-between space-y-0 border-b border-border/70 py-4">
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0 border-b border-border/70 py-4">
           <div>
             <CardTitle className="text-base">Casework</CardTitle>
-            <p className="mt-1 text-sm text-muted-foreground">Only work that needs an accountable decision.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Only work that needs an accountable decision.
+            </p>
           </div>
-          <Badge variant="outline" className="border-transparent bg-blue-600 text-white">
-            {activeCases.length} active
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-lg border border-border/80 bg-muted/40 p-0.5">
+              {(
+                [
+                  { id: "all", label: "All" },
+                  { id: "mine", label: "My queue" },
+                  { id: "team", label: "My team" },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setScope(tab.id)}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                    scope === tab.id
+                      ? "bg-white text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <Badge variant="outline" className="border-transparent bg-blue-600 text-white">
+              {activeCases.length} active
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
@@ -124,7 +152,13 @@ export function CaseWorkQueue() {
             <div className="px-5 py-10 text-center">
               <CheckCircle2 className="mx-auto size-7 text-success" />
               <p className="mt-3 text-sm font-medium">No active cases</p>
-              <p className="mt-1 text-sm text-muted-foreground">New findings, inspections, and recalls will appear here when they need ownership.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {scope === "mine"
+                  ? "Nothing assigned to you right now."
+                  : scope === "team"
+                    ? "No cases on your teams yet. Join a team in Authority setup."
+                    : "New findings, inspections, and recalls will appear here when they need ownership."}
+              </p>
             </div>
           ) : (
             <Table>
@@ -134,11 +168,12 @@ export function CaseWorkQueue() {
                   <TableHead>Organisation</TableHead>
                   <TableHead>Deadline</TableHead>
                   <TableHead>Owner</TableHead>
+                  <TableHead>Team</TableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {activeCases.slice(0, 8).map((caseRecord) => (
+                {activeCases.slice(0, 20).map((caseRecord) => (
                   <TableRow
                     key={caseRecord.id}
                     className="cursor-pointer"
@@ -160,6 +195,7 @@ export function CaseWorkQueue() {
                       </span>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{caseRecord.assignedTo?.name ?? "Unassigned"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{caseRecord.assignedTeam ?? "—"}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className={cn("text-[10px]", STATUS_TONE[caseRecord.status])}>
                         {STATUS_LABEL[caseRecord.status]}
@@ -187,6 +223,7 @@ function CaseDetailSheet({ caseId, onOpenChange }: { caseId: number | null; onOp
   const { data: officers = [] } = useRegulatoryOfficers();
   const { data: authorities = [] } = useRegulatoryAuthorities();
   const { data: authority } = useMyRegulatoryAuthority(true);
+  const { data: teams = [] } = useActiveAuthorityTeams(true);
   const referCase = useReferRegulatoryCase();
   const [recordingInspection, setRecordingInspection] = useState(false);
   const [referring, setReferring] = useState(false);
@@ -242,7 +279,26 @@ function CaseDetailSheet({ caseId, onOpenChange }: { caseId: number | null; onOp
     assignCase.mutate({ id: caseRecord.id, officerId: Number(officerId) });
   };
 
-  const assignToTeam = (team: string) => { if (caseRecord && team) assignTeam.mutate({ id: caseRecord.id, team }); };
+  const assignToTeam = (value: string) => {
+    if (!caseRecord || !value) return;
+    if (teams.length > 0) {
+      assignTeam.mutate({ id: caseRecord.id, teamId: Number(value) });
+      return;
+    }
+    assignTeam.mutate({ id: caseRecord.id, team: value });
+  };
+
+  const preferredOfficers = (() => {
+    const teamId = caseRecord?.assignedTeamId;
+    const teamName = caseRecord?.assignedTeam;
+    const desk =
+      (teamId != null ? teams.find((team) => team.id === teamId) : undefined) ??
+      (teamName ? teams.find((team) => team.name === teamName) : undefined);
+    if (!desk || desk.members.length === 0) return officers;
+    const memberIds = new Set(desk.members.map((member) => member.userId));
+    const onTeam = officers.filter((officer) => memberIds.has(officer.id));
+    return onTeam.length > 0 ? onTeam : officers;
+  })();
 
   const submitReferral = () => {
     if (!caseRecord || !toAuthorityId || referralReason.trim().length < 3) return;
@@ -270,14 +326,27 @@ function CaseDetailSheet({ caseId, onOpenChange }: { caseId: number | null; onOp
                   <p className="text-xs text-muted-foreground">Owner</p>
                   <select aria-label="Assign case owner" className="mt-1 w-full bg-transparent text-sm font-medium outline-none" value={caseRecord.assignedTo?.id ?? ""} disabled={assignCase.isPending} onChange={(event) => assignTo(event.target.value)}>
                     <option value="">Needs assignment</option>
-                    {officers.map((officer) => <option key={officer.id} value={officer.id}>{officer.name}</option>)}
+                    {preferredOfficers.map((officer) => <option key={officer.id} value={officer.id}>{officer.name}</option>)}
                   </select>
+                  {caseRecord.assignedTeam && preferredOfficers.length < officers.length ? (
+                    <p className="mt-1 text-[13px] text-muted-foreground">Showing {caseRecord.assignedTeam} members first</p>
+                  ) : null}
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Team</p>
-                  <select aria-label="Assign case team" className="mt-1 w-full bg-transparent text-sm font-medium outline-none" value={caseRecord.assignedTeam ?? ""} disabled={assignTeam.isPending} onChange={(event) => assignToTeam(event.target.value)}>
+                  <select aria-label="Assign case team" className="mt-1 w-full bg-transparent text-sm font-medium outline-none" value={caseRecord.assignedTeamId != null ? String(caseRecord.assignedTeamId) : caseRecord.assignedTeam ?? ""} disabled={assignTeam.isPending} onChange={(event) => assignToTeam(event.target.value)}>
                     <option value="">Needs team</option>
-                    {authority?.teams.map((team) => <option key={team} value={team}>{team}</option>)}
+                    {teams.length > 0
+                      ? teams.map((team) => (
+                          <option key={team.id} value={team.id}>
+                            {team.name}
+                          </option>
+                        ))
+                      : (authority?.teams ?? []).map((team) => (
+                          <option key={team} value={team}>
+                            {team}
+                          </option>
+                        ))}
                   </select>
                 </div>
                 <div><p className="text-xs text-muted-foreground">Deadline</p><p className={cn("mt-1 font-medium", dueLabel(caseRecord.dueOn).includes("overdue") && "text-danger")}>{dueLabel(caseRecord.dueOn)}</p></div>

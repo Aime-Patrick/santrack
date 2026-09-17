@@ -252,7 +252,7 @@ function QueueMixChart({
                 </li>
               ))}
               {statusFallback.length > 1 ? (
-                <li className="pt-1 text-[11px] text-muted-foreground">
+                <li className="pt-1 text-[13px] text-muted-foreground">
                   {statusFallback.map((row) => `${row.label} ${row.value}`).join(" · ")}
                 </li>
               ) : null}

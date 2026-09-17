@@ -424,7 +424,7 @@ function CompactCamera({
       {phase === "initializing" && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-slate-950/80 backdrop-blur-xs text-white">
           <Loader2 className="size-6 animate-spin text-primary" />
-          <span className="text-[11px] font-medium text-white/80">
+          <span className="text-[13px] font-medium text-white/80">
             Initializing camera…
           </span>
         </div>
@@ -507,7 +507,7 @@ function CompactCamera({
       <div className="pointer-events-none absolute bottom-2.5 inset-x-0 z-20 flex justify-center px-4">
         <div
           className={cn(
-            "flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium shadow-md backdrop-blur-md transition-all duration-200",
+            "flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-medium shadow-md backdrop-blur-md transition-all duration-200",
             phase === "scanned"
               ? "bg-success text-white"
               : phase === "detected"

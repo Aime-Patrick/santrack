@@ -512,13 +512,13 @@ function RegistrationReviewDialog({
               <p className="text-sm text-muted-foreground">
                 {typeLabel(org.type)} registration · submitted {formatDate(org.createdAt)}
                 {org.onboardingStatus === "CHANGES_REQUESTED" && (
-                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[13px] font-medium text-amber-700">
                     <AlertCircle className="size-3" />
                     Changes requested
                   </span>
                 )}
                 {org.onboardingStatus === "UNDER_CONSULTATION" && (
-                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-700">
+                  <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[13px] font-medium text-sky-700">
                     <MessageSquare className="size-3" />
                     Under consultation
                   </span>
@@ -780,7 +780,7 @@ function RegistrationReviewDialog({
                 )}>
                   <div className="flex items-center justify-between gap-2">
                     <span className={cn(
-                      "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                      "inline-flex items-center rounded-full px-2 py-0.5 text-[13px] font-semibold",
                       req.status === "RESPONDED" ? "bg-emerald-100 text-emerald-700" :
                       req.status === "EXPIRED" ? "bg-slate-100 text-slate-500" :
                       req.status === "SUPERSEDED" ? "bg-slate-100 text-slate-500" :
@@ -831,14 +831,14 @@ function RegistrationReviewDialog({
                   )}
                   {req.status === "RESPONDED" && (
                     <div className="mt-2 space-y-2 rounded-md border border-emerald-200/80 bg-white/70 p-2.5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                      <p className="text-[13px] font-semibold uppercase tracking-wide text-emerald-700">
                         Applicant reply
                       </p>
                       {req.responseData && Object.keys(req.responseData).length > 0 ? (
                         <div className="space-y-2">
                           {Object.entries(req.responseData).map(([key, value]) => (
                             <div key={key}>
-                              <p className="text-[11px] font-medium text-muted-foreground">{key}</p>
+                              <p className="text-[13px] font-medium text-muted-foreground">{key}</p>
                               <div
                                 className="prose prose-sm mt-0.5 max-w-none text-foreground [&_p]:my-1"
                                 dangerouslySetInnerHTML={{ __html: value }}
@@ -908,7 +908,7 @@ function RegistrationReviewDialog({
                 className="min-h-[80px] text-sm"
               />
               {decision === "REQUEST_CHANGES" && (
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[13px] text-muted-foreground">
                   The applicant will see this note and can upload missing documents before resubmitting.
                 </p>
               )}
@@ -1327,7 +1327,7 @@ function DocumentViewer({
             <p className="truncate text-sm font-semibold text-foreground">
               {docLabel(doc.documentType)}
             </p>
-            <p className="truncate text-[11px] text-muted-foreground">{doc.filename}</p>
+            <p className="truncate text-[13px] text-muted-foreground">{doc.filename}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">

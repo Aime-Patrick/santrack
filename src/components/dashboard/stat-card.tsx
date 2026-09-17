@@ -42,7 +42,7 @@ export function MetricCard({
     )}>
       <CardContent className="relative space-y-2 p-0">
         <div className="flex items-start justify-between gap-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:text-xs">
+          <p className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground lg:text-xs">
             {title}
           </p>
           <div className="flex shrink-0 items-center gap-2">
@@ -76,7 +76,7 @@ export function MetricCard({
 
         <div className="space-y-px">
           {trendText && (
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground lg:text-sm">
+            <div className="flex items-center gap-1 text-[13px] text-muted-foreground lg:text-sm">
               <span>{trendText}</span>
               {trendType === "up" && <ArrowUpRight className="size-3 text-success lg:size-3.5" />}
               {trendType === "down" && <ArrowDownRight className="size-3 text-danger lg:size-3.5" />}

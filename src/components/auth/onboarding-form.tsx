@@ -380,7 +380,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
               <Clock3 className="mt-0.5 size-4 shrink-0 text-[#067eda]" />
               <div>
                 <p className="text-xs font-semibold text-slate-900">What happens next</p>
-                <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                <p className="mt-0.5 text-[13px] leading-relaxed text-slate-500">
                   Regulatory officers (RSB / Rwanda FDA) will inspect your business documents.
                   You will be notified by email as soon as a decision is made.
                 </p>
@@ -390,7 +390,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
               <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[#067eda]" />
               <div>
                 <p className="text-xs font-semibold text-slate-900">Approval-gated Access</p>
-                <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">
+                <p className="mt-0.5 text-[13px] leading-relaxed text-slate-500">
                   Full supply chain operations and business dashboard tools will unlock immediately once regulatory approval is issued.
                 </p>
               </div>
@@ -447,7 +447,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                 {/* Dot */}
                 <div
                   className={cn(
-                    "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-all duration-300",
+                    "flex size-7 shrink-0 items-center justify-center rounded-full text-[13px] font-bold transition-all duration-300",
                     i < step
                       ? "bg-emerald-500 text-white"
                       : i === step
@@ -459,7 +459,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                 </div>
                 {/* Label — hidden on mobile */}
                 <span className={cn(
-                  "ml-2 text-[11px] font-semibold hidden sm:block whitespace-nowrap transition-colors",
+                  "ml-2 text-[13px] font-semibold hidden sm:block whitespace-nowrap transition-colors",
                   i === step ? "text-slate-800" : i < step ? "text-emerald-600" : "text-slate-400",
                 )}>
                   {s.label}
@@ -546,7 +546,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                         className={cn(INPUT_CLASS, "rounded-l-none font-mono")}
                       />
                     </div>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[13px] text-slate-400">
                       Used to reach you while registration is reviewed — required if you have no TIN yet.
                     </p>
                   </div>
@@ -564,7 +564,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                       onChange={(e) => setTin(e.target.value)}
                       className={cn(INPUT_CLASS, "font-mono")}
                     />
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[13px] text-slate-400">
                       Leave blank if you do not have one yet. You can add it later.
                     </p>
                   </div>
@@ -617,7 +617,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                             {selected && <Check className="size-3.5 shrink-0 text-[#067eda] mt-0.5" strokeWidth={2.5} />}
                           </div>
                           <p className="mt-2 text-xs font-semibold text-slate-900">{t.label}</p>
-                          <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">{t.hint}</p>
+                          <p className="mt-0.5 text-[13px] leading-relaxed text-slate-500">{t.hint}</p>
                         </button>
                       );
                     })}
@@ -627,7 +627,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                 <div className="space-y-2">
                   <label className={LABEL_CLASS}>
                     Industry sector
-                    <span className="ml-1 text-[11px] font-normal text-slate-400">— routes your application to the right regulator</span>
+                    <span className="ml-1 text-[13px] font-normal text-slate-400">— routes your application to the right regulator</span>
                   </label>
                   <div role="radiogroup" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {INDUSTRY_SECTORS.map((s) => {
@@ -714,7 +714,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                         className={cn(INPUT_CLASS, "rounded-l-none font-mono")}
                       />
                     </div>
-                    <p className="text-[11px] text-slate-400">Same number from step 1 — update it if needed.</p>
+                    <p className="text-[13px] text-slate-400">Same number from step 1 — update it if needed.</p>
                   </div>
                 </div>
 
@@ -723,7 +723,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                   <div className="flex items-center justify-between">
                     <label htmlFor="description" className={LABEL_CLASS}>Business description</label>
                     <span className={cn(
-                      "text-[11px] font-mono tabular-nums transition-colors duration-300",
+                      "text-[13px] font-mono tabular-nums transition-colors duration-300",
                       descWordCount >= DESC_MAX_WORDS
                         ? "text-red-500 font-semibold"
                         : descWordCount >= Math.round(DESC_MAX_WORDS * 0.7)
@@ -765,7 +765,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                 {/* Divider */}
                 <div className="flex items-center gap-2 pt-1">
                   <MapPin className="size-4 text-[#067eda] shrink-0" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Business address</span>
+                  <span className="text-[13px] font-bold uppercase tracking-wider text-slate-400">Business address</span>
                   <div className="flex-1 h-px bg-slate-100" />
                 </div>
 
@@ -868,7 +868,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                 {/* ── Certificates section header ── */}
                 <div className="flex items-center gap-2">
                   <Landmark className="size-4 text-[#067eda] shrink-0" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Certificates &amp; licences</span>
+                  <span className="text-[13px] font-bold uppercase tracking-wider text-slate-400">Certificates &amp; licences</span>
                   <div className="flex-1 h-px bg-slate-100" />
                 </div>
 
@@ -959,12 +959,12 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
 
                         {/* Required hint when file is missing */}
                         {docRequired && !doc.file && (
-                          <p className="mt-1.5 text-[11px] text-slate-400">
+                          <p className="mt-1.5 text-[13px] text-slate-400">
                             Upload required to submit your application.
                           </p>
                         )}
                         {isRdb && !hasTin && (
-                          <p className="mt-1.5 text-[11px] text-slate-400">
+                          <p className="mt-1.5 text-[13px] text-slate-400">
                             Optional until you have a TIN / RDB number.
                           </p>
                         )}
@@ -1045,7 +1045,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
 
                 <div className="flex items-center gap-2 pt-1">
                   <ShieldCheck className="size-4 text-[#067eda] shrink-0" />
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Ownership</span>
+                  <span className="text-[13px] font-bold uppercase tracking-wider text-slate-400">Ownership</span>
                   <div className="flex-1 h-px bg-slate-100" />
                 </div>
 
@@ -1056,7 +1056,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
                 >
                   <div>
                     <p className="text-xs font-semibold text-slate-700">Ownership information</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <p className="text-[13px] text-slate-400 mt-0.5">
                       {owners.length > 0
                         ? `${owners.length} owner${owners.length !== 1 ? "s" : ""} added`
                         : "Record who owns this business (required for compliance)"}
@@ -1093,7 +1093,7 @@ export function OnboardingForm({ onStart }: { onStart?: () => void } = {}) {
               Back
             </button>
 
-            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
+            <span className="text-[13px] font-mono uppercase tracking-wider text-slate-400">
               {step + 1} / {TOTAL_STEPS}
             </span>
 

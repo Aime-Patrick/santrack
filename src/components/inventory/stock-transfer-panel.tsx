@@ -341,7 +341,7 @@ function DispatchForm() {
           <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2.5">
             <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-faint">From</p>
+              <p className="text-[13px] font-semibold uppercase tracking-wider text-faint">From</p>
               <p className="text-sm text-foreground">
                 {sourceLocId
                   ? (locationList.find((l) => String(l.id) === sourceLocId)?.name ?? `Location ${sourceLocId}`)
@@ -358,7 +358,7 @@ function DispatchForm() {
           >
             <MapPin className={cn("mt-0.5 size-4 shrink-0", destOrgId ? "text-primary" : "text-muted-foreground")} />
             <div className="min-w-0 flex-1 space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-faint">To</p>
+              <p className="text-[13px] font-semibold uppercase tracking-wider text-faint">To</p>
               <SearchableSelect
                 value={destOrgId || undefined}
                 onValueChange={(v) => { setDestOrgId(v ?? ""); setDestLocId(""); setDestinationLocationName(null); }}

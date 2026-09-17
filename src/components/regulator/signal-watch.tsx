@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { useRegulatorySignals } from "@/hooks/regulatory-signals";
 import { FLAG_DANGER, FLAG_YELLOW } from "@/lib/badge-tones";
-import { INTEL_PAGE_SIZE, QueueToolbar } from "@/components/regulator/queue-toolbar";
+import { INTEL_PAGE_SIZE, QueuePagination, QueueSearch } from "@/components/regulator/queue-toolbar";
 import type { RegulatorySignal } from "@/services/regulatory-signal.service";
 
 function openSignal(signal: RegulatorySignal) {
@@ -78,14 +78,10 @@ export function SignalWatch() {
           </div>
         ) : (
           <>
-            <QueueToolbar
+            <QueueSearch
               query={query}
               onQuery={setQuery}
               placeholder="Search signal, batch, identity, or severity…"
-              total={filtered.length}
-              page={safePage}
-              pageSize={INTEL_PAGE_SIZE}
-              onPage={setPage}
             />
             {filtered.length === 0 ? (
               <p className="px-5 py-8 text-center text-sm text-muted-foreground">
@@ -148,6 +144,12 @@ export function SignalWatch() {
                 </TableBody>
               </Table>
             )}
+            <QueuePagination
+              total={filtered.length}
+              page={safePage}
+              pageSize={INTEL_PAGE_SIZE}
+              onPage={setPage}
+            />
           </>
         )}
       </CardContent>

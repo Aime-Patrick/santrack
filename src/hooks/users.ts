@@ -45,6 +45,15 @@ export function useUpdateUser() {
   });
 }
 
+export function useRequestUserEmailChange() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, email }: { userId: number; email: string }) =>
+      userService.requestEmailChange(userId, email),
+    onSuccess: () => qc.invalidateQueries({ queryKey: userKeys.all }),
+  });
+}
+
 export function useResetPassword() {
   return useMutation({
     mutationFn: ({ userId, input }: { userId: number; input: ResetPasswordInput }) =>

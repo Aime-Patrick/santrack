@@ -415,7 +415,7 @@ export default function ConsumerVerifyPage() {
                 type="button"
                 onClick={() => void toggleCamera()}
                 disabled={!cameraActive}
-                className="flex items-center gap-1.5 text-[11px] font-semibold text-white/45 underline underline-offset-4 transition-colors hover:text-white/80 disabled:pointer-events-none disabled:opacity-30"
+                className="flex items-center gap-1.5 text-[13px] font-semibold text-white/45 underline underline-offset-4 transition-colors hover:text-white/80 disabled:pointer-events-none disabled:opacity-30"
               >
                 <RotateCw className="size-3" />
                 {t("switchCamera")}
@@ -468,7 +468,7 @@ export default function ConsumerVerifyPage() {
           ].map(({ icon, label }) => (
             <span
               key={label}
-              className="flex max-w-full items-center gap-1.5 text-[11px] font-semibold text-white/60"
+              className="flex max-w-full items-center gap-1.5 text-[13px] font-semibold text-white/60"
             >
               {icon}
               <span className="truncate">{label}</span>

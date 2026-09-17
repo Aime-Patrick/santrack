@@ -189,7 +189,7 @@ export function PrepareCodesDialog({
               className="h-10 font-mono"
               autoFocus
             />
-            <p className="text-[11px] leading-4 text-muted-foreground">
+            <p className="text-[13px] leading-4 text-muted-foreground">
               Each code is a permanent unit identity (one QR per physical unit).
             </p>
           </div>
@@ -239,7 +239,7 @@ function PoolCard({ pool, slug }: { pool: IdentityPool; slug: string }) {
       <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:items-center lg:gap-4">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
               Run
             </p>
             <p className="mt-0.5 font-mono text-sm font-bold text-foreground">
@@ -247,7 +247,7 @@ function PoolCard({ pool, slug }: { pool: IdentityPool; slug: string }) {
             </p>
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
               Codes
             </p>
             <p className="mt-0.5 font-mono text-sm font-semibold text-foreground">
@@ -255,7 +255,7 @@ function PoolCard({ pool, slug }: { pool: IdentityPool; slug: string }) {
             </p>
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
               Status
             </p>
             <div className="mt-1">
@@ -263,7 +263,7 @@ function PoolCard({ pool, slug }: { pool: IdentityPool; slug: string }) {
             </div>
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
               Created
             </p>
             <p className="mt-0.5 text-sm text-muted-foreground">

@@ -111,7 +111,7 @@ export function PageHeroHeader({
             >
               <span className="w-6 sm:w-7 h-[3px] bg-rwanda-yellow rounded-full" />
               {kickerIcon}
-              <span className="text-rwanda-yellow text-[11px] sm:text-xs font-bold tracking-[0.2em] uppercase">
+              <span className="text-rwanda-yellow text-[13px] sm:text-xs font-bold tracking-[0.2em] uppercase">
                 {kicker}
               </span>
             </motion.div>

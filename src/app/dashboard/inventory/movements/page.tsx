@@ -42,7 +42,7 @@ function StatusBadge({ status }: { status: string }) {
     <Badge
       variant="outline"
       className={cn(
-        "flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5",
+        "flex items-center gap-1 text-[13px] font-semibold px-2 py-0.5",
         STATUS_STYLES[status] ?? "border-border/60 bg-muted/50 text-muted-foreground"
       )}
     >
@@ -99,7 +99,7 @@ function TransferRow({
           {direction === "outgoing" ? "→" : "←"} {counterparty}
           {transfer.destinationLocationName && ` · ${transfer.destinationLocationName}`}
         </p>
-        <p className="text-[11px] text-muted-foreground/70 mt-0.5">{dateLabel}</p>
+        <p className="text-[13px] text-muted-foreground/70 mt-0.5">{dateLabel}</p>
       </div>
 
       {/* Line count */}

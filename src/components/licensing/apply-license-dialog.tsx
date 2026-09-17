@@ -272,7 +272,7 @@ export function ApplyLicenseDialog({
               {/* Existing / Active Licenses Summary (if any) */}
               {heldCategories.length > 0 && (
                 <div className="space-y-2">
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Label className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Active & In-Progress Licenses ({heldCategories.length})
                   </Label>
                   <div className="space-y-2">
@@ -295,7 +295,7 @@ export function ApplyLicenseDialog({
                               </p>
                               <span
                                 className={cn(
-                                  "inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium",
+                                  "inline-flex items-center gap-1 rounded px-2 py-0.5 text-[13px] font-medium",
                                   isActive
                                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
                                     : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
@@ -334,7 +334,7 @@ export function ApplyLicenseDialog({
               {/* Available Licenses to Apply */}
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Label className="text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Available Licenses to Apply
                   </Label>
                   <span className="text-xs text-muted-foreground">
@@ -401,7 +401,7 @@ export function ApplyLicenseDialog({
                             </div>
 
                             {category.requiredDocuments.length > 0 && isSelected && (
-                              <div className="mt-2 border-t border-border pt-1.5 text-[11px] text-muted-foreground">
+                              <div className="mt-2 border-t border-border pt-1.5 text-[13px] text-muted-foreground">
                                 <span className="font-medium text-foreground">
                                   Required Docs:
                                 </span>{" "}

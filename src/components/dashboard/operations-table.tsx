@@ -82,20 +82,20 @@ const DEFAULT_TABS: OperationTab[] = [
 function StatusBadge({ status }: { status: OperationStatus }) {
   if (status === "Completed")
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#00953C]">
+      <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#00953C]">
         <span className="size-2 rounded-full bg-[#00953C]" />
         Completed
       </span>
     );
   if (status === "In Process")
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#067eda]">
+      <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#067eda]">
         <span className="size-2 rounded-full bg-[#067eda]" />
         In Process
       </span>
     );
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#b8860b]">
+    <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#b8860b]">
       <span className="size-2 rounded-full bg-[#fac600]" />
       Pending Review
     </span>
@@ -129,7 +129,7 @@ const columns: ColumnDef<TableFeatures, OperationRow>[] = [
     accessorKey: "category",
     header: "Category",
     cell: ({ row }) => (
-      <span className="inline-flex rounded-full border border-border/80 bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+      <span className="inline-flex rounded-full border border-border/80 bg-muted/40 px-2 py-0.5 text-[13px] font-medium text-muted-foreground whitespace-nowrap">
         {row.original.category}
       </span>
     ),

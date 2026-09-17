@@ -115,7 +115,7 @@ export function ModulesSection() {
                       <Icon className={`size-5 ${mod.color}`} />
                     </div>
                     <p className="text-sm font-bold text-slate-800">{mod.title}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5 leading-tight">{mod.desc}</p>
+                    <p className="text-[13px] text-slate-400 mt-0.5 leading-tight">{mod.desc}</p>
                   </motion.div>
                 );
               })}
@@ -134,7 +134,7 @@ export function ModulesSection() {
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50">
                 <h3 className="text-sm font-bold text-slate-800">Business Overview</h3>
-                <span className="text-[11px] text-slate-400 bg-slate-50 px-3 py-1 rounded-full border">
+                <span className="text-[13px] text-slate-400 bg-slate-50 px-3 py-1 rounded-full border">
                   May 1 – May 31, 2026
                 </span>
               </div>
@@ -142,11 +142,11 @@ export function ModulesSection() {
               <div className="p-5 space-y-5">
                 {/* Revenue */}
                 <div>
-                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide mb-1">Revenue Overview</p>
+                  <p className="text-[13px] text-slate-400 font-medium uppercase tracking-wide mb-1">Revenue Overview</p>
                   <div className="flex items-end gap-3">
                     <div>
                       <p className="text-2xl font-extrabold text-slate-900">RWF 128,450,000</p>
-                      <p className="text-[11px] text-green-600 font-semibold flex items-center gap-1 mt-0.5">
+                      <p className="text-[13px] text-green-600 font-semibold flex items-center gap-1 mt-0.5">
                         <TrendingUp className="size-3" /> +18.5% from last month
                       </p>
                     </div>
@@ -171,7 +171,7 @@ export function ModulesSection() {
                 <div className="grid grid-cols-2 gap-4 pt-2">
                   {/* Recent Activities */}
                   <div>
-                    <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide mb-2">Recent Activities</p>
+                    <p className="text-[13px] text-slate-400 font-medium uppercase tracking-wide mb-2">Recent Activities</p>
                     <div className="space-y-2">
                       {RECENT.map((r) => (
                         <div key={r.id} className="flex items-start gap-2">
@@ -189,7 +189,7 @@ export function ModulesSection() {
 
                   {/* Tasks */}
                   <div>
-                    <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide mb-2">Tasks</p>
+                    <p className="text-[13px] text-slate-400 font-medium uppercase tracking-wide mb-2">Tasks</p>
                     <div className="space-y-1.5">
                       {TASKS.map((t) => (
                         <div key={t} className="flex items-start gap-1.5">

@@ -187,7 +187,7 @@ export function MapPickerModal({
               <MapPin className="size-4 text-primary" />
               Select Premise Location
             </DialogTitle>
-            <DialogDescription className="text-[11px] text-muted-foreground">
+            <DialogDescription className="text-[13px] text-muted-foreground">
               Click on the map or drag the pin · Search address or jump to a district
             </DialogDescription>
           </div>
@@ -316,7 +316,7 @@ export function MapPickerModal({
           {/* Fine-tune inputs */}
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1.5">
-              <Label className="text-[11px] font-medium text-muted-foreground shrink-0">Lat</Label>
+              <Label className="text-[13px] font-medium text-muted-foreground shrink-0">Lat</Label>
               <input
                 type="number"
                 step="0.00001"
@@ -329,7 +329,7 @@ export function MapPickerModal({
               />
             </div>
             <div className="flex items-center gap-1.5">
-              <Label className="text-[11px] font-medium text-muted-foreground shrink-0">Lng</Label>
+              <Label className="text-[13px] font-medium text-muted-foreground shrink-0">Lng</Label>
               <input
                 type="number"
                 step="0.00001"

@@ -257,7 +257,7 @@ export function RegulatorFollowUpPanel({
 
                   {/* Token sent indicator */}
                   {isOpen && fu.responseToken && !fu.responseTokenUsed && (
-                    <div className="flex items-center gap-1.5 text-[11px] text-blue-600 dark:text-blue-400 bg-blue-500/[0.04] border border-blue-500/20 rounded px-2.5 py-1.5">
+                    <div className="flex items-center gap-1.5 text-[13px] text-blue-600 dark:text-blue-400 bg-blue-500/[0.04] border border-blue-500/20 rounded px-2.5 py-1.5">
                       <Mail className="h-3 w-3 shrink-0" />
                       <span>
                         Response link sent to holder —{" "}
@@ -270,7 +270,7 @@ export function RegulatorFollowUpPanel({
 
                   {fu.businessResponse ? (
                     <div className="bg-blue-500/[0.04] border border-blue-500/20 rounded-md p-3 space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px] font-medium text-blue-600 dark:text-blue-400">
+                      <div className="flex items-center justify-between text-[13px] font-medium text-blue-600 dark:text-blue-400">
                         <span className="flex items-center gap-1">
                           <UserCheck className="h-3.5 w-3.5" />
                           Business Rectification Submission:
@@ -283,7 +283,7 @@ export function RegulatorFollowUpPanel({
                         {fu.businessResponse}
                       </p>
                       {fu.evidenceFilename && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1">
+                        <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground pt-1">
                           <FileText className="h-3.5 w-3.5 text-primary" />
                           <span>Submitted Document: <strong>{fu.evidenceFilename}</strong></span>
                         </div>
@@ -291,7 +291,7 @@ export function RegulatorFollowUpPanel({
                     </div>
                   ) : (
                     isOpen && (
-                      <p className="text-[11px] italic text-amber-600 dark:text-amber-400">
+                      <p className="text-[13px] italic text-amber-600 dark:text-amber-400">
                         * Awaiting business corrective action response.
                       </p>
                     )
@@ -299,7 +299,7 @@ export function RegulatorFollowUpPanel({
 
                   {isClosed && (
                     <div className="bg-emerald-500/[0.04] border border-emerald-500/20 rounded-md p-3 space-y-1">
-                      <div className="flex items-center justify-between text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                      <div className="flex items-center justify-between text-[13px] font-medium text-emerald-600 dark:text-emerald-400">
                         <span className="flex items-center gap-1">
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           Closed & Verified
@@ -314,7 +314,7 @@ export function RegulatorFollowUpPanel({
                         </p>
                       )}
                       {fu.closedBy && (
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-[13px] text-muted-foreground">
                           Verified by: <strong>{fu.closedBy.fullName}</strong>
                         </p>
                       )}
@@ -459,7 +459,7 @@ export function RegulatorFollowUpPanel({
                 <p className="font-semibold text-foreground">Submitted Business Action:</p>
                 <p className="text-muted-foreground whitespace-pre-line">{closingFollowUp.businessResponse}</p>
                 {closingFollowUp.evidenceFilename && (
-                  <p className="text-[11px] text-primary pt-1">
+                  <p className="text-[13px] text-primary pt-1">
                     Document Reference: {closingFollowUp.evidenceFilename}
                   </p>
                 )}
@@ -566,7 +566,7 @@ export function RegulatorFollowUpPanel({
                     onChange={(e) => setSendLinkExpiryDays(Math.max(1, Math.min(30, Number(e.target.value))))}
                     className="text-xs h-9 w-28"
                   />
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[13px] text-muted-foreground">
                     The link will expire after this many days and cannot be reused.
                   </p>
                 </div>

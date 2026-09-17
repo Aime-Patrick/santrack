@@ -443,7 +443,7 @@ export function LabelStudioWorkspace({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 max-w-36 gap-1.5 px-2.5 text-[11px] font-medium"
+                  className="h-8 max-w-36 gap-1.5 px-2.5 text-[13px] font-medium"
                 >
                   <Tag className="size-3.5 shrink-0 text-primary" />
                   <span className="truncate">
@@ -489,7 +489,7 @@ export function LabelStudioWorkspace({
           <Button
             size="sm"
             className={cn(
-              "h-8 gap-1.5 px-2.5 text-[11px] font-semibold shadow-xs",
+              "h-8 gap-1.5 px-2.5 text-[13px] font-semibold shadow-xs",
               saveStatus === "saved"
                 ? "bg-muted text-muted-foreground hover:bg-muted"
                 : "bg-success text-success-foreground hover:bg-success/90",
@@ -520,7 +520,7 @@ export function LabelStudioWorkspace({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 gap-1 px-2 font-mono text-[11px]"
+                  className="h-8 gap-1 px-2 font-mono text-[13px]"
                   title="Labels included in PDF download"
                 >
                   {effectivePrintLimit}
@@ -545,7 +545,7 @@ export function LabelStudioWorkspace({
 
           <Button
             size="sm"
-            className="h-8 gap-1.5 bg-primary px-2.5 text-[11px] font-semibold text-white shadow-xs hover:bg-primary/90"
+            className="h-8 gap-1.5 bg-primary px-2.5 text-[13px] font-semibold text-white shadow-xs hover:bg-primary/90"
             onClick={() => void handleDownload()}
             disabled={busy || rows.length === 0}
             title={`Download ${effectivePrintLimit} labels as PDF`}
@@ -630,7 +630,7 @@ export function LabelStudioWorkspace({
                 ✕
               </Button>
             </div>
-            <p className="text-[11px] leading-snug text-muted-foreground">
+            <p className="text-[13px] leading-snug text-muted-foreground">
               Click any name to copy, then use it as the element binding key in the Fabric inspector:
             </p>
             <div className="grid max-h-64 gap-1.5 overflow-y-auto">

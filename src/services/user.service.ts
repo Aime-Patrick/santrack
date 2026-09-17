@@ -18,6 +18,12 @@ export const userService = {
     return api.patch<UserResponse>(`/api/users/${userId}`, input).then((r) => r.data);
   },
 
+  requestEmailChange(userId: number, email: string): Promise<UserResponse> {
+    return api
+      .post<UserResponse>(`/api/users/${userId}/email-change`, { email })
+      .then((r) => r.data);
+  },
+
   resetPassword(userId: number, input: ResetPasswordInput): Promise<void> {
     return api.post(`/api/users/${userId}/reset-password`, input).then(() => undefined);
   },

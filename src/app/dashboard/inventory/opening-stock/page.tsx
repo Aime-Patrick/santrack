@@ -1178,7 +1178,7 @@ export default function OpeningStockPage() {
                         <RotateCcw className="mr-1 size-3.5" /> Reset
                       </Button>
                     )}
-                    <span className="hidden text-[11px] text-muted-foreground sm:inline">
+                    <span className="hidden text-[13px] text-muted-foreground sm:inline">
                       Hover a row to remove a mistake
                     </span>
                   </div>

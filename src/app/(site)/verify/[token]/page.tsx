@@ -72,10 +72,10 @@ export default function VerifyTokenPage({
       <div className="relative mx-auto w-full max-w-lg flex-1 px-4 pb-12 pt-5 sm:px-8 sm:pb-16 sm:pt-6">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-foreground">
+            <p className="text-[13px] font-bold uppercase tracking-[0.18em] text-foreground">
               Authenticity check
             </p>
-            <p className="truncate text-[11px] text-muted-foreground">
+            <p className="truncate text-[13px] text-muted-foreground">
               Public product verification
             </p>
           </div>
@@ -148,7 +148,7 @@ function NotFoundState({
         </p>
       ) : null}
 
-      <div className="mx-auto mt-6 max-w-full break-all rounded-lg border border-border bg-card px-3 py-2.5 font-mono text-[11px] text-muted-foreground">
+      <div className="mx-auto mt-6 max-w-full break-all rounded-lg border border-border bg-card px-3 py-2.5 font-mono text-[13px] text-muted-foreground">
         {token}
       </div>
       <p className="mt-4 text-center text-xs text-muted-foreground">
@@ -311,7 +311,7 @@ function VerifyCertificate({ token, result }: { token: string; result: VerifyRes
             )}
           >
             <p className="text-xs font-semibold text-foreground">{scanSignal.title}</p>
-            <p className="mt-1 text-pretty text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-1 text-pretty text-[13px] leading-5 text-muted-foreground">
               {scanSignal.detail}
             </p>
           </div>
@@ -386,7 +386,7 @@ function VerifyCertificate({ token, result }: { token: string; result: VerifyRes
         <ReportProductIssue token={token} compact />
       </div>
 
-      <p className="break-all px-1 text-center text-[11px] text-faint">
+      <p className="break-all px-1 text-center text-[13px] text-faint">
         Public verification · each unit seal is unique · {token.slice(0, 18)}
         {token.length > 18 ? "…" : ""}
       </p>

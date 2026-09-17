@@ -144,7 +144,7 @@ export default function UpdatesPage() {
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between text-xs text-slate-400">
                       <span
-                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${CATEGORY_COLORS[post.category]}`}
+                        className={`px-2.5 py-0.5 rounded-full text-[13px] font-semibold border ${CATEGORY_COLORS[post.category]}`}
                       >
                         {CATEGORY_LABELS[post.category]}
                       </span>

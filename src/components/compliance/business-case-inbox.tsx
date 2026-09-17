@@ -404,7 +404,7 @@ function InfoChip({
 }) {
   return (
     <div className="rounded-lg border border-border/80 px-3 py-2">
-      <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+      <p className="flex items-center gap-1.5 text-[13px] font-medium uppercase tracking-wide text-muted-foreground">
         {icon}
         {label}
       </p>

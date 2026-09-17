@@ -1018,7 +1018,7 @@ function LicensingHubWorkspace() {
                 <FileText className="mr-2 size-4 text-primary" />
                 <div>
                   <p className="text-sm font-medium">Business operating licence</p>
-                  <p className="text-[11px] text-muted-foreground">Manufacturing, trade, warehousing</p>
+                  <p className="text-[13px] text-muted-foreground">Manufacturing, trade, warehousing</p>
                 </div>
               </DropdownMenuItem>
 
@@ -1029,7 +1029,7 @@ function LicensingHubWorkspace() {
                 <Building2 className="mr-2 size-4 text-success" />
                 <div>
                   <p className="text-sm font-medium">Premise registration</p>
-                  <p className="text-[11px] text-muted-foreground">Factory, MCC, processing site</p>
+                  <p className="text-[13px] text-muted-foreground">Factory, MCC, processing site</p>
                 </div>
               </DropdownMenuItem>
 
@@ -1040,7 +1040,7 @@ function LicensingHubWorkspace() {
                 <Package className="mr-2 size-4 text-primary" />
                 <div>
                   <p className="text-sm font-medium">Product registration</p>
-                  <p className="text-[11px] text-muted-foreground">Market auth, CoA &amp; label</p>
+                  <p className="text-[13px] text-muted-foreground">Market auth, CoA &amp; label</p>
                 </div>
               </DropdownMenuItem>
             </DropdownMenuContent>

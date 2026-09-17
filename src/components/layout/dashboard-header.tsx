@@ -58,7 +58,7 @@ function LocaleSwitcher() {
         render={
           <button
             type="button"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/70 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-[11px] font-semibold uppercase tracking-wider cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border/70 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-[13px] font-semibold uppercase tracking-wider cursor-pointer"
             title="Switch language"
           />
         }

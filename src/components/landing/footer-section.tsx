@@ -111,7 +111,7 @@ export async function FooterSection() {
 
           {/* Platform */}
           <div className="lg:col-span-2">
-            <h3 className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#fac600] mb-4">
+            <h3 className="text-[13px] font-bold tracking-[0.15em] uppercase text-[#fac600] mb-4">
               {t("platform")}
             </h3>
             <ul className="flex flex-col gap-2.5">
@@ -127,7 +127,7 @@ export async function FooterSection() {
 
           {/* Company */}
           <div className="lg:col-span-2">
-            <h3 className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#fac600] mb-4">
+            <h3 className="text-[13px] font-bold tracking-[0.15em] uppercase text-[#fac600] mb-4">
               {t("company")}
             </h3>
             <ul className="flex flex-col gap-2.5">
@@ -143,7 +143,7 @@ export async function FooterSection() {
 
           {/* Contact + CTA */}
           <div className="lg:col-span-4 flex flex-col gap-4">
-            <h3 className="text-[11px] font-bold tracking-[0.15em] uppercase text-[#fac600]">
+            <h3 className="text-[13px] font-bold tracking-[0.15em] uppercase text-[#fac600]">
               {t("getInTouch")}
             </h3>
             <ul className="flex flex-col gap-3">

@@ -194,6 +194,9 @@ export interface CapabilityCatalogue {
 export interface UserResponse {
   id: number;
   email: string;
+  /** New address awaiting inbox confirmation; current `email` stays active. */
+  pendingEmail?: string | null;
+  pendingEmailExpiresAt?: string | null;
   fullName: string | null;
   role: UserRole;
   organization: OrganizationResponse | null;

@@ -135,7 +135,7 @@ export function AvatarPickerDialog({ user, open, onOpenChange }: Props) {
                 Remove
               </Button>
             )}
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               JPEG, PNG, WebP, or GIF · max 2 MB
             </p>
           </div>
@@ -189,7 +189,7 @@ export function AvatarPickerDialog({ user, open, onOpenChange }: Props) {
               );
             })}
           </div>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-[13px] text-muted-foreground">
             Avatars by{" "}
             <a
               href="https://www.dicebear.com"

@@ -316,7 +316,7 @@ function IndustryDetail() {
             </div>
             <div>
               <p className="text-xl font-bold tracking-tight leading-none">{stat.value}</p>
-              <p className="mt-1 text-[11px] text-muted-foreground">{stat.label}</p>
+              <p className="mt-1 text-[13px] text-muted-foreground">{stat.label}</p>
             </div>
           </button>
         ))}

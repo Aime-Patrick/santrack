@@ -64,7 +64,7 @@ export function ReportProductIssue({ token, compact = false }: { token: string; 
         onClick={() => setOpen(true)}
         variant={compact ? "outline" : "default"}
         className={compact
-          ? "h-8 w-auto rounded-md border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-600 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+          ? "h-8 w-auto rounded-md border-slate-200 bg-white px-2.5 text-[13px] font-semibold text-slate-600 hover:border-red-200 hover:bg-red-50 hover:text-red-700"
           : "h-12 w-full rounded-2xl bg-primary text-xs font-bold text-white hover:bg-primary-dark"}
       >
         {!compact ? <AlertTriangle className="mr-2 size-4" /> : null}

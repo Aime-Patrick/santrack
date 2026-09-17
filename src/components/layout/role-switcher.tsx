@@ -160,7 +160,7 @@ export function RoleSwitcher() {
               <span className="block text-xs font-semibold text-foreground">
                 Works for a licensing authority
               </span>
-              <span className="mt-0.5 block text-[11px] leading-relaxed text-muted-foreground">
+              <span className="mt-0.5 block text-[13px] leading-relaxed text-muted-foreground">
                 Adds{" "}
                 {PREVIEW_STANDING_CAPABILITIES.map((cap) =>
                   cap.replace(/_/g, " ").toLowerCase(),

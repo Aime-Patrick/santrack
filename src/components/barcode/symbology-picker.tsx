@@ -122,7 +122,7 @@ export function SymbologyPicker({
           const Icon = group.icon;
           return (
             <SelectGroup key={group.use}>
-              <SelectLabel className="flex items-center gap-1.5 pt-2 text-[11px] font-bold uppercase tracking-wider text-faint">
+              <SelectLabel className="flex items-center gap-1.5 pt-2 text-[13px] font-bold uppercase tracking-wider text-faint">
                 <Icon className="size-3" />
                 {group.title}
               </SelectLabel>
@@ -168,7 +168,7 @@ export function SymbologyNote({ spec }: { spec: SymbologySpec | undefined }) {
       <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
         {spec.purpose}
       </p>
-      <p className="mt-1.5 text-[11px] leading-relaxed text-faint">
+      <p className="mt-1.5 text-[13px] leading-relaxed text-faint">
         <span className="font-medium">Accepts:</span> {spec.accepts}
       </p>
     </div>

@@ -466,7 +466,7 @@ function IssueRecallDialog({
               <ShieldAlert className="size-5" />
             </div>
             <div className="min-w-0">
-              <p className="mb-0.5 text-[11px] font-bold uppercase tracking-[0.14em] text-danger">Safety action</p>
+              <p className="mb-0.5 text-[13px] font-bold uppercase tracking-[0.14em] text-danger">Safety action</p>
               <DialogTitle className="text-2xl">Issue product recall</DialogTitle>
               <DialogDescription>
                 Stop a specific lot across every distribution point.

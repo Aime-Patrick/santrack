@@ -121,17 +121,17 @@ export function LicenseFollowUpPanel({
         </div>
         <div className="flex items-center gap-2">
           {openCount > 0 && (
-            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-[11px]">
+            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-[13px]">
               {openCount} Action Required
             </Badge>
           )}
           {actionedCount > 0 && (
-            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30 text-[11px]">
+            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/30 text-[13px]">
               {actionedCount} Under Verification
             </Badge>
           )}
           {closedCount > 0 && (
-            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[11px]">
+            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-[13px]">
               {closedCount} Resolved
             </Badge>
           )}
@@ -203,7 +203,7 @@ export function LicenseFollowUpPanel({
 
                 {fu.businessResponse && (
                   <div className="bg-blue-500/[0.04] border border-blue-500/20 rounded-md p-3 space-y-1.5">
-                    <div className="flex items-center justify-between text-[11px] font-medium text-blue-600 dark:text-blue-400">
+                    <div className="flex items-center justify-between text-[13px] font-medium text-blue-600 dark:text-blue-400">
                       <span>Business Response & Evidence:</span>
                       {fu.actionedAt && (
                         <span>Submitted on {new Date(fu.actionedAt).toLocaleDateString()}</span>
@@ -213,7 +213,7 @@ export function LicenseFollowUpPanel({
                       {fu.businessResponse}
                     </p>
                     {fu.evidenceFilename && (
-                      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1">
+                      <div className="flex items-center gap-1.5 text-[13px] text-muted-foreground pt-1">
                         <FileText className="h-3.5 w-3.5 text-primary" />
                         <span>Attached Reference: <strong>{fu.evidenceFilename}</strong></span>
                       </div>
@@ -223,7 +223,7 @@ export function LicenseFollowUpPanel({
 
                 {isClosed && (
                   <div className="bg-emerald-500/[0.04] border border-emerald-500/20 rounded-md p-3 space-y-1.5">
-                    <div className="flex items-center justify-between text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                    <div className="flex items-center justify-between text-[13px] font-medium text-emerald-600 dark:text-emerald-400">
                       <span className="flex items-center gap-1">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         Regulator Sign-off & Verification
@@ -238,7 +238,7 @@ export function LicenseFollowUpPanel({
                       </p>
                     )}
                     {fu.closedBy && (
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-[13px] text-muted-foreground">
                         Verified by: <strong>{fu.closedBy.fullName}</strong>
                       </p>
                     )}

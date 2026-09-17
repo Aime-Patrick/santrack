@@ -126,7 +126,7 @@ export default function LicensePublicVerificationPage({
                       <p className="text-xs font-bold uppercase tracking-wider">
                         {data.valid ? "Verified & Authenticated" : "License Lapsed / Inactive"}
                       </p>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-[13px] text-muted-foreground">
                         {data.valid
                           ? "This operating license is officially active and authorized."
                           : `Status: ${data.status}. Not authorized for current operations.`}
@@ -159,7 +159,7 @@ export default function LicensePublicVerificationPage({
                       License Category
                     </span>
                     <p className="font-medium text-foreground">{data.categoryName}</p>
-                    <p className="text-[11px] text-muted-foreground">Activity: {data.activity}</p>
+                    <p className="text-[13px] text-muted-foreground">Activity: {data.activity}</p>
                   </div>
 
                   {data.facilityName && (
@@ -170,7 +170,7 @@ export default function LicensePublicVerificationPage({
                       </div>
                       <p className="font-medium text-foreground">{data.facilityName}</p>
                       {meta.cadastralUpi && (
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-[13px] text-muted-foreground">
                           Cadastral UPI: <span className="font-mono text-foreground">{meta.cadastralUpi}</span>
                         </p>
                       )}
@@ -223,7 +223,7 @@ export default function LicensePublicVerificationPage({
 
           {/* Footer */}
           <div className="px-6 py-4 bg-muted/20 border-t border-border text-center">
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               Official verification service powered by SANTRACK Industry Traceability Engine.
             </p>
           </div>

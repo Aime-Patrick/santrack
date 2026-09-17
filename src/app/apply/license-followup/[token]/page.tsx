@@ -209,7 +209,7 @@ export default function LicenseFollowUpResponsePage() {
             <p className="text-xs font-semibold text-foreground leading-tight truncate">
               SANTRACK — Compliance Condition Response
             </p>
-            <p className="text-[11px] text-muted-foreground leading-tight truncate">
+            <p className="text-[13px] text-muted-foreground leading-tight truncate">
               Licence: <span className="font-medium text-foreground">{view.licenseNumber}</span>
               {" · "}
               {view.organizationName}
@@ -271,7 +271,7 @@ export default function LicenseFollowUpResponsePage() {
                 <h2 className="font-semibold text-sm text-foreground">{view.title}</h2>
                 <span
                   className={cn(
-                    "text-[11px] font-medium px-2 py-0.5 rounded-full border",
+                    "text-[13px] font-medium px-2 py-0.5 rounded-full border",
                     priorityColor
                   )}
                 >

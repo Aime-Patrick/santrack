@@ -4,25 +4,33 @@ import { useState } from "react";
 import { AlertTriangle, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { getApiErrorMessage } from "@/lib/api";
-import { useConfigureMyRegulatoryAuthority, useMyRegulatoryAuthority } from "@/hooks/regulatory-authorities";
-
-// ── All sector values that can be assigned as mandates ────────────────────────
+import { AuthorityTeamsManager } from "@/components/regulator/authority-teams-manager";
+import {
+  useConfigureMyRegulatoryAuthority,
+  useMyRegulatoryAuthority,
+} from "@/hooks/regulatory-authorities";
 
 const SECTOR_OPTIONS: { value: string; label: string }[] = [
-  { value: "FOOD_AND_BEVERAGE",       label: "Food & Beverage"       },
-  { value: "PHARMACEUTICALS",         label: "Pharmaceuticals"        },
-  { value: "COSMETICS",               label: "Cosmetics"              },
-  { value: "MINING_AND_MINERALS",     label: "Mining & Minerals"      },
-  { value: "AGRICULTURE_AND_EXPORTS", label: "Agriculture & Exports"  },
-  { value: "GENERAL_MANUFACTURING",   label: "General Manufacturing"  },
-  { value: "DISTRIBUTION",            label: "Distribution"           },
-  { value: "RETAIL",                  label: "Retail"                 },
-  { value: "OTHER",                   label: "Other"                  },
+  { value: "FOOD_AND_BEVERAGE", label: "Food & Beverage" },
+  { value: "PHARMACEUTICALS", label: "Pharmaceuticals" },
+  { value: "COSMETICS", label: "Cosmetics" },
+  { value: "MINING_AND_MINERALS", label: "Mining & Minerals" },
+  { value: "AGRICULTURE_AND_EXPORTS", label: "Agriculture & Exports" },
+  { value: "GENERAL_MANUFACTURING", label: "General Manufacturing" },
+  { value: "DISTRIBUTION", label: "Distribution" },
+  { value: "RETAIL", label: "Retail" },
+  { value: "OTHER", label: "Other" },
 ];
 
 const split = (value: string) =>
@@ -32,20 +40,18 @@ export function AuthoritySelfSetup() {
   const { data, isLoading } = useMyRegulatoryAuthority(true);
   const save = useConfigureMyRegulatoryAuthority();
 
-  // Sector mandates as a Set of toggled values
   const [mandates, setMandates] = useState<Set<string>>(new Set());
   const [categories, setCategories] = useState("");
-  const [teams, setTeams] = useState("");
   const [referralDays, setReferralDays] = useState("");
 
-  // Seed form from API exactly once per mount
   const [seeded, setSeeded] = useState(false);
   if (data && !seeded) {
     setSeeded(true);
     setMandates(new Set(data.mandates));
     setCategories(data.caseCategories.join(", "));
-    setTeams(data.teams.join(", "));
-    setReferralDays(data.referralResponseDays ? String(data.referralResponseDays) : "");
+    setReferralDays(
+      data.referralResponseDays ? String(data.referralResponseDays) : "",
+    );
   }
 
   function toggleSector(value: string) {
@@ -56,17 +62,23 @@ export function AuthoritySelfSetup() {
     });
   }
 
-  if (isLoading) return <p className="text-sm text-muted-foreground">Loading authority setup…</p>;
+  if (isLoading) {
+    return <p className="text-sm text-muted-foreground">Loading authority setup…</p>;
+  }
   if (!data) {
     return (
       <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
         <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" />
         <div>
-          <p className="text-sm font-semibold text-amber-800">Authority workspace not configured</p>
-          <p className="mt-1 text-xs text-amber-700 leading-relaxed">
-            Your organization is registered as a regulator but has not been linked to a SANTRACK
-            authority workspace. Ask the <strong>System Administrator</strong> to open the{" "}
-            <strong>Regulators</strong> screen and onboard your organization as an authority.
+          <p className="text-sm font-semibold text-amber-800">
+            Authority workspace not configured
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-amber-700">
+            Your organization is registered as a regulator but has not been linked
+            to a SANTRACK authority workspace. Ask the{" "}
+            <strong>System Administrator</strong> to open the{" "}
+            <strong>Regulators</strong> screen and onboard your organization as an
+            authority.
           </p>
         </div>
       </div>
@@ -82,14 +94,14 @@ export function AuthoritySelfSetup() {
           </div>
           <div>
             <CardTitle>{data.name}</CardTitle>
-            <CardDescription>Only your authority controls these operational settings.</CardDescription>
+            <CardDescription>
+              Only your authority controls these operational settings.
+            </CardDescription>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-5">
-
-        {/* ── Sector mandates — tag selector ── */}
         <div className="space-y-2">
           <Label>
             Industry sector mandates
@@ -106,7 +118,7 @@ export function AuthoritySelfSetup() {
                   type="button"
                   onClick={() => toggleSector(value)}
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-all cursor-pointer select-none",
+                    "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-all select-none",
                     active
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground",
@@ -119,13 +131,13 @@ export function AuthoritySelfSetup() {
             })}
           </div>
           {mandates.size === 0 && (
-            <p className="text-[11px] text-muted-foreground">
-              No sectors selected — new applications will not be routed here automatically.
+            <p className="text-[13px] text-muted-foreground">
+              No sectors selected — new applications will not be routed here
+              automatically.
             </p>
           )}
         </div>
 
-        {/* ── Case categories ── */}
         <Field
           label="Case categories"
           value={categories}
@@ -133,15 +145,8 @@ export function AuthoritySelfSetup() {
           placeholder="Suspected counterfeit, unsafe product"
         />
 
-        {/* ── Teams ── */}
-        <Field
-          label="Teams"
-          value={teams}
-          onChange={setTeams}
-          placeholder="Market surveillance, case triage"
-        />
+        <AuthorityTeamsManager />
 
-        {/* ── Referral response target ── */}
         <div className="space-y-2">
           <Label>Referral response target (days)</Label>
           <Input
@@ -156,7 +161,8 @@ export function AuthoritySelfSetup() {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Case categories and teams: separate entries with commas. These settings do not assign cases or expose another authority's work.
+          Case categories: separate entries with commas. Teams are managed above
+          with members and a team leader.
         </p>
 
         <Button
@@ -165,12 +171,16 @@ export function AuthoritySelfSetup() {
               {
                 mandates: [...mandates],
                 caseCategories: split(categories),
-                teams: split(teams),
-                referralResponseDays: referralDays ? Number(referralDays) : null,
+                referralResponseDays: referralDays
+                  ? Number(referralDays)
+                  : null,
               },
               {
                 onSuccess: () => toast.success("Authority settings saved"),
-                onError: (error) => toast.error(getApiErrorMessage(error, "Could not save setup")),
+                onError: (error) =>
+                  toast.error(
+                    getApiErrorMessage(error, "Could not save setup"),
+                  ),
               },
             )
           }
@@ -197,7 +207,11 @@ function Field({
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
     </div>
   );
 }

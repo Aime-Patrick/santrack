@@ -173,7 +173,7 @@ export function IndustryCasesTable({ cases }: { cases: RegulatoryCase[] }) {
             type="button"
             onClick={() => setFilter(option.id)}
             className={cn(
-              "rounded-full px-2.5 py-1 text-[11px] font-semibold cursor-pointer",
+              "rounded-full px-2.5 py-1 text-[13px] font-semibold cursor-pointer",
               filter === option.id
                 ? "bg-[#067eda] text-white"
                 : "bg-muted text-muted-foreground",

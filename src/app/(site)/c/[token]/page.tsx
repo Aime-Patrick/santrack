@@ -152,7 +152,7 @@ export default function PublicCategoryPage({
               )}
             </div>
 
-            <p className="text-center text-[11px] text-slate-400">
+            <p className="text-center text-[13px] text-slate-400">
               Catalogue share via SANTRACK — stock and location are not shown.
             </p>
           </div>

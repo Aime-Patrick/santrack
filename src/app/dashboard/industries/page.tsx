@@ -263,7 +263,7 @@ function IndustriesWorkspace() {
                 {industry.tin && (
                   <>
                     <span>·</span>
-                    <span className="font-mono text-[11px] bg-muted px-1 rounded text-foreground">
+                    <span className="font-mono text-[13px] bg-muted px-1 rounded text-foreground">
                       TIN {industry.tin}
                     </span>
                   </>
@@ -286,7 +286,7 @@ function IndustriesWorkspace() {
               {ind.category}
             </Badge>
             {ind.industrySector && (
-              <p className="text-[11px] text-muted-foreground capitalize">
+              <p className="text-[13px] text-muted-foreground capitalize">
                 {ind.industrySector.replace(/_/g, " ").toLowerCase()}
               </p>
             )}
@@ -314,7 +314,7 @@ function IndustriesWorkspace() {
               <span className="text-muted-foreground italic">Rwanda national</span>
             )}
             {ind.sector && (
-              <p className="text-[11px] text-muted-foreground pl-4.5">{ind.sector} Sector</p>
+              <p className="text-[13px] text-muted-foreground pl-4.5">{ind.sector} Sector</p>
             )}
           </div>
         );
@@ -365,7 +365,7 @@ function IndustriesWorkspace() {
               )}
             </div>
             {ind.primaryLicenseNumber && (
-              <div className="text-[11px] text-muted-foreground">
+              <div className="text-[13px] text-muted-foreground">
                 <span className="font-mono text-foreground">{ind.primaryLicenseNumber}</span>
                 {ind.licenseExpiresOn && (
                   <span className="ml-1">
@@ -453,7 +453,7 @@ function IndustriesWorkspace() {
               <Building2 className="size-4 text-primary" />
             </div>
             <p className="mt-2 text-2xl font-bold tracking-tight">{counts.total}</p>
-            <p className="text-[11px] text-muted-foreground">All businesses</p>
+            <p className="text-[13px] text-muted-foreground">All businesses</p>
           </CardContent>
         </Card>
 
@@ -471,7 +471,7 @@ function IndustriesWorkspace() {
             <p className="mt-2 text-2xl font-bold text-blue-700 dark:text-blue-400 tracking-tight">
               {counts.licensedByUs}
             </p>
-            <p className="text-[11px] text-blue-600/80 dark:text-blue-400/80">Direct authority oversight</p>
+            <p className="text-[13px] text-blue-600/80 dark:text-blue-400/80">Direct authority oversight</p>
           </CardContent>
         </Card>
 
@@ -489,7 +489,7 @@ function IndustriesWorkspace() {
             <p className="mt-2 text-2xl font-bold text-emerald-700 dark:text-emerald-400 tracking-tight">
               {counts.active}
             </p>
-            <p className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">Valid operating standing</p>
+            <p className="text-[13px] text-emerald-600/80 dark:text-emerald-400/80">Valid operating standing</p>
           </CardContent>
         </Card>
 
@@ -507,7 +507,7 @@ function IndustriesWorkspace() {
             <p className="mt-2 text-2xl font-bold text-amber-700 dark:text-amber-400 tracking-tight">
               {counts.pending}
             </p>
-            <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80">Applications in queue</p>
+            <p className="text-[13px] text-amber-600/80 dark:text-amber-400/80">Applications in queue</p>
           </CardContent>
         </Card>
       </div>
